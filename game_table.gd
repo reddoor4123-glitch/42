@@ -33,13 +33,21 @@ var trump_panel: PanelContainer
 var trump_buttons: HBoxContainer
 var _follow_me_sep: HSeparator = null
 var _follow_me_btn: Button = null
+var nello_panel: PanelContainer
+var _nello_reversed_btn: Button = null
+var preset_panel: PanelContainer
 var status_label: Label
+
+# Debug flag — set true to skip AI thinking pauses for faster testing.
+# Wire this to a proper settings toggle later once the settings UI exists.
+const DEBUG_FAST_MODE: bool = true
 
 # Game state
 var selected_tile: DominoTile = null
 var human_seat: int = 0
 var waiting_for_human: bool = false
 var waiting_for_trump: bool = false
+var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
 var human_is_forced: bool = false
 var waiting_for_continue: bool = false
@@ -127,6 +135,46 @@ func _build_ui():
 	them_vbox.add_child(them_scroll)
 	_them_tricks = TrickPile.new()
 	them_scroll.add_child(_them_tricks)
+
+	# --- Preset picker panel (shown on first launch, hides when a preset is chosen) ---
+	preset_panel = PanelContainer.new()
+	preset_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_child(preset_panel)
+
+	var preset_vbox = VBoxContainer.new()
+	preset_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	preset_vbox.add_theme_constant_override("separation", 12)
+	preset_panel.add_child(preset_vbox)
+
+	var preset_title = Label.new()
+	preset_title.text = "Welcome to 42 — Choose Your Rules"
+	preset_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preset_title.add_theme_font_size_override("font_size", 18)
+	preset_title.add_theme_color_override("font_color", Color.WHITE)
+	preset_vbox.add_child(preset_title)
+
+	var preset_subtitle = Label.new()
+	preset_subtitle.text = "You can change this anytime from the menu"
+	preset_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preset_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	preset_vbox.add_child(preset_subtitle)
+
+	var preset_btn_row = VBoxContainer.new()
+	preset_btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	preset_btn_row.add_theme_constant_override("separation", 8)
+	preset_vbox.add_child(preset_btn_row)
+
+	var presets = [
+		["Teel Rules",       "Our family's house rules",    "teel"],
+		["Texas Standard",   "Common tournament-style rules", "texas"],
+		["Pagat Tournament", "Strict tournament ruleset",   "pagat"],
+	]
+	for p in presets:
+		var btn = Button.new()
+		btn.text = "%s\n%s" % [p[0], p[1]]
+		btn.custom_minimum_size = Vector2(200, 60)
+		btn.pressed.connect(_on_preset_chosen.bind(p[2]))
+		preset_btn_row.add_child(btn)
 
 	# --- Middle row: left opponent | play area | right opponent ---
 	var hbox_mid = HBoxContainer.new()
@@ -237,6 +285,41 @@ func _build_ui():
 	_follow_me_btn.pressed.connect(_on_trump_selected.bind(-1))
 	trump_vbox.add_child(_follow_me_btn)
 
+	# --- Nello doubles-mode panel ---
+	nello_panel = PanelContainer.new()
+	nello_panel.visible = false
+	play_vbox.add_child(nello_panel)
+
+	var nello_vbox = VBoxContainer.new()
+	nello_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	nello_vbox.add_theme_constant_override("separation", 6)
+	nello_panel.add_child(nello_vbox)
+
+	var nello_label = Label.new()
+	nello_label.text = "How do doubles play?"
+	nello_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nello_label.add_theme_font_size_override("font_size", 14)
+	nello_vbox.add_child(nello_label)
+
+	var nello_row = HBoxContainer.new()
+	nello_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	nello_row.add_theme_constant_override("separation", 8)
+	nello_vbox.add_child(nello_row)
+
+	for ml in [["Doubles High", "high"], ["Doubles Low", "low"], ["Own Suit", "own_suit"]]:
+		var btn = Button.new()
+		btn.text = ml[0]
+		btn.custom_minimum_size = Vector2(110, 40)
+		btn.pressed.connect(_on_nello_mode_selected.bind(ml[1]))
+		nello_row.add_child(btn)
+
+	_nello_reversed_btn = Button.new()
+	_nello_reversed_btn.text = "Reversed"
+	_nello_reversed_btn.custom_minimum_size = Vector2(110, 40)
+	_nello_reversed_btn.visible = false
+	_nello_reversed_btn.pressed.connect(_on_nello_mode_selected.bind("reversed"))
+	nello_row.add_child(_nello_reversed_btn)
+
 	# --- Human player hand ---
 	player_hand_container = HBoxContainer.new()
 	player_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -253,7 +336,15 @@ func _build_ui():
 # ─── GAME FLOW ────────────────────────────────────────────────────────────────
 
 func _start_game():
-	var settings = GameSettingsScript.new()
+	preset_panel.visible = true
+
+func _on_preset_chosen(key: String):
+	preset_panel.visible = false
+	var settings: GameSettings
+	match key:
+		"teel":  settings = GameSettingsScript.teel_rules()
+		"texas": settings = GameSettingsScript.texas_standard()
+		_:       settings = GameSettingsScript.pagat_tournament()
 	game = Game.new(settings)
 	game.setup_players(human_seat)
 	_start_hand()
@@ -292,7 +383,7 @@ func _run_bidding_sequence():
 			_show_bid_panel()
 			return
 		_set_status("%s is thinking..." % _seat_label(pid))
-		await get_tree().create_timer(1.0).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced)
@@ -300,7 +391,7 @@ func _run_bidding_sequence():
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
-		await get_tree().create_timer(0.7).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 
 func _contract_floor(contract_type: int, auction_floor: int) -> int:
 	match contract_type:
@@ -338,8 +429,8 @@ func _show_bid_panel():
 		if eligible.has(t):
 			contracts.append(t)
 
-	if _bid_panel_expanded and not contracts.has(_selected_contract_type):
-		_selected_contract_type = contracts[0] if not contracts.is_empty() else BidScript.Type.MARKS
+	if _bid_panel_expanded and _selected_contract_type != BidScript.Type.MARKS and not contracts.has(_selected_contract_type):
+		_selected_contract_type = BidScript.Type.MARKS
 
 	# Outer vbox centers everything
 	var center_vbox = VBoxContainer.new()
@@ -480,7 +571,7 @@ func _show_bid_panel():
 			contract_row.add_child(btn)
 			contract_buttons[t] = btn
 			btn.pressed.connect(func():
-				_selected_contract_type = t
+				_selected_contract_type = BidScript.Type.MARKS if _selected_contract_type == t else t
 				_show_bid_panel()
 			)
 
@@ -519,7 +610,7 @@ func _on_bid_submitted(bid: RefCounted):
 		game.current_bid = bid
 	_show_bid_bubble(human_seat, "You\n%s" % bid.debug_string())
 	_set_status("You: %s" % bid.debug_string())
-	await get_tree().create_timer(0.7).timeout
+	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 	await _run_post_human_bids()
 	_finish_bidding([])
 
@@ -529,7 +620,7 @@ func _run_post_human_bids():
 	for i in range(human_pos + 1, 4):
 		var pid = bid_order[i]
 		_set_status("%s is thinking..." % _seat_label(pid))
-		await get_tree().create_timer(1.0).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced)
@@ -537,37 +628,82 @@ func _run_post_human_bids():
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
-		await get_tree().create_timer(0.7).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 
 func _finish_bidding(_unused: Array):
 	var winning = game.current_bid
 	if winning == null:
 		_set_status("No bid — reshuffling...")
-		await get_tree().create_timer(1.5).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.5).timeout
 		_start_hand()
 		return
 
 	_set_status("Bid: Player %d — %s" % [winning.player_id, winning.debug_string()])
 
-	if winning.player_id == human_seat:
-		_show_trump_panel()
-	else:
-		# AI picks best trump for their hand
-		var ai_eval = AIPlayer.best_trump(game.players[winning.player_id].hand)
-		var best_suit = ai_eval["trump"]
-		game.apply_bid_result(best_suit)
-		_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
-		_refresh_all_hands()
-		await get_tree().create_timer(0.8).timeout
-		_begin_play()
+	if winning.type == BidScript.Type.NELLO:
+		if winning.player_id == human_seat:
+			# Human picks doubles mode, then leads
+			_show_nello_panel()
+		else:
+			# AI Nello: use table default, bid winner leads
+			game.active_nello_doubles_mode = game.settings.nello_doubles_mode
+			game.apply_bid_result(-1)
+			_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+			_refresh_all_hands()
+			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			_begin_play(winning.player_id)
 
-func _show_trump_panel():
+	elif winning.type == BidScript.Type.SEVENS:
+		# Sevens needs no trump selection from anyone
+		game.apply_bid_result(-1)
+		_set_info("Sevens | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+		_refresh_all_hands()
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+		_begin_play(winning.player_id)
+
+	elif winning.type == BidScript.Type.PLUNGE or winning.type == BidScript.Type.SPLASH:
+		# Plunge / Splash — partner of bid winner calls trump and leads
+		var partner_id = (winning.player_id + 2) % 4
+		var bid_label = "Plunge" if winning.type == BidScript.Type.PLUNGE else "Splash"
+		if partner_id == human_seat:
+			_show_trump_panel("%s bid %s — you call trump!" % [_seat_label(winning.player_id), bid_label])
+		else:
+			_set_status("%s is calling trump..." % _seat_label(partner_id))
+			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
+			var suit_names = ["Blanks", "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes"]
+			var ai_eval = AIPlayer.best_trump(game.players[partner_id].hand)
+			var best_suit = ai_eval["trump"]
+			game.apply_bid_result(best_suit)
+			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			_refresh_all_hands()
+			_set_status("%s called %s" % [_seat_label(partner_id), suit_names[best_suit]])
+			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			_begin_play(partner_id)
+
+	else:
+		# Covers POINTS and MARKS (bid winner picks trump and leads).
+		# FOLLOW_ME and LOW_NO also fall here for now — intentional pending their own panels.
+		if not (winning.type == BidScript.Type.POINTS or winning.type == BidScript.Type.MARKS
+				or winning.type == BidScript.Type.FOLLOW_ME or winning.type == BidScript.Type.LOW_NO):
+			push_warning("_finish_bidding: unhandled bid type %d fell through to trump panel" % winning.type)
+		if winning.player_id == human_seat:
+			_show_trump_panel()
+		else:
+			var ai_eval = AIPlayer.best_trump(game.players[winning.player_id].hand)
+			var best_suit = ai_eval["trump"]
+			game.apply_bid_result(best_suit)
+			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			_refresh_all_hands()
+			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			_begin_play()
+
+func _show_trump_panel(message: String = "You won the bid — call your trump suit"):
 	waiting_for_trump = true
 	var allow = game.settings.allow_follow_me
 	_follow_me_sep.visible = allow
 	_follow_me_btn.visible = allow
 	trump_panel.visible = true
-	_set_status("You won the bid — call your trump suit")
+	_set_status(message)
 
 func _on_trump_selected(suit: int):
 	trump_panel.visible = false
@@ -575,11 +711,34 @@ func _on_trump_selected(suit: int):
 	game.apply_bid_result(suit)
 	_set_info("Trump: %ds | Marks: You %d | Them %d" % [suit, game.team_marks[0], game.team_marks[1]])
 	_refresh_all_hands()
+	# Derive the correct leader from game state set by apply_bid_result():
+	# for Plunge/Splash the partner leads, otherwise the bid winner leads.
+	var is_ps = (game.variant == BidScript.Type.PLUNGE or game.variant == BidScript.Type.SPLASH)
+	var leader = (game.current_bid.player_id + 2) % 4 if is_ps else game.current_bid.player_id
+	_begin_play(leader)
+
+func _show_nello_panel():
+	waiting_for_nello_mode = true
+	_nello_reversed_btn.visible = game.settings.nello_doubles_reversed
+	nello_panel.visible = true
+	_set_status("You won Nello — how do doubles play?")
+
+func _on_nello_mode_selected(mode: String):
+	nello_panel.visible = false
+	waiting_for_nello_mode = false
+	game.active_nello_doubles_mode = mode
+	game.apply_bid_result(-1)
+	_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+	_refresh_all_hands()
 	_begin_play()
 
-func _begin_play():
+func _begin_play(leader_override: int = -1):
 	_clear_bid_bubbles()
-	var leader = game.current_bid.player_id if game.current_bid else 0
+	var leader: int
+	if leader_override >= 0:
+		leader = leader_override
+	else:
+		leader = game.current_bid.player_id if game.current_bid else 0
 	_play_trick(leader)
 
 func _play_trick(leader: int):
@@ -591,13 +750,25 @@ func _play_trick(leader: int):
 func _play_next_in_trick():
 	var player = game.players[game.current_player]
 
+	# Nello: partner sits out — skip their turn entirely
+	if game.variant == BidScript.Type.NELLO:
+		var nello_partner = (game.current_bid.player_id + 2) % 4
+		if game.current_player == nello_partner:
+			game.current_player = (game.current_player + 1) % 4
+			if game.current_trick.plays.size() < 3:  # only 3 players in Nello
+				_play_next_in_trick()
+			else:
+				await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.2).timeout
+				_resolve_trick()
+			return
+
 	if player.is_human:
 		_highlight_legal_moves()
 		waiting_for_human = true
 		_set_status("Your turn — tap a domino to play")
 	else:
 		_set_status("%s is thinking..." % _seat_label(player.id))
-		await get_tree().create_timer(1.4).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.4).timeout
 		var chosen = _ai_choose_domino(player)
 		_animate_ai_play(player, chosen)
 
@@ -642,10 +813,11 @@ func _execute_play(player: Player, domino: Domino):
 
 	game.current_player = (game.current_player + 1) % 4
 
-	if game.current_trick.plays.size() < 4:
+	var trick_size = 3 if game.variant == BidScript.Type.NELLO else 4
+	if game.current_trick.plays.size() < trick_size:
 		_play_next_in_trick()
 	else:
-		await get_tree().create_timer(1.2).timeout
+		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.2).timeout
 		_resolve_trick()
 
 func _resolve_trick():
@@ -664,11 +836,11 @@ func _resolve_trick():
 	else:
 		_them_tricks.add_trick_dominoes(trick_dominoes)
 
-	await get_tree().create_timer(2.2).timeout
+	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 2.2).timeout
 	_clear_play_area()
 
-	# Check if a Marks or Sevens bid is already mathematically lost
-	if _is_bid_mathematically_set(winner_team):
+	# Check if the bid is already mathematically lost
+	if _is_bid_mathematically_set(winner_id):
 		_resolve_hand()
 		return
 
@@ -677,17 +849,19 @@ func _resolve_trick():
 	else:
 		_resolve_hand()
 
-# For Marks/Sevens bids, the bidding team must win every single trick.
-# If a non-bidding-team player wins any trick, the bid is already set —
-# no need to keep playing.
-func _is_bid_mathematically_set(last_trick_winner_team: int) -> bool:
+# Returns true if the bid is already mathematically unwinnable and play can stop early.
+# Nello: bidder catching any trick fails immediately (partner winning is fine).
+# Marks/Sevens: any trick won by the non-bidding team ends it.
+func _is_bid_mathematically_set(winner_id: int) -> bool:
 	if game.current_bid == null:
 		return false
+	if game.variant == BidScript.Type.NELLO:
+		return winner_id == game.current_bid.player_id
 	var needs_all_tricks = game.current_bid.type == BidScript.Type.MARKS or game.current_bid.type == BidScript.Type.SEVENS
 	if not needs_all_tricks:
 		return false
 	var bid_team = game.current_bid.player_id % 2
-	return last_trick_winner_team != bid_team
+	return (winner_id % 2) != bid_team
 
 func _resolve_hand():
 	var result = game.resolve_hand()

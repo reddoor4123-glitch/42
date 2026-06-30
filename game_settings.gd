@@ -137,7 +137,7 @@ static func pagat_tournament() -> GameSettings:
 	s.marks_to_win = 7
 	return s
 
-static func family_house_rules() -> GameSettings:
+static func teel_rules() -> GameSettings:
 	# Built directly from the family house-rules document.
 	var s = GameSettings.new()
 	s.bid_direction = "shaker_left_first"   # left of shaker bids first, shaker bids last, going right
