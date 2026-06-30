@@ -4,7 +4,9 @@ extends RefCounted
 # ─────────────────────────────────────────────
 #  BIDDING RULES
 # ─────────────────────────────────────────────
-var bid_direction: String = "clockwise"     # "clockwise" or "counterclockwise" (family plays CCW)
+var bid_direction: String = "shaker_left_first"
+# "shaker_left_first": shaker-1, shaker-2, shaker-3, shaker (standard — bidding starts to the dealer's left)
+# "shaker_right_first": shaker+1, shaker+2, shaker+3, shaker
 var allow_forced_bid: bool = true           # If all pass, shaker must bid minimum
 var forced_bid_minimum: int = 30            # Common values: 30, 42
 var reshake_if_all_pass: bool = false        # Alternative to forced bid: just reshake, no penalty
@@ -61,7 +63,7 @@ var follow_me_allow_as_points_bid: bool = false  # If false, Follow Me requires 
 var allow_sevens: bool = true
 var sevens_require_minimum_bid: bool = false
 var sevens_minimum_bid: int = 42
-var sevens_require_seven_in_hand: bool = false   # Must hold a domino summing to 7 to call it
+var sevens_require_seven_in_hand: bool = true    # Must hold a domino summing to 7 to call it
 var sevens_tie_rule: String = "earliest"         # "earliest" = first domino to reach min distance wins;
 												  # "all_played" = compare only after all 4 are down (still earliest wins ties)
 
@@ -99,7 +101,7 @@ var stack_tricks_display: bool = false      # Hide all but most recent 1-2 trick
 # ─────────────────────────────────────────────
 static func texas_standard() -> GameSettings:
 	var s = GameSettings.new()
-	s.bid_direction = "clockwise"
+	s.bid_direction = "shaker_right_first"
 	s.allow_nello = true
 	s.nello_partner_sits_out = true
 	s.nello_doubles_mode = "high"
@@ -115,7 +117,7 @@ static func texas_standard() -> GameSettings:
 static func pagat_tournament() -> GameSettings:
 	# Closely follows pagat.com's "marks" ruleset (McLeod/Celko)
 	var s = GameSettings.new()
-	s.bid_direction = "clockwise"
+	s.bid_direction = "shaker_right_first"
 	s.max_open_bid_marks = 2
 	s.allow_plunge = true
 	s.plunge_minimum_doubles = 4
@@ -138,7 +140,7 @@ static func pagat_tournament() -> GameSettings:
 static func family_house_rules() -> GameSettings:
 	# Built directly from the family house-rules document.
 	var s = GameSettings.new()
-	s.bid_direction = "counterclockwise"   # left of shaker bids first, shaker bids last, going right
+	s.bid_direction = "shaker_left_first"   # left of shaker bids first, shaker bids last, going right
 	s.allow_forced_bid = true
 	s.forced_bid_minimum = 30
 	s.reshake_if_all_pass = false

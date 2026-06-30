@@ -20,6 +20,9 @@ var bid_panel: PanelContainer
 var bid_buttons: HBoxContainer
 var _pts_picker: DrumPicker = null
 var _marks_picker: DrumPicker = null
+var _bid_panel_expanded: bool = false
+var _selected_contract_type: int = BidScript.Type.MARKS
+var _contract_marks_picker: DrumPicker = null
 var _bid_bubbles: Dictionary = {}  # player_id -> Label
 var _bubble_overlay: Control = null
 var _us_marks: MarksDisplay = null
@@ -28,6 +31,8 @@ var _us_tricks: TrickPile = null
 var _them_tricks: TrickPile = null
 var trump_panel: PanelContainer
 var trump_buttons: HBoxContainer
+var _follow_me_sep: HSeparator = null
+var _follow_me_btn: Button = null
 var status_label: Label
 
 # Game state
@@ -220,6 +225,18 @@ func _build_ui():
 		else:
 			row2.add_child(btn)
 
+	# Follow Me / No Trump — built once, visibility toggled in _show_trump_panel()
+	_follow_me_sep = HSeparator.new()
+	_follow_me_sep.visible = false
+	trump_vbox.add_child(_follow_me_sep)
+
+	_follow_me_btn = Button.new()
+	_follow_me_btn.text = "No Trump  (Follow Me)"
+	_follow_me_btn.custom_minimum_size = Vector2(180, 40)
+	_follow_me_btn.visible = false
+	_follow_me_btn.pressed.connect(_on_trump_selected.bind(-1))
+	trump_vbox.add_child(_follow_me_btn)
+
 	# --- Human player hand ---
 	player_hand_container = HBoxContainer.new()
 	player_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -252,6 +269,8 @@ func _start_bidding():
 	_set_info("Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 	game.current_bid = null
 	human_is_forced = false
+	_bid_panel_expanded = false
+	_selected_contract_type = BidScript.Type.MARKS
 	_clear_bid_bubbles()
 	_run_bidding_sequence()
 
@@ -283,16 +302,26 @@ func _run_bidding_sequence():
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.7).timeout
 
+func _contract_floor(contract_type: int, auction_floor: int) -> int:
+	match contract_type:
+		BidScript.Type.PLUNGE:
+			return max(game.settings.plunge_minimum_bid_marks, auction_floor)
+		BidScript.Type.SPLASH:
+			return max(game.settings.splash_bid_marks, auction_floor)
+		_:
+			return auction_floor
+
 func _show_bid_panel():
 	for child in bid_buttons.get_children():
 		child.queue_free()
 	_pts_picker = null
 	_marks_picker = null
+	_contract_marks_picker = null
 
 	var current_high = game.current_bid
 	var min_points = 30
 	var points_available = true
-	var min_marks = 1
+	var auction_floor = 1
 
 	if current_high != null and current_high.type == BidScript.Type.POINTS:
 		min_points = current_high.value + 1
@@ -300,7 +329,17 @@ func _show_bid_panel():
 			points_available = false
 	elif current_high != null and current_high.type == BidScript.Type.MARKS:
 		points_available = false
-		min_marks = current_high.value + 1
+		auction_floor = current_high.value + 1
+
+	const CONTRACT_ORDER = [BidScript.Type.NELLO, BidScript.Type.SEVENS, BidScript.Type.PLUNGE, BidScript.Type.SPLASH]
+	var eligible: Array = game.eligible_contracts(game.players[human_seat].hand)
+	var contracts: Array = []
+	for t in CONTRACT_ORDER:
+		if eligible.has(t):
+			contracts.append(t)
+
+	if _bid_panel_expanded and not contracts.has(_selected_contract_type):
+		_selected_contract_type = contracts[0] if not contracts.is_empty() else BidScript.Type.MARKS
 
 	# Outer vbox centers everything
 	var center_vbox = VBoxContainer.new()
@@ -309,13 +348,28 @@ func _show_bid_panel():
 	center_vbox.add_theme_constant_override("separation", 6)
 	bid_buttons.add_child(center_vbox)
 
-	# Single row: [Pass]  [Points label+drum+btn]  [Marks label+drum+btn]
+	# Single row, slot order:
+	#   collapsed: [Pass]      [Points] [Marks] [More]
+	#   expanded:  [Back][Pass]         [Marks] [contract buttons]
 	var row = HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	center_vbox.add_child(row)
 
-	# --- Pass ---
+	# --- Back (expanded only, sits before Pass) ---
+	if _bid_panel_expanded:
+		var back_btn = Button.new()
+		back_btn.text = "‹ Back"
+		back_btn.custom_minimum_size = Vector2(64, 76)
+		back_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		back_btn.pressed.connect(func():
+			_bid_panel_expanded = false
+			_selected_contract_type = BidScript.Type.MARKS
+			_show_bid_panel()
+		)
+		row.add_child(back_btn)
+
+	# --- Pass (same slot in both states) ---
 	var pass_btn = Button.new()
 	pass_btn.text = "Pass"
 	pass_btn.custom_minimum_size = Vector2(64, 76)
@@ -323,8 +377,8 @@ func _show_bid_panel():
 	row.add_child(pass_btn)
 	pass_btn.pressed.connect(_on_bid_submitted.bind(BidScript.new(BidScript.Type.PASS, 0, human_seat)))
 
-	# --- Points drum ---
-	if points_available:
+	# --- Points drum (collapsed only) ---
+	if not _bid_panel_expanded and points_available:
 		var sep = VSeparator.new()
 		sep.custom_minimum_size = Vector2(2, 76)
 		row.add_child(sep)
@@ -357,8 +411,9 @@ func _show_bid_panel():
 		)
 		pts_col.add_child(pts_bid_btn)
 
-	# --- Marks drum ---
-	if min_marks <= 7:
+	# --- Marks drum — same drum/slot in both states; re-floored when expanded ---
+	var marks_floor = _contract_floor(_selected_contract_type, auction_floor) if _bid_panel_expanded else auction_floor
+	if marks_floor <= 7:
 		var sep2 = VSeparator.new()
 		sep2.custom_minimum_size = Vector2(2, 76)
 		row.add_child(sep2)
@@ -376,8 +431,9 @@ func _show_bid_panel():
 		marks_col.add_child(marks_lbl)
 
 		_marks_picker = DrumPicker.new()
+		_contract_marks_picker = _marks_picker
 		var mark_vals: Array[int] = []
-		for v in range(min_marks, 8):
+		for v in range(marks_floor, 8):
 			mark_vals.append(v)
 		_marks_picker.setup(mark_vals, 0)
 		marks_col.add_child(_marks_picker)
@@ -386,11 +442,72 @@ func _show_bid_panel():
 		marks_bid_btn.text = "Bid"
 		marks_bid_btn.custom_minimum_size = Vector2(DrumPicker.ITEM_WIDTH * DrumPicker.VISIBLE_ITEMS, 28)
 		marks_bid_btn.pressed.connect(func():
-			_on_bid_submitted(BidScript.new(BidScript.Type.MARKS, _marks_picker.get_value(), human_seat))
+			var bid_type = _selected_contract_type if _bid_panel_expanded else BidScript.Type.MARKS
+			_on_bid_submitted(BidScript.new(bid_type, _marks_picker.get_value(), human_seat))
 		)
 		marks_col.add_child(marks_bid_btn)
 
+	# --- More (collapsed) / contract buttons (expanded) ---
+	if not _bid_panel_expanded:
+		if not eligible.is_empty():
+			var sep3 = VSeparator.new()
+			sep3.custom_minimum_size = Vector2(2, 76)
+			row.add_child(sep3)
+
+			var more_btn = Button.new()
+			more_btn.text = "More ▾"
+			more_btn.custom_minimum_size = Vector2(64, 76)
+			more_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			more_btn.pressed.connect(func():
+				_bid_panel_expanded = true
+				_show_bid_panel()
+			)
+			row.add_child(more_btn)
+	else:
+		var sep4 = VSeparator.new()
+		sep4.custom_minimum_size = Vector2(2, 76)
+		row.add_child(sep4)
+
+		var contract_row = HBoxContainer.new()
+		contract_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		contract_row.add_theme_constant_override("separation", 8)
+		row.add_child(contract_row)
+
+		var contract_buttons: Dictionary = {}  # type -> Button
+		for t in contracts:
+			var btn = Button.new()
+			btn.text = _contract_label(t)
+			contract_row.add_child(btn)
+			contract_buttons[t] = btn
+			btn.pressed.connect(func():
+				_selected_contract_type = t
+				_show_bid_panel()
+			)
+
+		_update_contract_button_visuals(contract_buttons)
+
 	bid_panel.visible = true
+
+func _contract_label(contract_type: int) -> String:
+	match contract_type:
+		BidScript.Type.NELLO:
+			return "Nello"
+		BidScript.Type.SEVENS:
+			return "Sevens"
+		BidScript.Type.PLUNGE:
+			return "Plunge (%d)" % game.settings.plunge_minimum_bid_marks
+		BidScript.Type.SPLASH:
+			return "Splash (%d)" % game.settings.splash_bid_marks
+		_:
+			return ""
+
+func _update_contract_button_visuals(contract_buttons: Dictionary):
+	for t in contract_buttons:
+		var btn: Button = contract_buttons[t]
+		if t == _selected_contract_type:
+			btn.modulate = Color(0.95, 0.80, 0.15)
+		else:
+			btn.modulate = Color(1, 1, 1)
 
 func _on_bid_submitted(bid: RefCounted):
 	if human_is_forced and bid.type == BidScript.Type.PASS:
@@ -446,6 +563,9 @@ func _finish_bidding(_unused: Array):
 
 func _show_trump_panel():
 	waiting_for_trump = true
+	var allow = game.settings.allow_follow_me
+	_follow_me_sep.visible = allow
+	_follow_me_btn.visible = allow
 	trump_panel.visible = true
 	_set_status("You won the bid — call your trump suit")
 

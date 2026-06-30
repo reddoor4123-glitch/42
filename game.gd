@@ -54,14 +54,16 @@ func deal_hands():
 
 # Returns the seating order bidding follows this hand, ending with the
 # shaker (who always bids last, regardless of direction).
-# "clockwise": shaker+1, shaker+2, shaker+3, shaker
-# "counterclockwise": shaker-1, shaker-2, shaker-3, shaker
+# "shaker_left_first": shaker-1, shaker-2, shaker-3, shaker (standard)
+# "shaker_right_first": shaker+1, shaker+2, shaker+3, shaker
 func bid_order() -> Array:
 	var order: Array = []
-	var dir = 1 if settings.bid_direction == "clockwise" else -1
+	var dir = -1 if settings.bid_direction == "shaker_left_first" else 1
 	for i in range(1, 4):
 		order.append((shaker + dir * i + 4) % 4)
 	order.append(shaker)
+	# TEMP DEBUG — remove after verifying direction
+	print("Bid order (shaker=%d, dir=%s): %s" % [shaker, settings.bid_direction, order])
 	return order
 
 func first_bidder() -> int:
@@ -84,6 +86,26 @@ func bid_context(player_id: int, bid_position: int) -> Dictionary:
 		"is_dealer": player_id == shaker,
 		"all_others_passed": (bid_position == 3 and current_bid == null),
 	}
+
+# Returns which special contract types are currently eligible given settings
+# and the player's hand. Only checks NELLO, SEVENS, PLUNGE, and SPLASH.
+func eligible_contracts(hand: Array) -> Array:
+	var result: Array = []
+	if settings.allow_nello:
+		result.append(BidScript.Type.NELLO)
+	if settings.allow_sevens and (not settings.sevens_require_seven_in_hand or _has_seven_domino(hand)):
+		result.append(BidScript.Type.SEVENS)
+	if settings.allow_plunge and count_doubles(hand) >= settings.plunge_minimum_doubles:
+		result.append(BidScript.Type.PLUNGE)
+	if settings.allow_splash and count_doubles(hand) >= settings.splash_minimum_doubles:
+		result.append(BidScript.Type.SPLASH)
+	return result
+
+func _has_seven_domino(hand: Array) -> bool:
+	for d in hand:
+		if d.pip_sum() == 7:
+			return true
+	return false
 
 func submit_bid(bid: RefCounted, bid_position: int = -1) -> bool:
 	var context = {}
