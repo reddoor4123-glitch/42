@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://c1wwpcys2wev7"]
+
+[ext_resource type="Script" uid="uid://p65nnun74iw4" path="res://game_table.gd" id="1_0fbet"]
+
+[node name="Control" type="Node" unique_id=1612613053]
+script = ExtResource("1_0fbet")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=744031002]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 0, 0, 1)
