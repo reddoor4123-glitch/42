@@ -45,12 +45,14 @@ var _pending_settings: GameSettings = null
 var _preset_btn_container: VBoxContainer = null
 var _preset_status_label: Label = null
 var main_menu_panel: PanelContainer = null
+var difficulty_panel: PanelContainer = null
+var _difficulty_btn_container: VBoxContainer = null
 var _game_top_row: HBoxContainer = null
 var _game_mid_row: HBoxContainer = null
 
 # Debug flag — set true to skip AI thinking pauses for faster testing.
 # Wire this to a proper settings toggle later once the settings UI exists.
-const DEBUG_FAST_MODE: bool = true
+const DEBUG_FAST_MODE: bool = false
 
 # Game state
 var selected_tile: DominoTile = null
@@ -223,12 +225,11 @@ func _build_ui():
 	rules_btn.pressed.connect(_on_menu_rules_pressed)
 	menu_vbox.add_child(rules_btn)
 
-	var more_btn = Button.new()
-	more_btn.text = "More (Coming Soon)"
-	more_btn.custom_minimum_size = Vector2(220, 64)
-	more_btn.disabled = true
-	more_btn.modulate = Color(1, 1, 1, 0.6)
-	menu_vbox.add_child(more_btn)
+	var diff_menu_btn = Button.new()
+	diff_menu_btn.text = "Difficulty"
+	diff_menu_btn.custom_minimum_size = Vector2(220, 64)
+	diff_menu_btn.pressed.connect(_on_menu_difficulty_pressed)
+	menu_vbox.add_child(diff_menu_btn)
 
 	# --- Preset picker panel ---
 	preset_panel = PanelContainer.new()
@@ -270,6 +271,64 @@ func _build_ui():
 	_preset_btn_container.add_theme_constant_override("separation", 8)
 	_preset_btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preset_scroll.add_child(_preset_btn_container)
+
+	# --- Difficulty picker panel ---
+	difficulty_panel = PanelContainer.new()
+	difficulty_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	difficulty_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	difficulty_panel.custom_minimum_size = Vector2(480, 0)
+	difficulty_panel.visible = false
+	var diff_style = StyleBoxFlat.new()
+	diff_style.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+	diff_style.corner_radius_top_left = 10
+	diff_style.corner_radius_top_right = 10
+	diff_style.corner_radius_bottom_left = 10
+	diff_style.corner_radius_bottom_right = 10
+	diff_style.content_margin_left = 32
+	diff_style.content_margin_right = 32
+	diff_style.content_margin_top = 32
+	diff_style.content_margin_bottom = 32
+	difficulty_panel.add_theme_stylebox_override("panel", diff_style)
+	vbox.add_child(difficulty_panel)
+
+	var diff_vbox = VBoxContainer.new()
+	diff_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	diff_vbox.add_theme_constant_override("separation", 16)
+	difficulty_panel.add_child(diff_vbox)
+
+	var diff_title = Label.new()
+	diff_title.text = "Choose Your Experience"
+	diff_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	diff_title.add_theme_font_size_override("font_size", 22)
+	diff_title.add_theme_color_override("font_color", Color.WHITE)
+	diff_vbox.add_child(diff_title)
+
+	var diff_subtitle = Label.new()
+	diff_subtitle.text = "You can change this anytime from settings"
+	diff_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	diff_subtitle.add_theme_font_size_override("font_size", 13)
+	diff_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	diff_vbox.add_child(diff_subtitle)
+
+	var diff_back_btn = Button.new()
+	diff_back_btn.text = "← Menu"
+	diff_back_btn.custom_minimum_size = Vector2(100, 40)
+	diff_back_btn.pressed.connect(func():
+		difficulty_panel.visible = false
+		main_menu_panel.visible = true
+	)
+	diff_vbox.add_child(diff_back_btn)
+
+	var diff_scroll = ScrollContainer.new()
+	diff_scroll.custom_minimum_size = Vector2(240, 260)
+	diff_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	diff_vbox.add_child(diff_scroll)
+
+	_difficulty_btn_container = VBoxContainer.new()
+	_difficulty_btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_difficulty_btn_container.add_theme_constant_override("separation", 8)
+	_difficulty_btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	diff_scroll.add_child(_difficulty_btn_container)
 
 	# --- Middle row: left opponent | play area | right opponent ---
 	_game_mid_row = HBoxContainer.new()
@@ -551,7 +610,7 @@ func _run_bidding_sequence():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
@@ -788,7 +847,7 @@ func _run_post_human_bids():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
@@ -962,10 +1021,13 @@ func _animate_ai_play(player: Player, domino: Domino):
 func _ai_choose_domino(player: Player) -> Domino:
 	var legal = game.get_legal_moves(player)
 	var partner_id = (player.id + 2) % 4
+	var is_partner = (player.id == (human_seat + 2) % 4)
 	var reason_log: Array = []
 	var chosen = AIPlayer.decide_play(
 		legal, player.hand, game.current_trick,
-		player.id, partner_id, game.trump, reason_log
+		player.id, partner_id, game.trump, reason_log,
+		game.settings.ai_difficulty,
+		is_partner
 	)
 	if reason_log.size() > 0:
 		_set_status("%s: %s" % [_seat_label(player.id), reason_log[0]])
@@ -1211,6 +1273,13 @@ func _build_settings_content():
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", Color.WHITE)
 	_settings_content_vbox.add_child(title)
+
+	_add_option_row(_settings_content_vbox, "AI Difficulty", [
+		["Easy",     "easy"],
+		["Standard", "standard"],
+		["Hard",     "hard"],
+	], _pending_settings.ai_difficulty, func(v): _pending_settings.ai_difficulty = v)
+	_settings_content_vbox.add_child(HSeparator.new())
 
 	# ── BIDDING ──
 	var bid_body = _make_section(_settings_content_vbox, "BIDDING")
@@ -1463,6 +1532,7 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.allow_table_talk = src.allow_table_talk
 	dst.allow_early_hand_end = src.allow_early_hand_end
 	dst.stack_tricks_display = src.stack_tricks_display
+	dst.ai_difficulty = src.ai_difficulty
 	return dst
 
 func _restart_game_with_settings(new_settings: GameSettings):
@@ -1494,6 +1564,9 @@ func _on_menu_play_pressed():
 			if valid:
 				main_menu_panel.visible = false
 				_on_preset_chosen(key)
+				# Apply saved difficulty on top of preset default
+				if game != null and data.has("ai_difficulty"):
+					game.settings.ai_difficulty = str(data["ai_difficulty"])
 				return
 	_on_menu_rules_pressed()
 
@@ -1570,10 +1643,18 @@ func _rebuild_preset_buttons():
 	_preset_btn_container.add_child(create_btn)
 
 func _save_last_used(key: String):
-	var f = FileAccess.open("user://last_used.json", FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify({"last_preset": key}))
-		f.close()
+	var data = {}
+	var fr = FileAccess.open("user://last_used.json", FileAccess.READ)
+	if fr:
+		var existing = JSON.parse_string(fr.get_as_text())
+		fr.close()
+		if existing is Dictionary:
+			data = existing
+	data["last_preset"] = key
+	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	if fw:
+		fw.store_string(JSON.stringify(data))
+		fw.close()
 
 func _show_save_preset_popup():
 	var popup = Control.new()
@@ -1653,6 +1734,62 @@ func _save_custom_preset(cname: String):
 		f.store_string(JSON.stringify(GameSettingsScript.to_dict(_pending_settings), "\t"))
 		f.close()
 	settings_panel.visible = false
+
+func _on_menu_difficulty_pressed():
+	main_menu_panel.visible = false
+	_rebuild_difficulty_buttons()
+	difficulty_panel.visible = true
+
+func _on_difficulty_chosen(key: String):
+	# Persist the choice merged into last_used.json
+	var data = {}
+	var fr = FileAccess.open("user://last_used.json", FileAccess.READ)
+	if fr:
+		var existing = JSON.parse_string(fr.get_as_text())
+		fr.close()
+		if existing is Dictionary:
+			data = existing
+	if not data is Dictionary:
+		data = {}
+	data["ai_difficulty"] = key
+	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	if fw:
+		fw.store_string(JSON.stringify(data))
+		fw.close()
+	# Apply immediately to a running game
+	if game != null:
+		game.settings.ai_difficulty = key
+	difficulty_panel.visible = false
+	main_menu_panel.visible = true
+
+func _rebuild_difficulty_buttons():
+	for c in _difficulty_btn_container.get_children():
+		c.queue_free()
+
+	var current = "standard"
+	if game != null:
+		current = game.settings.ai_difficulty
+	else:
+		var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+		if f:
+			var data = JSON.parse_string(f.get_as_text())
+			f.close()
+			if data is Dictionary and data.has("ai_difficulty"):
+				current = str(data["ai_difficulty"])
+
+	var options = [
+		["Easy",     "Supportive partner, relaxed opponents", "easy"],
+		["Standard", "Balanced play — the real game",         "standard"],
+		["Hard",     "Serious players, no mercy",             "hard"],
+	]
+	for opt in options:
+		var btn = Button.new()
+		btn.text = "%s\n%s" % [opt[0], opt[1]]
+		btn.custom_minimum_size = Vector2(220, 72)
+		if opt[2] == current:
+			btn.modulate = Color(0.95, 0.80, 0.15)
+		btn.pressed.connect(_on_difficulty_chosen.bind(opt[2]))
+		_difficulty_btn_container.add_child(btn)
 
 func _input(event: InputEvent):
 	if waiting_for_continue and event is InputEventMouseButton and event.pressed:

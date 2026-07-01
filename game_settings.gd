@@ -95,6 +95,7 @@ var shuffle_style: String = "random"
 var allow_table_talk: bool = false
 var allow_early_hand_end: bool = true       # Lay-down / early stop once outcome is locked in
 var stack_tricks_display: bool = false      # Hide all but most recent 1-2 tricks per side instead of showing all flat
+var ai_difficulty: String = "standard"      # "easy", "standard", "hard"
 
 # ─────────────────────────────────────────────
 #  PRESET HELPERS
@@ -123,6 +124,7 @@ static func standard_42() -> GameSettings:
 	s.allow_low_no = false
 	s.score_by_marks = true
 	s.marks_to_win = 7
+	s.ai_difficulty = "standard"
 	return s
 
 static func tournament_rules() -> GameSettings:
@@ -146,6 +148,7 @@ static func tournament_rules() -> GameSettings:
 	s.allow_low_no = false
 	s.score_by_marks = true
 	s.marks_to_win = 7
+	s.ai_difficulty = "standard"
 	return s
 
 static func lechner_hall() -> GameSettings:
@@ -175,6 +178,7 @@ static func lechner_hall() -> GameSettings:
 	s.allow_low_no = false
 	s.score_by_marks = true
 	s.marks_to_win = 7
+	s.ai_difficulty = "standard"
 	return s
 
 static func teel_rules() -> GameSettings:
@@ -216,6 +220,7 @@ static func teel_rules() -> GameSettings:
 
 	s.allow_early_hand_end = true
 	s.stack_tricks_display = false
+	s.ai_difficulty = "standard"
 	return s
 
 # ─────────────────────────────────────────────
@@ -276,6 +281,7 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"allow_table_talk": s.allow_table_talk,
 		"allow_early_hand_end": s.allow_early_hand_end,
 		"stack_tricks_display": s.stack_tricks_display,
+		"ai_difficulty": s.ai_difficulty,
 	}
 
 static func from_dict(d: Dictionary) -> GameSettings:
@@ -333,4 +339,5 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.allow_table_talk = d.get("allow_table_talk", false)
 	s.allow_early_hand_end = d.get("allow_early_hand_end", true)
 	s.stack_tricks_display = d.get("stack_tricks_display", false)
+	s.ai_difficulty = d.get("ai_difficulty", "standard")
 	return s
