@@ -99,39 +99,79 @@ var stack_tricks_display: bool = false      # Hide all but most recent 1-2 trick
 # ─────────────────────────────────────────────
 #  PRESET HELPERS
 # ─────────────────────────────────────────────
-static func texas_standard() -> GameSettings:
+static func standard_42() -> GameSettings:
+	# Baseline rules — "just learn the game" option
 	var s = GameSettings.new()
-	s.bid_direction = "shaker_right_first"
+	s.bid_direction = "shaker_left_first"
+	s.allow_forced_bid = true
+	s.forced_bid_minimum = 30
+	s.minimum_bid = 30
+	s.max_open_bid_marks = 2
+	s.allow_jump_bids = false
 	s.allow_nello = true
 	s.nello_partner_sits_out = true
-	s.nello_doubles_mode = "high"
-	s.allow_plunge = true
-	s.allow_splash = false
-	s.allow_follow_me = false
-	s.allow_sevens = false
-	s.allow_low_no = false
-	s.score_by_marks = true
-	s.marks_to_win = 7
-	return s
-
-static func pagat_tournament() -> GameSettings:
-	# Closely follows pagat.com's "marks" ruleset (McLeod/Celko)
-	var s = GameSettings.new()
-	s.bid_direction = "shaker_right_first"
-	s.max_open_bid_marks = 2
+	s.nello_doubles_mode = "own_suit"
 	s.allow_plunge = true
 	s.plunge_minimum_doubles = 4
 	s.plunge_minimum_bid_marks = 4
 	s.allow_splash = true
 	s.splash_minimum_doubles = 3
 	s.splash_bid_marks = 2
+	s.allow_follow_me = true
+	s.allow_sevens = true
+	s.sevens_require_seven_in_hand = true
+	s.allow_low_no = false
+	s.score_by_marks = true
+	s.marks_to_win = 7
+	return s
+
+static func tournament_rules() -> GameSettings:
+	# Strict tournament rules per texas42.net/tournamentsample.html
+	# Key: no Plunge/Splash/Sevens; Nello only as forced bid; max open 2 marks
+	var s = GameSettings.new()
+	s.bid_direction = "shaker_left_first"
+	s.allow_forced_bid = true
+	s.forced_bid_minimum = 30
+	s.minimum_bid = 30
+	s.max_open_bid_marks = 2
+	s.allow_jump_bids = false
+	s.allow_nello = true
+	s.nello_only_on_forced_bid = true
+	s.nello_partner_sits_out = true
+	s.nello_doubles_mode = "high"
+	s.allow_plunge = false
+	s.allow_splash = false
+	s.allow_follow_me = true
+	s.allow_sevens = false
+	s.allow_low_no = false
+	s.score_by_marks = true
+	s.marks_to_win = 7
+	return s
+
+static func lechner_hall() -> GameSettings:
+	# Aggie 42 — Lechner Hall Texas A&M rules per texas42.net/lechnerhall.html
+	# Splash min is 3 marks (not 2); Nello doubles configurable; Follow Me / Sevens allowed
+	# Note: Lechner rules require win by 2 marks — needs marks_win_by_two field (future addition)
+	var s = GameSettings.new()
+	s.bid_direction = "shaker_left_first"
+	s.allow_forced_bid = true
+	s.forced_bid_minimum = 30
+	s.minimum_bid = 30
+	s.max_open_bid_marks = 2
+	s.allow_jump_bids = false
 	s.allow_nello = true
 	s.nello_partner_sits_out = true
 	s.nello_doubles_mode = "own_suit"
+	s.nello_doubles_reversed = false
+	s.allow_plunge = true
+	s.plunge_minimum_doubles = 4
+	s.plunge_minimum_bid_marks = 4
+	s.allow_splash = true
+	s.splash_minimum_doubles = 3
+	s.splash_bid_marks = 3
 	s.allow_follow_me = true
-	s.follow_me_allow_as_points_bid = false
 	s.allow_sevens = true
-	s.sevens_require_seven_in_hand = false
+	s.sevens_require_seven_in_hand = true
 	s.allow_low_no = false
 	s.score_by_marks = true
 	s.marks_to_win = 7
@@ -176,4 +216,121 @@ static func teel_rules() -> GameSettings:
 
 	s.allow_early_hand_end = true
 	s.stack_tricks_display = false
+	return s
+
+# ─────────────────────────────────────────────
+#  SERIALIZATION
+# ─────────────────────────────────────────────
+static func to_dict(s: GameSettings) -> Dictionary:
+	return {
+		"bid_direction": s.bid_direction,
+		"allow_forced_bid": s.allow_forced_bid,
+		"forced_bid_minimum": s.forced_bid_minimum,
+		"reshake_if_all_pass": s.reshake_if_all_pass,
+		"minimum_bid": s.minimum_bid,
+		"max_open_bid_marks": s.max_open_bid_marks,
+		"allow_jump_bids": s.allow_jump_bids,
+		"allow_plunge": s.allow_plunge,
+		"plunge_minimum_doubles": s.plunge_minimum_doubles,
+		"plunge_minimum_bid_marks": s.plunge_minimum_bid_marks,
+		"allow_splash": s.allow_splash,
+		"splash_minimum_doubles": s.splash_minimum_doubles,
+		"splash_bid_marks": s.splash_bid_marks,
+		"allow_low_no": s.allow_low_no,
+		"allow_nello": s.allow_nello,
+		"nello_all_four_play": s.nello_all_four_play,
+		"nello_partner_sits_out": s.nello_partner_sits_out,
+		"allow_nello_exchange": s.allow_nello_exchange,
+		"nello_exchange_bidder_gives": s.nello_exchange_bidder_gives,
+		"nello_exchange_partner_gives": s.nello_exchange_partner_gives,
+		"nello_only_on_forced_bid": s.nello_only_on_forced_bid,
+		"nello_minimum_bid": s.nello_minimum_bid,
+		"nello_doubles_mode": s.nello_doubles_mode,
+		"nello_doubles_reversed": s.nello_doubles_reversed,
+		"nello_bid_value": s.nello_bid_value,
+		"nello_count_as_marks": s.nello_count_as_marks,
+		"nello_failure_penalty": s.nello_failure_penalty,
+		"nello_failure_fixed_points": s.nello_failure_fixed_points,
+		"allow_follow_me": s.allow_follow_me,
+		"follow_me_doubles_mode": s.follow_me_doubles_mode,
+		"follow_me_allow_as_points_bid": s.follow_me_allow_as_points_bid,
+		"allow_sevens": s.allow_sevens,
+		"sevens_require_minimum_bid": s.sevens_require_minimum_bid,
+		"sevens_minimum_bid": s.sevens_minimum_bid,
+		"sevens_require_seven_in_hand": s.sevens_require_seven_in_hand,
+		"sevens_tie_rule": s.sevens_tie_rule,
+		"doubles_are_trump": s.doubles_are_trump,
+		"doubles_trump_reversed": s.doubles_trump_reversed,
+		"default_trump_if_undeclared": s.default_trump_if_undeclared,
+		"allow_small_end_opening_lead": s.allow_small_end_opening_lead,
+		"force_trump_opening_lead": s.force_trump_opening_lead,
+		"score_by_marks": s.score_by_marks,
+		"marks_to_win": s.marks_to_win,
+		"points_to_win": s.points_to_win,
+		"set_penalty": s.set_penalty,
+		"count_dominos_in_tricks": s.count_dominos_in_tricks,
+		"winning_trick_bonus": s.winning_trick_bonus,
+		"allow_renege_challenge": s.allow_renege_challenge,
+		"renege_penalty": s.renege_penalty,
+		"shuffle_style": s.shuffle_style,
+		"allow_table_talk": s.allow_table_talk,
+		"allow_early_hand_end": s.allow_early_hand_end,
+		"stack_tricks_display": s.stack_tricks_display,
+	}
+
+static func from_dict(d: Dictionary) -> GameSettings:
+	var s = GameSettings.new()
+	s.bid_direction = d.get("bid_direction", "shaker_left_first")
+	s.allow_forced_bid = d.get("allow_forced_bid", true)
+	s.forced_bid_minimum = d.get("forced_bid_minimum", 30)
+	s.reshake_if_all_pass = d.get("reshake_if_all_pass", false)
+	s.minimum_bid = d.get("minimum_bid", 30)
+	s.max_open_bid_marks = d.get("max_open_bid_marks", 2)
+	s.allow_jump_bids = d.get("allow_jump_bids", false)
+	s.allow_plunge = d.get("allow_plunge", true)
+	s.plunge_minimum_doubles = d.get("plunge_minimum_doubles", 4)
+	s.plunge_minimum_bid_marks = d.get("plunge_minimum_bid_marks", 4)
+	s.allow_splash = d.get("allow_splash", false)
+	s.splash_minimum_doubles = d.get("splash_minimum_doubles", 3)
+	s.splash_bid_marks = d.get("splash_bid_marks", 2)
+	s.allow_low_no = d.get("allow_low_no", false)
+	s.allow_nello = d.get("allow_nello", true)
+	s.nello_all_four_play = d.get("nello_all_four_play", false)
+	s.nello_partner_sits_out = d.get("nello_partner_sits_out", true)
+	s.allow_nello_exchange = d.get("allow_nello_exchange", true)
+	s.nello_exchange_bidder_gives = d.get("nello_exchange_bidder_gives", "any")
+	s.nello_exchange_partner_gives = d.get("nello_exchange_partner_gives", "low")
+	s.nello_only_on_forced_bid = d.get("nello_only_on_forced_bid", false)
+	s.nello_minimum_bid = d.get("nello_minimum_bid", 42)
+	s.nello_doubles_mode = d.get("nello_doubles_mode", "high")
+	s.nello_doubles_reversed = d.get("nello_doubles_reversed", false)
+	s.nello_bid_value = d.get("nello_bid_value", 42)
+	s.nello_count_as_marks = d.get("nello_count_as_marks", true)
+	s.nello_failure_penalty = d.get("nello_failure_penalty", "bid")
+	s.nello_failure_fixed_points = d.get("nello_failure_fixed_points", 42)
+	s.allow_follow_me = d.get("allow_follow_me", true)
+	s.follow_me_doubles_mode = d.get("follow_me_doubles_mode", "high")
+	s.follow_me_allow_as_points_bid = d.get("follow_me_allow_as_points_bid", false)
+	s.allow_sevens = d.get("allow_sevens", true)
+	s.sevens_require_minimum_bid = d.get("sevens_require_minimum_bid", false)
+	s.sevens_minimum_bid = d.get("sevens_minimum_bid", 42)
+	s.sevens_require_seven_in_hand = d.get("sevens_require_seven_in_hand", true)
+	s.sevens_tie_rule = d.get("sevens_tie_rule", "earliest")
+	s.doubles_are_trump = d.get("doubles_are_trump", false)
+	s.doubles_trump_reversed = d.get("doubles_trump_reversed", false)
+	s.default_trump_if_undeclared = d.get("default_trump_if_undeclared", false)
+	s.allow_small_end_opening_lead = d.get("allow_small_end_opening_lead", false)
+	s.force_trump_opening_lead = d.get("force_trump_opening_lead", false)
+	s.score_by_marks = d.get("score_by_marks", true)
+	s.marks_to_win = d.get("marks_to_win", 7)
+	s.points_to_win = d.get("points_to_win", 250)
+	s.set_penalty = d.get("set_penalty", "bid")
+	s.count_dominos_in_tricks = d.get("count_dominos_in_tricks", true)
+	s.winning_trick_bonus = d.get("winning_trick_bonus", 0)
+	s.allow_renege_challenge = d.get("allow_renege_challenge", true)
+	s.renege_penalty = d.get("renege_penalty", "set")
+	s.shuffle_style = d.get("shuffle_style", "random")
+	s.allow_table_talk = d.get("allow_table_talk", false)
+	s.allow_early_hand_end = d.get("allow_early_hand_end", true)
+	s.stack_tricks_display = d.get("stack_tricks_display", false)
 	return s

@@ -64,8 +64,6 @@ func bid_order() -> Array:
 	for i in range(1, 4):
 		order.append((shaker + dir * i + 4) % 4)
 	order.append(shaker)
-	# TEMP DEBUG — remove after verifying direction
-	print("Bid order (shaker=%d, dir=%s): %s" % [shaker, settings.bid_direction, order])
 	return order
 
 func first_bidder() -> int:

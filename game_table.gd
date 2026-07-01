@@ -37,6 +37,16 @@ var nello_panel: PanelContainer
 var _nello_reversed_btn: Button = null
 var preset_panel: PanelContainer
 var status_label: Label
+var settings_panel: Control = null
+var _settings_content_vbox: VBoxContainer = null
+var _settings_panel_inner: PanelContainer = null
+var _settings_scroll: ScrollContainer = null
+var _pending_settings: GameSettings = null
+var _preset_btn_container: VBoxContainer = null
+var _preset_status_label: Label = null
+var main_menu_panel: PanelContainer = null
+var _game_top_row: HBoxContainer = null
+var _game_mid_row: HBoxContainer = null
 
 # Debug flag — set true to skip AI thinking pauses for faster testing.
 # Wire this to a proper settings toggle later once the settings UI exists.
@@ -91,7 +101,8 @@ func _build_ui():
 	root.add_child(vbox)
 
 	# --- Top row: US panel | partner hand | THEM panel ---
-	var top_row = HBoxContainer.new()
+	_game_top_row = HBoxContainer.new()
+	var top_row = _game_top_row
 	top_row.add_theme_constant_override("separation", 6)
 	vbox.add_child(top_row)
 
@@ -136,9 +147,93 @@ func _build_ui():
 	_them_tricks = TrickPile.new()
 	them_scroll.add_child(_them_tricks)
 
-	# --- Preset picker panel (shown on first launch, hides when a preset is chosen) ---
+	# --- Main menu panel — dark card centered over the felt ---
+	main_menu_panel = PanelContainer.new()
+	main_menu_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	main_menu_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_menu_panel.custom_minimum_size = Vector2(480, 0)
+	main_menu_panel.visible = false
+	var menu_style = StyleBoxFlat.new()
+	menu_style.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+	menu_style.corner_radius_top_left = 10
+	menu_style.corner_radius_top_right = 10
+	menu_style.corner_radius_bottom_left = 10
+	menu_style.corner_radius_bottom_right = 10
+	menu_style.content_margin_left = 32
+	menu_style.content_margin_right = 32
+	menu_style.content_margin_top = 40
+	menu_style.content_margin_bottom = 40
+	main_menu_panel.add_theme_stylebox_override("panel", menu_style)
+	vbox.add_child(main_menu_panel)
+
+	var menu_vbox = VBoxContainer.new()
+	menu_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	menu_vbox.add_theme_constant_override("separation", 16)
+	main_menu_panel.add_child(menu_vbox)
+
+	# Decorative domino pip row
+	var pip_row = HBoxContainer.new()
+	pip_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	pip_row.add_theme_constant_override("separation", 20)
+	menu_vbox.add_child(pip_row)
+	for pip_counts in [[1, 2], [3, 4], [2, 6]]:
+		var dom_vbox = VBoxContainer.new()
+		dom_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+		dom_vbox.add_theme_constant_override("separation", 2)
+		pip_row.add_child(dom_vbox)
+		for half in pip_counts:
+			var half_row = HBoxContainer.new()
+			half_row.alignment = BoxContainer.ALIGNMENT_CENTER
+			half_row.add_theme_constant_override("separation", 3)
+			dom_vbox.add_child(half_row)
+			for _p in range(half if half <= 3 else 3):
+				var dot = Label.new()
+				dot.text = "●"
+				dot.add_theme_font_size_override("font_size", 8)
+				dot.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88, 0.55))
+				half_row.add_child(dot)
+
+	var menu_title = Label.new()
+	menu_title.text = "42"
+	menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu_title.add_theme_font_size_override("font_size", 48)
+	menu_title.add_theme_color_override("font_color", Color.WHITE)
+	menu_vbox.add_child(menu_title)
+
+	var menu_subtitle = Label.new()
+	menu_subtitle.text = "The National Game of Texas"
+	menu_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	menu_subtitle.add_theme_font_size_override("font_size", 14)
+	menu_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	menu_vbox.add_child(menu_subtitle)
+
+	var menu_spacer = Control.new()
+	menu_spacer.custom_minimum_size = Vector2(0, 24)
+	menu_vbox.add_child(menu_spacer)
+
+	var play_btn = Button.new()
+	play_btn.text = "Play"
+	play_btn.custom_minimum_size = Vector2(220, 64)
+	play_btn.pressed.connect(_on_menu_play_pressed)
+	menu_vbox.add_child(play_btn)
+
+	var rules_btn = Button.new()
+	rules_btn.text = "Choose Rules"
+	rules_btn.custom_minimum_size = Vector2(220, 64)
+	rules_btn.pressed.connect(_on_menu_rules_pressed)
+	menu_vbox.add_child(rules_btn)
+
+	var more_btn = Button.new()
+	more_btn.text = "More (Coming Soon)"
+	more_btn.custom_minimum_size = Vector2(220, 64)
+	more_btn.disabled = true
+	more_btn.modulate = Color(1, 1, 1, 0.6)
+	menu_vbox.add_child(more_btn)
+
+	# --- Preset picker panel ---
 	preset_panel = PanelContainer.new()
 	preset_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preset_panel.visible = false
 	vbox.add_child(preset_panel)
 
 	var preset_vbox = VBoxContainer.new()
@@ -159,25 +254,26 @@ func _build_ui():
 	preset_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	preset_vbox.add_child(preset_subtitle)
 
-	var preset_btn_row = VBoxContainer.new()
-	preset_btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	preset_btn_row.add_theme_constant_override("separation", 8)
-	preset_vbox.add_child(preset_btn_row)
+	_preset_status_label = Label.new()
+	_preset_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_preset_status_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
+	_preset_status_label.visible = false
+	preset_vbox.add_child(_preset_status_label)
 
-	var presets = [
-		["Teel Rules",       "Our family's house rules",    "teel"],
-		["Texas Standard",   "Common tournament-style rules", "texas"],
-		["Pagat Tournament", "Strict tournament ruleset",   "pagat"],
-	]
-	for p in presets:
-		var btn = Button.new()
-		btn.text = "%s\n%s" % [p[0], p[1]]
-		btn.custom_minimum_size = Vector2(200, 60)
-		btn.pressed.connect(_on_preset_chosen.bind(p[2]))
-		preset_btn_row.add_child(btn)
+	var preset_scroll = ScrollContainer.new()
+	preset_scroll.custom_minimum_size = Vector2(240, 340)
+	preset_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	preset_vbox.add_child(preset_scroll)
+
+	_preset_btn_container = VBoxContainer.new()
+	_preset_btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	_preset_btn_container.add_theme_constant_override("separation", 8)
+	_preset_btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preset_scroll.add_child(_preset_btn_container)
 
 	# --- Middle row: left opponent | play area | right opponent ---
-	var hbox_mid = HBoxContainer.new()
+	_game_mid_row = HBoxContainer.new()
+	var hbox_mid = _game_mid_row
 	hbox_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	hbox_mid.add_theme_constant_override("separation", 4)
 	hbox_mid.add_theme_constant_override("separation", 8)
@@ -333,23 +429,92 @@ func _build_ui():
 	_bubble_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_bubble_overlay)
 
+	# --- Gear button (top-right, always visible) ---
+	var gear_btn = Button.new()
+	gear_btn.text = "⚙"
+	gear_btn.custom_minimum_size = Vector2(40, 40)
+	gear_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	gear_btn.position = Vector2(-48, 8)
+	gear_btn.pressed.connect(_show_settings_panel)
+	root.add_child(gear_btn)
+
+	# --- Settings overlay (shell built once; content rebuilt on open) ---
+	settings_panel = Control.new()
+	settings_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_panel.visible = false
+	root.add_child(settings_panel)
+
+	var s_dim = ColorRect.new()
+	s_dim.color = Color(0, 0, 0, 0.65)
+	s_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_panel.add_child(s_dim)
+
+	var s_center = CenterContainer.new()
+	s_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_panel.add_child(s_center)
+
+	_settings_panel_inner = PanelContainer.new()
+	var s_style = StyleBoxFlat.new()
+	s_style.bg_color = Color(0.06, 0.06, 0.09, 0.95)
+	s_style.corner_radius_top_left = 6
+	s_style.corner_radius_top_right = 6
+	s_style.corner_radius_bottom_left = 6
+	s_style.corner_radius_bottom_right = 6
+	_settings_panel_inner.add_theme_stylebox_override("panel", s_style)
+	s_center.add_child(_settings_panel_inner)
+
+	var s_margin = MarginContainer.new()
+	s_margin.add_theme_constant_override("margin_left", 12)
+	s_margin.add_theme_constant_override("margin_right", 12)
+	s_margin.add_theme_constant_override("margin_top", 12)
+	s_margin.add_theme_constant_override("margin_bottom", 12)
+	s_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_settings_panel_inner.add_child(s_margin)
+
+	_settings_scroll = ScrollContainer.new()
+	_settings_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_settings_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	s_margin.add_child(_settings_scroll)
+
+	_settings_content_vbox = VBoxContainer.new()
+	_settings_content_vbox.add_theme_constant_override("separation", 10)
+	_settings_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_settings_scroll.add_child(_settings_content_vbox)
+
 # ─── GAME FLOW ────────────────────────────────────────────────────────────────
 
 func _start_game():
-	preset_panel.visible = true
+	_show_game_board(false)
+	main_menu_panel.visible = true
 
 func _on_preset_chosen(key: String):
 	preset_panel.visible = false
-	var settings: GameSettings
-	match key:
-		"teel":  settings = GameSettingsScript.teel_rules()
-		"texas": settings = GameSettingsScript.texas_standard()
-		_:       settings = GameSettingsScript.pagat_tournament()
-	game = Game.new(settings)
+	_save_last_used(key)
+	var s: GameSettings
+	if key.begins_with("custom:"):
+		var cname = key.substr(7)
+		var cf = FileAccess.open("user://custom_rulesets/%s.json" % cname, FileAccess.READ)
+		if cf:
+			var data = JSON.parse_string(cf.get_as_text())
+			cf.close()
+			s = GameSettingsScript.from_dict(data)
+		else:
+			s = GameSettingsScript.standard_42()
+	else:
+		match key:
+			"teel":       s = GameSettingsScript.teel_rules()
+			"standard":   s = GameSettingsScript.standard_42()
+			"tournament": s = GameSettingsScript.tournament_rules()
+			"lechner":    s = GameSettingsScript.lechner_hall()
+			_:            s = GameSettingsScript.standard_42()
+	game = Game.new(s)
 	game.setup_players(human_seat)
 	_start_hand()
 
 func _start_hand():
+	main_menu_panel.visible = false
+	preset_panel.visible = false
+	_show_game_board(true)
 	game.deal_hands()
 	_refresh_all_hands()
 	_us_tricks.clear_tricks()
@@ -1026,6 +1191,468 @@ func _seat_label(pid: int) -> String:
 		return "Left Opponent"
 
 
+
+# ─── SETTINGS OVERLAY ────────────────────────────────────────────────────────
+
+func _show_settings_panel():
+	_pending_settings = GameSettingsScript.standard_42() if game == null else _copy_settings(game.settings)
+	var vp = get_viewport().get_visible_rect().size
+	_settings_panel_inner.custom_minimum_size = vp * 0.92
+	_build_settings_content()
+	settings_panel.visible = true
+
+func _build_settings_content():
+	for c in _settings_content_vbox.get_children():
+		c.queue_free()
+
+	var title = Label.new()
+	title.text = "Settings"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color.WHITE)
+	_settings_content_vbox.add_child(title)
+
+	# ── BIDDING ──
+	var bid_body = _make_section(_settings_content_vbox, "BIDDING")
+	_add_option_row(bid_body, "Bid Direction", [
+		["Left of shaker first", "shaker_left_first"],
+		["Right of shaker first", "shaker_right_first"]
+	], _pending_settings.bid_direction, func(v): _pending_settings.bid_direction = v)
+	_add_spinbox_row(bid_body, "Minimum Bid", 30, 42, _pending_settings.minimum_bid,
+		func(v): _pending_settings.minimum_bid = v)
+	var forced_cb = _add_checkbox_row(bid_body, "Allow Forced Bid", _pending_settings.allow_forced_bid,
+		func(v): _pending_settings.allow_forced_bid = v)
+	var forced_sub = _add_sub_container(bid_body, forced_cb)
+	_add_spinbox_row(forced_sub, "Forced Bid Minimum", 30, 42, _pending_settings.forced_bid_minimum,
+		func(v): _pending_settings.forced_bid_minimum = v)
+	_add_checkbox_row(bid_body, "Allow Jump Bids", _pending_settings.allow_jump_bids,
+		func(v): _pending_settings.allow_jump_bids = v)
+
+	# ── SPECIAL CONTRACTS ──
+	var sc_body = _make_section(_settings_content_vbox, "SPECIAL CONTRACTS")
+
+	var nello_cb = _add_checkbox_row(sc_body, "Allow Nello", _pending_settings.allow_nello,
+		func(v): _pending_settings.allow_nello = v)
+	var nello_sub = _add_sub_container(sc_body, nello_cb)
+	_add_checkbox_row(nello_sub, "Partner Sits Out", _pending_settings.nello_partner_sits_out,
+		func(v): _pending_settings.nello_partner_sits_out = v)
+	_add_option_row(nello_sub, "Doubles Mode", [
+		["High (standard)", "high"], ["Low", "low"], ["Own Suit", "own_suit"]
+	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
+	_add_checkbox_row(nello_sub, "Allow Exchange", _pending_settings.allow_nello_exchange,
+		func(v): _pending_settings.allow_nello_exchange = v)
+
+	var plunge_cb = _add_checkbox_row(sc_body, "Allow Plunge", _pending_settings.allow_plunge,
+		func(v): _pending_settings.allow_plunge = v)
+	var plunge_sub = _add_sub_container(sc_body, plunge_cb)
+	_add_spinbox_row(plunge_sub, "Min Doubles Required", 2, 7, _pending_settings.plunge_minimum_doubles,
+		func(v): _pending_settings.plunge_minimum_doubles = v)
+	_add_spinbox_row(plunge_sub, "Min Bid (Marks)", 1, 7, _pending_settings.plunge_minimum_bid_marks,
+		func(v): _pending_settings.plunge_minimum_bid_marks = v)
+
+	var splash_cb = _add_checkbox_row(sc_body, "Allow Splash", _pending_settings.allow_splash,
+		func(v): _pending_settings.allow_splash = v)
+	var splash_sub = _add_sub_container(sc_body, splash_cb)
+	_add_spinbox_row(splash_sub, "Min Doubles Required", 1, 6, _pending_settings.splash_minimum_doubles,
+		func(v): _pending_settings.splash_minimum_doubles = v)
+	_add_spinbox_row(splash_sub, "Bid Value (Marks)", 1, 7, _pending_settings.splash_bid_marks,
+		func(v): _pending_settings.splash_bid_marks = v)
+
+	var sevens_cb = _add_checkbox_row(sc_body, "Allow Sevens", _pending_settings.allow_sevens,
+		func(v): _pending_settings.allow_sevens = v)
+	var sevens_sub = _add_sub_container(sc_body, sevens_cb)
+	_add_checkbox_row(sevens_sub, "Require 7-pip Domino in Hand", _pending_settings.sevens_require_seven_in_hand,
+		func(v): _pending_settings.sevens_require_seven_in_hand = v)
+
+	_add_checkbox_row(sc_body, "Allow Follow Me / No Trump", _pending_settings.allow_follow_me,
+		func(v): _pending_settings.allow_follow_me = v)
+
+	# ── TRUMP & DOUBLES ──
+	var trump_body = _make_section(_settings_content_vbox, "TRUMP & DOUBLES")
+	_add_checkbox_row(trump_body, "Doubles Are a Trump Suit", _pending_settings.doubles_are_trump,
+		func(v): _pending_settings.doubles_are_trump = v)
+	_add_checkbox_row(trump_body, "Force Trump on Opening Lead", _pending_settings.force_trump_opening_lead,
+		func(v): _pending_settings.force_trump_opening_lead = v)
+	_add_checkbox_row(trump_body, "Allow Small-End Opening Lead", _pending_settings.allow_small_end_opening_lead,
+		func(v): _pending_settings.allow_small_end_opening_lead = v)
+
+	# ── SCORING ──
+	var score_body = _make_section(_settings_content_vbox, "SCORING")
+	_add_checkbox_row(score_body, "Score by Marks", _pending_settings.score_by_marks,
+		func(v): _pending_settings.score_by_marks = v)
+	_add_spinbox_row(score_body, "Marks to Win", 1, 21, _pending_settings.marks_to_win,
+		func(v): _pending_settings.marks_to_win = v)
+	_add_option_row(score_body, "Set Penalty", [
+		["Bid value", "bid"], ["All points (42)", "all_points"]
+	], _pending_settings.set_penalty, func(v): _pending_settings.set_penalty = v)
+	_add_checkbox_row(score_body, "Count Dominoes in Tricks", _pending_settings.count_dominos_in_tricks,
+		func(v): _pending_settings.count_dominos_in_tricks = v)
+
+	# ── DISPLAY ──
+	var disp_body = _make_section(_settings_content_vbox, "DISPLAY")
+	_add_checkbox_row(disp_body, "Allow Early Hand End", _pending_settings.allow_early_hand_end,
+		func(v): _pending_settings.allow_early_hand_end = v)
+	_add_checkbox_row(disp_body, "Stack Trick Display", _pending_settings.stack_tricks_display,
+		func(v): _pending_settings.stack_tricks_display = v)
+
+	# ── Save as preset ──
+	var save_sep = HSeparator.new()
+	_settings_content_vbox.add_child(save_sep)
+
+	var save_btn = Button.new()
+	save_btn.text = "Save as New Ruleset..."
+	save_btn.custom_minimum_size = Vector2(220, 44)
+	save_btn.pressed.connect(_show_save_preset_popup)
+	_settings_content_vbox.add_child(save_btn)
+
+	# ── Bottom buttons ──
+	var sep = HSeparator.new()
+	_settings_content_vbox.add_child(sep)
+
+	var btn_row = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	_settings_content_vbox.add_child(btn_row)
+
+	var home_btn = Button.new()
+	home_btn.text = "⌂  Menu"
+	home_btn.custom_minimum_size = Vector2(100, 44)
+	home_btn.pressed.connect(_on_settings_home_pressed)
+	btn_row.add_child(home_btn)
+
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 44)
+	cancel_btn.pressed.connect(func(): settings_panel.visible = false)
+	btn_row.add_child(cancel_btn)
+
+	var confirm_btn = Button.new()
+	confirm_btn.text = "Confirm & Restart"
+	confirm_btn.custom_minimum_size = Vector2(180, 44)
+	confirm_btn.pressed.connect(func(): _restart_game_with_settings(_pending_settings))
+	btn_row.add_child(confirm_btn)
+
+func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
+	var header = Button.new()
+	header.text = "▶  " + title
+	header.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	parent.add_child(header)
+
+	var body = VBoxContainer.new()
+	body.visible = false
+	body.add_theme_constant_override("separation", 14)
+	parent.add_child(body)
+
+	header.pressed.connect(func():
+		body.visible = not body.visible
+		header.text = ("▼  " if body.visible else "▶  ") + title
+	)
+	return body
+
+func _add_checkbox_row(parent: VBoxContainer, label: String, value: bool, setter: Callable) -> CheckBox:
+	var cb = CheckBox.new()
+	cb.text = label
+	cb.button_pressed = value
+	cb.add_theme_font_size_override("font_size", 15)
+	cb.toggled.connect(setter)
+	parent.add_child(cb)
+	return cb
+
+func _add_sub_container(parent: VBoxContainer, toggle_cb: CheckBox) -> VBoxContainer:
+	var sub = VBoxContainer.new()
+	sub.add_theme_constant_override("separation", 4)
+	sub.visible = toggle_cb.button_pressed
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.visible = sub.visible
+	parent.add_child(margin)
+	margin.add_child(sub)
+	toggle_cb.toggled.connect(func(v): margin.visible = v)
+	return sub
+
+func _add_option_row(parent: VBoxContainer, label: String, options: Array, current: String, setter: Callable):
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
+	var lbl = Label.new()
+	lbl.text = label + ":"
+	lbl.custom_minimum_size = Vector2(170, 0)
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.add_theme_font_size_override("font_size", 15)
+	row.add_child(lbl)
+	var opt = OptionButton.new()
+	var sel_idx = 0
+	for i in range(options.size()):
+		opt.add_item(options[i][0])
+		if options[i][1] == current:
+			sel_idx = i
+	opt.select(sel_idx)
+	opt.item_selected.connect(func(idx): setter.call(options[idx][1]))
+	row.add_child(opt)
+
+func _add_spinbox_row(parent: VBoxContainer, label: String, min_v: int, max_v: int, current: int, setter: Callable):
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	parent.add_child(row)
+	var lbl = Label.new()
+	lbl.text = label + ":"
+	lbl.custom_minimum_size = Vector2(170, 0)
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.add_theme_font_size_override("font_size", 15)
+	row.add_child(lbl)
+	var sb = SpinBox.new()
+	sb.min_value = min_v
+	sb.max_value = max_v
+	sb.value = current
+	sb.value_changed.connect(func(v): setter.call(int(v)))
+	row.add_child(sb)
+
+func _copy_settings(src: GameSettings) -> GameSettings:
+	var dst = GameSettings.new()
+	dst.bid_direction = src.bid_direction
+	dst.allow_forced_bid = src.allow_forced_bid
+	dst.forced_bid_minimum = src.forced_bid_minimum
+	dst.reshake_if_all_pass = src.reshake_if_all_pass
+	dst.minimum_bid = src.minimum_bid
+	dst.max_open_bid_marks = src.max_open_bid_marks
+	dst.allow_jump_bids = src.allow_jump_bids
+	dst.allow_plunge = src.allow_plunge
+	dst.plunge_minimum_doubles = src.plunge_minimum_doubles
+	dst.plunge_minimum_bid_marks = src.plunge_minimum_bid_marks
+	dst.allow_splash = src.allow_splash
+	dst.splash_minimum_doubles = src.splash_minimum_doubles
+	dst.splash_bid_marks = src.splash_bid_marks
+	dst.allow_low_no = src.allow_low_no
+	dst.allow_nello = src.allow_nello
+	dst.nello_all_four_play = src.nello_all_four_play
+	dst.nello_partner_sits_out = src.nello_partner_sits_out
+	dst.allow_nello_exchange = src.allow_nello_exchange
+	dst.nello_exchange_bidder_gives = src.nello_exchange_bidder_gives
+	dst.nello_exchange_partner_gives = src.nello_exchange_partner_gives
+	dst.nello_only_on_forced_bid = src.nello_only_on_forced_bid
+	dst.nello_minimum_bid = src.nello_minimum_bid
+	dst.nello_doubles_mode = src.nello_doubles_mode
+	dst.nello_doubles_reversed = src.nello_doubles_reversed
+	dst.nello_bid_value = src.nello_bid_value
+	dst.nello_count_as_marks = src.nello_count_as_marks
+	dst.nello_failure_penalty = src.nello_failure_penalty
+	dst.nello_failure_fixed_points = src.nello_failure_fixed_points
+	dst.allow_follow_me = src.allow_follow_me
+	dst.follow_me_doubles_mode = src.follow_me_doubles_mode
+	dst.follow_me_allow_as_points_bid = src.follow_me_allow_as_points_bid
+	dst.allow_sevens = src.allow_sevens
+	dst.sevens_require_minimum_bid = src.sevens_require_minimum_bid
+	dst.sevens_minimum_bid = src.sevens_minimum_bid
+	dst.sevens_require_seven_in_hand = src.sevens_require_seven_in_hand
+	dst.sevens_tie_rule = src.sevens_tie_rule
+	dst.doubles_are_trump = src.doubles_are_trump
+	dst.doubles_trump_reversed = src.doubles_trump_reversed
+	dst.default_trump_if_undeclared = src.default_trump_if_undeclared
+	dst.allow_small_end_opening_lead = src.allow_small_end_opening_lead
+	dst.force_trump_opening_lead = src.force_trump_opening_lead
+	dst.score_by_marks = src.score_by_marks
+	dst.marks_to_win = src.marks_to_win
+	dst.points_to_win = src.points_to_win
+	dst.set_penalty = src.set_penalty
+	dst.count_dominos_in_tricks = src.count_dominos_in_tricks
+	dst.winning_trick_bonus = src.winning_trick_bonus
+	dst.allow_renege_challenge = src.allow_renege_challenge
+	dst.renege_penalty = src.renege_penalty
+	dst.shuffle_style = src.shuffle_style
+	dst.allow_table_talk = src.allow_table_talk
+	dst.allow_early_hand_end = src.allow_early_hand_end
+	dst.stack_tricks_display = src.stack_tricks_display
+	return dst
+
+func _restart_game_with_settings(new_settings: GameSettings):
+	settings_panel.visible = false
+	preset_panel.visible = false
+	game = Game.new(new_settings)
+	game.setup_players(human_seat)
+	_us_marks.set_marks(0)
+	_them_marks.set_marks(0)
+	_us_tricks.clear_tricks()
+	_them_tricks.clear_tricks()
+	_start_hand()
+
+func _show_game_board(visible: bool):
+	_game_top_row.visible = visible
+	_game_mid_row.visible = visible
+	player_hand_container.visible = visible
+
+func _on_menu_play_pressed():
+	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+	if f:
+		var data = JSON.parse_string(f.get_as_text())
+		f.close()
+		if data is Dictionary and data.has("last_preset"):
+			var key = str(data["last_preset"])
+			var valid = true
+			if key.begins_with("custom:"):
+				valid = FileAccess.file_exists("user://custom_rulesets/%s.json" % key.substr(7))
+			if valid:
+				main_menu_panel.visible = false
+				_on_preset_chosen(key)
+				return
+	_on_menu_rules_pressed()
+
+func _on_menu_rules_pressed():
+	main_menu_panel.visible = false
+	_preset_status_label.visible = false
+	_rebuild_preset_buttons()
+	preset_panel.visible = true
+
+func _on_settings_home_pressed():
+	var confirm = ConfirmationDialog.new()
+	confirm.title = "Return to Menu?"
+	confirm.dialog_text = "Current game will be lost. Return to main menu?"
+	confirm.ok_button_text = "Return to Menu"
+	confirm.cancel_button_text = "Stay"
+	confirm.confirmed.connect(func():
+		settings_panel.visible = false
+		_show_game_board(false)
+		main_menu_panel.visible = true
+		game = null
+		confirm.queue_free()
+	)
+	confirm.canceled.connect(func(): confirm.queue_free())
+	add_child(confirm)
+	confirm.popup_centered()
+
+func _rebuild_preset_buttons():
+	for c in _preset_btn_container.get_children():
+		c.queue_free()
+
+	var builtins = [
+		["Teel Rules",   "Our family's house rules",       "teel"],
+		["Standard 42",  "The classic game",               "standard"],
+		["Tournament",   "Strict competitive rules",       "tournament"],
+		["Lechner Hall", "Aggie 42 — A&M dorm rules",      "lechner"],
+	]
+	for p in builtins:
+		var btn = Button.new()
+		btn.text = "%s\n%s" % [p[0], p[1]]
+		btn.custom_minimum_size = Vector2(220, 60)
+		btn.pressed.connect(_on_preset_chosen.bind(p[2]))
+		_preset_btn_container.add_child(btn)
+
+	# Load custom presets from disk
+	var dir = DirAccess.open("user://custom_rulesets")
+	if dir:
+		var files: Array[String] = []
+		dir.list_dir_begin()
+		var fname = dir.get_next()
+		while fname != "":
+			if fname.ends_with(".json"):
+				files.append(fname)
+			fname = dir.get_next()
+		dir.list_dir_end()
+		files.sort()
+		if files.size() > 0:
+			_preset_btn_container.add_child(HSeparator.new())
+		for file_name in files:
+			var cname = file_name.left(file_name.length() - 5)
+			var btn = Button.new()
+			btn.text = "★ %s\nCustom ruleset" % cname
+			btn.custom_minimum_size = Vector2(220, 60)
+			btn.pressed.connect(_on_preset_chosen.bind("custom:" + cname))
+			_preset_btn_container.add_child(btn)
+
+	_preset_btn_container.add_child(HSeparator.new())
+	var create_btn = Button.new()
+	create_btn.text = "+ Create New Ruleset"
+	create_btn.custom_minimum_size = Vector2(220, 44)
+	create_btn.pressed.connect(func():
+		preset_panel.visible = false
+		_show_settings_panel()
+	)
+	_preset_btn_container.add_child(create_btn)
+
+func _save_last_used(key: String):
+	var f = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify({"last_preset": key}))
+		f.close()
+
+func _show_save_preset_popup():
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	settings_panel.add_child(popup)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.5)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(dim)
+
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(center)
+
+	var box = PanelContainer.new()
+	box.custom_minimum_size = Vector2(320, 0)
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box.add_theme_stylebox_override("panel", box_style)
+	center.add_child(box)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	box.add_child(vb)
+
+	var prompt_lbl = Label.new()
+	prompt_lbl.text = "Name your ruleset:"
+	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	prompt_lbl.add_theme_font_size_override("font_size", 16)
+	vb.add_child(prompt_lbl)
+
+	var line_edit = LineEdit.new()
+	line_edit.placeholder_text = "e.g. My Custom Rules"
+	line_edit.custom_minimum_size = Vector2(280, 40)
+	vb.add_child(line_edit)
+
+	var btn_row = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 12)
+	vb.add_child(btn_row)
+
+	var cancel_p = Button.new()
+	cancel_p.text = "Cancel"
+	cancel_p.custom_minimum_size = Vector2(100, 40)
+	cancel_p.pressed.connect(func(): popup.queue_free())
+	btn_row.add_child(cancel_p)
+
+	var ok_btn = Button.new()
+	ok_btn.text = "Save"
+	ok_btn.custom_minimum_size = Vector2(100, 40)
+	btn_row.add_child(ok_btn)
+
+	var do_save = func():
+		var cname = line_edit.text.strip_edges()
+		if cname.is_empty():
+			return
+		popup.queue_free()
+		_save_custom_preset(cname)
+
+	ok_btn.pressed.connect(do_save)
+	line_edit.text_submitted.connect(func(_t): do_save.call())
+	line_edit.grab_focus()
+
+func _save_custom_preset(cname: String):
+	var d = DirAccess.open("user://")
+	if d:
+		d.make_dir("custom_rulesets")
+	var path = "user://custom_rulesets/%s.json" % cname
+	var f = FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(GameSettingsScript.to_dict(_pending_settings), "\t"))
+		f.close()
+	settings_panel.visible = false
 
 func _input(event: InputEvent):
 	if waiting_for_continue and event is InputEventMouseButton and event.pressed:
