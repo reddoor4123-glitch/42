@@ -179,6 +179,23 @@ static func decide_bid(
 	target_bid = max(28, target_bid)
 	target_bid = min(target_bid, roundi(est_pts) + max_overbid)
 
+	# ── CONTROL OVERRIDE (expert only) ───────────────────────────────────────
+	# Expert players recognize a category of hands that warrant a bid regardless
+	# of slight EV shortfall: sufficient trick expectation AND structural trump
+	# control. This is not numeric tuning — it is a hand archetype rule.
+	# Requires BOTH axes; neither is sufficient alone:
+	#   A) Trick expectation:  estimated_tricks >= 4.3
+	#   B) Structural control: double trump OR trump_count >= 4
+	var control_hand := false
+	if difficulty == "expert":
+		control_hand = (
+			eval.get("estimated_tricks", 0.0) >= 4.3 and
+			(eval.get("has_double_trump", false) or eval.get("trump_count", 0) >= 4)
+		)
+		if control_hand:
+			should_bid = true
+			target_bid = max(target_bid, 30)
+
 	# ── LAYER 3: EXECUTION (auction rules — no re-evaluation here) ───────────
 	# - respect current highest bid
 	# - respect legal minimum increments
@@ -206,7 +223,7 @@ static func decide_bid(
 			final_bid = min(final_bid, 42)
 			var pts_bid = BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
 			_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-				should_bid, target_bid, est_pts, current_high, pts_bid)
+				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand)
 			return pts_bid
 
 	# Marks bid — strong hand requirement (unchanged)
@@ -214,19 +231,19 @@ static func decide_bid(
 	   (current_high == null or current_high.type != BidScript.Type.MARKS):
 		var marks_bid = BidScript.new(BidScript.Type.MARKS, 1, player_id)
 		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-			should_bid, target_bid, est_pts, current_high, marks_bid)
+			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand)
 		return marks_bid
 
 	# Forced minimum fallback
 	if is_forced:
 		var forced_bid = BidScript.new(BidScript.Type.POINTS, 30, player_id)
 		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-			should_bid, target_bid, est_pts, current_high, forced_bid)
+			should_bid, target_bid, est_pts, current_high, forced_bid, control_hand)
 		return forced_bid
 
 	var pass_bid = BidScript.new(BidScript.Type.PASS, 0, player_id)
 	_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-		should_bid, target_bid, est_pts, current_high, pass_bid)
+		should_bid, target_bid, est_pts, current_high, pass_bid, control_hand)
 	return pass_bid
 
 static func _log_bid_decision(
@@ -239,7 +256,8 @@ static func _log_bid_decision(
 	target_bid: int,
 	est_pts: float,
 	current_high: RefCounted,
-	result: RefCounted
+	result: RefCounted,
+	control_hand: bool = false
 ) -> void:
 	var hand_str = ", ".join(hand.map(func(d): return d.debug_string()))
 	var doubles_in_hand = hand.filter(func(d): return d.is_double()).size()
@@ -261,8 +279,8 @@ static func _log_bid_decision(
 		eval.get("estimated_tricks", 0.0),
 		eval.get("realization_bias", 0.0)
 	])
-	print("  Layer 2:       risk_bias=%.2f  max_overbid=%d  should_bid=%s  target=%d" % [
-		risk_bias, max_overbid, str(should_bid), target_bid
+	print("  Layer 2:       risk_bias=%.2f  max_overbid=%d  control_override=%s  should_bid=%s  target=%d" % [
+		risk_bias, max_overbid, str(control_hand), str(should_bid), target_bid
 	])
 	print("  Threshold:     est_pts(%.1f) + risk_bias*4(%.1f) >= 28.0 → %s" % [
 		est_pts, risk_bias * 4.0, str((est_pts + risk_bias * 4.0) >= 28.0)
