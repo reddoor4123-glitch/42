@@ -19,7 +19,7 @@ extends RefCounted
 # Future: Named personalities as presets over these axes
 # Future: Family-observed behaviors as personality templates
 #
-# "That partner plays just like my uncle." — that's the target.
+# "That partner plays just like Uncle Ed." — that's the target.
 # ═══════════════════════════════════════════════════════════════════
 
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
@@ -27,25 +27,22 @@ extends RefCounted
 # Add new modes here; decide_bid() and decide_play() read from this dict.
 const AI_MODES := {
 	"beginner": {
-		"confidence_multiplier": 0.75,
-		"bid_conservatism":      4.0,
-		"aggression_cap":        2,
-		"opportunism":           "low",
-		"cooperation_bias":      "high",
+		"risk_bias":        -0.25,
+		"max_overbid":      2,
+		"opportunism":      "low",
+		"cooperation_bias": "high",
 	},
 	"standard": {
-		"confidence_multiplier": 1.0,
-		"bid_conservatism":      2.0,
-		"aggression_cap":        3,
-		"opportunism":           "medium",
-		"cooperation_bias":      "medium",
+		"risk_bias":        0.0,
+		"max_overbid":      4,
+		"opportunism":      "medium",
+		"cooperation_bias": "medium",
 	},
 	"expert": {
-		"confidence_multiplier": 1.1,
-		"bid_conservatism":      1.0,
-		"aggression_cap":        5,
-		"opportunism":           "high",
-		"cooperation_bias":      "medium",
+		"risk_bias":        0.25,
+		"max_overbid":      6,
+		"opportunism":      "high",
+		"cooperation_bias": "medium",
 	},
 }
 
@@ -149,23 +146,35 @@ static func decide_bid(
 ) -> RefCounted:
 
 	var BidScript = load("res://bid.gd")
+
+	# ── LAYER 1: EVALUATION (truth — do not modify) ───────────────────────────
 	var eval = best_trump(hand)
-	var est_pts = eval["estimated_points"]
-	var trump_count = eval["trump_count"]
+	var est_pts: float = eval["estimated_points"]
+	var trump_count: int = eval["trump_count"]
 
-	# Behavioral profile — difficulty adjusts social tone, not intelligence.
-	# Beginner: underestimates hand, needs more cushion, won't push auctions hard.
-	# Expert: slight optimism, bids more readily, competes harder.
+	# ── LAYER 2: INTENT (personality) ────────────────────────────────────────
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
-	var confidence_multiplier: float = mode["confidence_multiplier"]
-	var bid_conservatism: float      = mode["bid_conservatism"]
-	var aggression_cap: int          = mode["aggression_cap"]
-	est_pts = est_pts * confidence_multiplier
+	var risk_bias: float = mode["risk_bias"]
+	var max_overbid: int = mode["max_overbid"]
 
-	# Determine what minimum bid we need to beat
-	var min_points := 30
-	var min_marks := 99  # Effectively disabled unless we want to bid marks
+	# confidence is NOT used in Phase 1 decision logic.
+	# Reserved for Phase 2 Risk expansion (bidding style, aggression curves, etc.)
+	@warning_ignore("unused_variable")
+	var confidence: float = clamp((est_pts - 26.0) / 10.0 + risk_bias * 0.6, 0.0, 1.0)
+
+	var should_bid: bool = (est_pts + risk_bias * 4.0) >= 28.0
+	var target_bid: int = roundi(est_pts + risk_bias * 3.0)
+	target_bid = max(28, target_bid)
+	target_bid = min(target_bid, roundi(est_pts) + max_overbid)
+
+	# ── LAYER 3: EXECUTION (auction rules — no re-evaluation here) ───────────
+	# - respect current highest bid
+	# - respect legal minimum increments
+	# - enforce max_overbid cap
+	# - do NOT re-score the hand here
+
 	var points_still_legal := true
+	var min_points := 30
 
 	if current_high != null and current_high.type == BidScript.Type.POINTS:
 		min_points = current_high.value + 1
@@ -173,25 +182,24 @@ static func decide_bid(
 			points_still_legal = false
 	elif current_high != null and current_high.type == BidScript.Type.MARKS:
 		points_still_legal = false
-		min_marks = current_high.value + 1
 
-	# Compute bid points — aggression_cap limits how far above minimum we'll push.
-	var bid_points = int(est_pts * 0.80)
-	bid_points = clampi(bid_points, min_points, min(min_points + aggression_cap, 42))
-
-	# Only bid if our estimate clears the threshold with enough confidence.
-	var confidence_threshold = 28.0 + bid_conservatism
 	if is_forced:
-		confidence_threshold = 0.0  # Forced bid — bid regardless
+		should_bid = true
+		target_bid = max(target_bid, 30)
 
-	if est_pts >= confidence_threshold and points_still_legal and bid_points >= min_points:
-		return BidScript.new(BidScript.Type.POINTS, bid_points, player_id)
+	if should_bid and points_still_legal:
+		if min_points <= target_bid:
+			var final_bid = min(target_bid, min_points + max_overbid)
+			final_bid = max(final_bid, min_points)
+			final_bid = min(final_bid, 42)
+			return BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
 
-	# Consider a 1-mark bid if hand is very strong
-	if trump_count >= 5 and eval["has_double_trump"] and min_marks <= 1:
+	# Marks bid — strong hand requirement (unchanged)
+	if trump_count >= 5 and eval["has_double_trump"] and \
+	   (current_high == null or current_high.type != BidScript.Type.MARKS):
 		return BidScript.new(BidScript.Type.MARKS, 1, player_id)
 
-	# Pass (or forced minimum)
+	# Forced minimum fallback
 	if is_forced:
 		return BidScript.new(BidScript.Type.POINTS, 30, player_id)
 
@@ -211,12 +219,42 @@ static func decide_play(
 	trump: int,
 	reason_log: Array,        # Pass an array to receive the reasoning string
 	difficulty: String = "standard",
-	is_partner: bool = false
+	is_partner: bool = false,
+	contract: int = -1,       # Bid.Type int; -1 = unknown/regular
+	bidder_id: int = -1       # player_id of whoever won the auction
 ) -> Domino:
 
 	var plays = trick.plays
 	var is_leading = plays.size() == 0
 	var lead_suit = trick.lead_suit
+
+	var BidScript = load("res://bid.gd")
+
+	# ── SEVENS ────────────────────────────────────────────────────────────────────
+	# Sevens is not a variation of standard trick play — it is a different game.
+	# There are no suits, no trump, no counters, no cooperation strategy, no
+	# long-term planning. Every player, every trick, one rule: play the domino
+	# in hand whose pip sum is closest to 7. Holding anything back is never
+	# correct — one lost trick sets the bid, so there is nothing to save for.
+	# This block exits completely; none of the standard evaluation runs.
+	if contract == BidScript.Type.SEVENS:
+		var chosen = _closest_to_seven(legal)
+		reason_log.append("Sevens — closest pip-sum to 7 — played %s" % chosen.debug_string())
+		return chosen
+
+	# ── NELLO ─────────────────────────────────────────────────────────────────────
+	# Nello is also a different game. The bidder is trying to lose every trick.
+	# Opponents are trying to SET the bidder by ducking — playing low so the
+	# bidder's high dominoes are forced to win. Both roles share the same action
+	# (play lowest legal) for opposite reasons. Standard evaluation does not apply.
+	# Note: the bidder's partner sits out and never reaches this code.
+	if contract == BidScript.Type.NELLO:
+		var lowest = _lowest_in(legal, trump, lead_suit)
+		if player_id == bidder_id:
+			reason_log.append("Nello bidder — playing low to avoid winning — played %s" % lowest.debug_string())
+		else:
+			reason_log.append("Nello opponent — ducking to force bidder into tricks — played %s" % lowest.debug_string())
+		return lowest
 
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
 	@warning_ignore("unused_variable")
@@ -425,6 +463,19 @@ static func _highest_in(dominos: Array, trump: int, lead_suit: int) -> Domino:
 	for d in dominos:
 		if d.get_rank(trump, "high", lead_suit) > best.get_rank(trump, "high", lead_suit):
 			best = d
+	return best
+
+# Returns the domino from `dominos` whose pip_sum is closest to 7.
+# Used exclusively for Sevens hands. Ties broken by first encountered — arbitrary
+# tie-breaking is correct per the rules (all same-distance dominos are equivalent).
+static func _closest_to_seven(dominos: Array) -> Domino:
+	var best: Domino = dominos[0]
+	var best_dist: int = abs(best.pip_sum() - 7)
+	for d in dominos:
+		var dist = abs(d.pip_sum() - 7)
+		if dist < best_dist:
+			best = d
+			best_dist = dist
 	return best
 
 static func _lowest_in(dominos: Array, trump: int, lead_suit: int) -> Domino:

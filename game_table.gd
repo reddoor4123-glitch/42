@@ -1225,7 +1225,9 @@ func _ai_choose_domino(player: Player) -> Domino:
 		legal, player.hand, game.current_trick,
 		player.id, partner_id, game.trump, reason_log,
 		game.settings.ai_difficulty,
-		is_partner
+		is_partner,
+		game.variant,
+		game.current_bid.player_id if game.current_bid != null else -1
 	)
 	if reason_log.size() > 0:
 		_set_status("%s: %s" % [_seat_label(player.id), reason_log[0]])
