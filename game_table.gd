@@ -1240,7 +1240,6 @@ func _ai_choose_domino(player: Player) -> Domino:
 		game.current_bid.player_id if game.current_bid != null else -1
 	)
 	if reason_log.size() > 0:
-		_set_status("%s: %s" % [_seat_label(player.id), reason_log[0]])
 		_last_play_reason = reason_log[-1]
 	else:
 		_last_play_reason = ""
@@ -2370,10 +2369,24 @@ func _render_replay_trick():
 			for child in _replay_played_containers[pid].get_children():
 				child.queue_free()
 
-	# Annotate the winner's bubble
+	# Annotate the winner's bubble with trick value context
 	var winner_id = trick_record["winner_id"]
 	if _replay_bubble_labels[winner_id] != null:
-		_replay_bubble_labels[winner_id].text += "\n✓ Won trick"
+		var trick_pts := 1  # base 1 point for the trick itself
+		var has_counter := false
+		for play in trick_record["plays"]:
+			var pip: int = play["domino"].pip_sum()
+			if pip == 5 or pip == 10:
+				trick_pts += pip
+				has_counter = true
+		var value_str: String
+		if trick_pts >= 10:
+			value_str = "Won trick — %d pts" % trick_pts
+		elif has_counter:
+			value_str = "Won trick — %d pts" % trick_pts
+		else:
+			value_str = "Won trick"
+		_replay_bubble_labels[winner_id].text += "\n✓ " + value_str
 
 func _replay_next_trick():
 	_replay_trick_index += 1

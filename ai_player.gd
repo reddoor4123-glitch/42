@@ -372,7 +372,7 @@ static func decide_play(
 	# This block exits completely; none of the standard evaluation runs.
 	if contract == BidScript.Type.SEVENS:
 		var chosen = _closest_to_seven(legal)
-		reason_log.append("Sevens — closest pip-sum to 7 — played %s" % chosen.debug_string())
+		reason_log.append("Playing my closest domino to seven.")
 		return chosen
 
 	# ── NELLO ─────────────────────────────────────────────────────────────────────
@@ -384,9 +384,9 @@ static func decide_play(
 	if contract == BidScript.Type.NELLO:
 		var lowest = _lowest_in(legal, trump, lead_suit)
 		if player_id == bidder_id:
-			reason_log.append("Nello bidder — playing low to avoid winning — played %s" % lowest.debug_string())
+			reason_log.append("Playing low to avoid taking this trick.")
 		else:
-			reason_log.append("Nello opponent — ducking to force bidder into tricks — played %s" % lowest.debug_string())
+			reason_log.append("Staying low to make the bidder take this one.")
 		return lowest
 
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
@@ -408,25 +408,25 @@ static func decide_play(
 				return not d.is_trump(trump) and d.pip_sum() != 5 and d.pip_sum() != 10)
 			if off_safe.size() > 0:
 				var best = _highest_in(off_safe, trump, lead_suit)
-				reason_log.append("Led to give partner a safe follow suit — played %s" % best.debug_string())
+				reason_log.append("Opening a safe suit for you to follow.")
 				return best
 
 			# Draw out opponents' trump when we hold enough to control the suit.
 			var trumps = legal.filter(func(d): return d.is_trump(trump))
 			if trumps.size() >= 3:
 				var best = _highest_in(trumps, trump, lead_suit)
-				reason_log.append("Led trump — holding %d trumps, drawing out opponents — played %s" % [trumps.size(), best.debug_string()])
+				reason_log.append("I have trump control — drawing out the opponents.")
 				return best
 
 			# Counter protection: prefer non-counter leads even if that's all that's left.
 			var non_counters_lead = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_lead.size() > 0:
 				var best = _highest_in(non_counters_lead, trump, lead_suit)
-				reason_log.append("Led high non-counter — played %s" % best.debug_string())
+				reason_log.append("Leading strong to set up a good trick for us.")
 				return best
 
 			var best = _highest_in(legal, trump, lead_suit)
-			reason_log.append("Protecting counters — led best available — played %s" % best.debug_string())
+			reason_log.append("Keeping my counters safe — leading what I can.")
 			return best
 
 		# ── FOLLOWING as Partner ──────────────────────────────────────────────
@@ -438,10 +438,10 @@ static func decide_play(
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_follow.size() > 0:
 				var lowest = _lowest_in(non_counters_follow, trump, lead_suit)
-				reason_log.append("Partner winning — clearing the way, protecting counters — played %s" % lowest.debug_string())
+				reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			var lowest = _lowest_in(legal, trump, lead_suit)
-			reason_log.append("Partner winning — no non-counter to spare — played %s" % lowest.debug_string())
+			reason_log.append("You're winning, but I had to let a counter go.")
 			return lowest
 
 		# Human is not currently winning — try to win for the team.
@@ -452,21 +452,21 @@ static func decide_play(
 			if difficulty == "beginner":
 				# Beginner Partner: always secure the trick without second-guessing card economy.
 				var chosen = _lowest_in(can_win, trump, lead_suit)
-				reason_log.append("Beginner mode — securing trick for partner — played %s" % chosen.debug_string())
+				reason_log.append("Stepping in to win this for us.")
 				return chosen
 
 			# Standard and Expert: prefer non-trump winners to save trump.
 			var non_trump_wins = can_win.filter(func(d): return not d.is_trump(trump))
 			if non_trump_wins.size() > 0:
 				var chosen = _lowest_in(non_trump_wins, trump, lead_suit)
-				reason_log.append("Winning for team — human couldn't hold it — played %s" % chosen.debug_string())
+				reason_log.append("You couldn't hold it — I've got this trick.")
 				return chosen
 
 			# Only trump can win.
 			if difficulty == "expert":
 				# Expert Partner: no trust rule — play optimally for the contract.
 				var chosen = _lowest_in(can_win, trump, lead_suit)
-				reason_log.append("Playing for contract — optimal play — played %s" % chosen.debug_string())
+				reason_log.append("Trumping in — the contract needs this trick.")
 				return chosen
 
 			# Standard trust rule: if the human already played and we're not last,
@@ -480,12 +480,12 @@ static func decide_play(
 					return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 				if safe_discard.size() > 0:
 					var discard = _lowest_in(safe_discard, trump, lead_suit)
-					reason_log.append("Trusting partner's play — holding trump %s for later — played %s" % [trump_held.debug_string(), discard.debug_string()])
+					reason_log.append("Saving my trump — there's still a chance someone else covers.")
 					return discard
 
 			# Last player or no safe discard — trump in to secure the trick.
 			var chosen = _lowest_in(can_win, trump, lead_suit)
-			reason_log.append("Winning for team — trumping in for partner — played %s" % chosen.debug_string())
+			reason_log.append("Trumping in to secure this trick for us.")
 			return chosen
 
 		# Can't win — discard to protect point cards.
@@ -496,16 +496,16 @@ static func decide_play(
 				return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 			if safe_high.size() > 0:
 				var discard = _highest_in(safe_high, trump, lead_suit)
-				reason_log.append("Beginner mode — protecting team counters — played %s" % discard.debug_string())
+				reason_log.append("Can't win this one — protecting our counters.")
 				return discard
 
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
 			var discard = _lowest_in(non_counters_discard, trump, lead_suit)
-			reason_log.append("Can't win — protecting counter — played %s" % discard.debug_string())
+			reason_log.append("Can't win this one — saving my counter for later.")
 			return discard
 		var discard = _lowest_in(legal, trump, lead_suit)
-		reason_log.append("No choice — discarding counter — played %s" % discard.debug_string())
+		reason_log.append("Nowhere to hide — had to let a counter go.")
 		return discard
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
@@ -519,7 +519,7 @@ static func decide_play(
 			var non_trumps_beginner = legal.filter(func(d): return not d.is_trump(trump))
 			if non_trumps_beginner.size() > 0:
 				var best = _highest_in(non_trumps_beginner, trump, lead_suit)
-				reason_log.append("Beginner mode — conservative opening — played %s" % best.debug_string())
+				reason_log.append("Feeling out the hand before committing trump.")
 				return best
 
 		# TODO Phase 3: Expert — target known voids from trick history here.
@@ -528,19 +528,19 @@ static func decide_play(
 		var trumps = legal.filter(func(d): return d.is_trump(trump))
 		if trumps.size() >= 3:
 			var best = _highest_in(trumps, trump, lead_suit)
-			reason_log.append("Led trump — holding %d trumps, drawing out opponents — played %s" % [trumps.size(), best.debug_string()])
+			reason_log.append("I have trump control — drawing out the opponents.")
 			return best
 
 		# Lead a strong counter if we're confident it will win.
 		var counters = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 		for c in counters:
 			if c.get_rank(trump, "high", lead_suit) >= 4:
-				reason_log.append("Led high counter %s to secure points" % c.debug_string())
+				reason_log.append("Leading my strong counter to lock in the points.")
 				return c
 
 		# Lead highest available domino.
 		var best = _highest_in(legal, trump, lead_suit)
-		reason_log.append("Led high domino — played %s" % best.debug_string())
+		reason_log.append("Leading my best domino.")
 		return best
 
 	# ── FOLLOWING as Opponent ──────────────────────────────────────────────────
@@ -549,7 +549,7 @@ static func decide_play(
 	# Partner is winning — save strength, don't over-contribute.
 	if partner_winning:
 		var lowest = _lowest_in(legal, trump, lead_suit)
-		reason_log.append("Partner winning — played low %s to save strength" % lowest.debug_string())
+		reason_log.append("My partner has this one — saving my strength.")
 		return lowest
 
 	# Try to win the trick.
@@ -563,7 +563,7 @@ static func decide_play(
 			var trick_pts = _estimate_trick_value(plays, trump)
 			if trick_pts >= 5:
 				var chosen = _lowest_in(can_win, trump, lead_suit)
-				reason_log.append("Beginner mode — contesting valuable trick — played %s" % chosen.debug_string())
+				reason_log.append("These points are worth contesting.")
 				return chosen
 			# Trick not worth contesting — fall through to discard
 	else:
@@ -573,20 +573,20 @@ static func decide_play(
 			var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 			if counter_wins.size() > 0:
 				var chosen = _lowest_in(counter_wins, trump, lead_suit)
-				reason_log.append("Won trick with counter — played %s" % chosen.debug_string())
+				reason_log.append("Winning the trick and picking up the points.")
 				return chosen
 			var chosen = _lowest_in(can_win, trump, lead_suit)
-			reason_log.append("Won trick — played %s" % chosen.debug_string())
+			reason_log.append("Winning the trick.")
 			return chosen
 
 	# Can't win — discard lowest non-counter to protect point cards.
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
 		var discard = _lowest_in(non_counters, trump, lead_suit)
-		reason_log.append("Couldn't win — discarding low non-counter — played %s" % discard.debug_string())
+		reason_log.append("Can't win this one — discarding low.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit)
-	reason_log.append("Couldn't win — discarding counter — played %s" % discard.debug_string())
+	reason_log.append("No way to win, and nothing safe to throw.")
 	return discard
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
