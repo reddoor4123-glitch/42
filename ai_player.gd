@@ -192,18 +192,77 @@ static func decide_bid(
 			var final_bid = min(target_bid, min_points + max_overbid)
 			final_bid = max(final_bid, min_points)
 			final_bid = min(final_bid, 42)
-			return BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
+			var pts_bid = BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
+			_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
+				should_bid, target_bid, est_pts, current_high, pts_bid)
+			return pts_bid
 
 	# Marks bid — strong hand requirement (unchanged)
 	if trump_count >= 5 and eval["has_double_trump"] and \
 	   (current_high == null or current_high.type != BidScript.Type.MARKS):
-		return BidScript.new(BidScript.Type.MARKS, 1, player_id)
+		var marks_bid = BidScript.new(BidScript.Type.MARKS, 1, player_id)
+		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
+			should_bid, target_bid, est_pts, current_high, marks_bid)
+		return marks_bid
 
 	# Forced minimum fallback
 	if is_forced:
-		return BidScript.new(BidScript.Type.POINTS, 30, player_id)
+		var forced_bid = BidScript.new(BidScript.Type.POINTS, 30, player_id)
+		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
+			should_bid, target_bid, est_pts, current_high, forced_bid)
+		return forced_bid
 
-	return BidScript.new(BidScript.Type.PASS, 0, player_id)
+	var pass_bid = BidScript.new(BidScript.Type.PASS, 0, player_id)
+	_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
+		should_bid, target_bid, est_pts, current_high, pass_bid)
+	return pass_bid
+
+static func _log_bid_decision(
+	hand: Array[Domino],
+	eval: Dictionary,
+	difficulty: String,
+	risk_bias: float,
+	max_overbid: int,
+	should_bid: bool,
+	target_bid: int,
+	est_pts: float,
+	current_high: RefCounted,
+	result: RefCounted
+) -> void:
+	var hand_str = ", ".join(hand.map(func(d): return d.debug_string()))
+	var doubles_in_hand = hand.filter(func(d): return d.is_double()).size()
+	var current_high_str = "none"
+	if current_high != null:
+		current_high_str = str(current_high.value) if current_high.value > 0 else "pass"
+
+	print("── BID DECISION (player %d, %s) ─────────────────────" % [result.player_id, difficulty])
+	print("  Hand:          %s" % hand_str)
+	print("  Doubles:       %d" % doubles_in_hand)
+	print("  Best trump:    suit=%d  trump_count=%d  double_trump=%s" % [
+		eval.get("trump", -1),
+		eval.get("trump_count", 0),
+		str(eval.get("has_double_trump", false))
+	])
+	print("  Eval:          est_pts=%.1f  est_tricks=%.2f  counter_pts=%.1f" % [
+		eval.get("estimated_points", 0.0),
+		eval.get("estimated_tricks", 0.0),
+		eval.get("counter_points", 0.0)
+	])
+	print("  Layer 2:       risk_bias=%.2f  max_overbid=%d  should_bid=%s  target=%d" % [
+		risk_bias, max_overbid, str(should_bid), target_bid
+	])
+	print("  Threshold:     est_pts(%.1f) + risk_bias*4(%.1f) >= 28.0 → %s" % [
+		est_pts, risk_bias * 4.0, str((est_pts + risk_bias * 4.0) >= 28.0)
+	])
+	print("  Current high:  %s" % current_high_str)
+	var BidScript2 = load("res://bid.gd")
+	var result_str = "PASS"
+	if result.type == BidScript2.Type.POINTS:
+		result_str = "%d pts" % result.value
+	elif result.type == BidScript2.Type.MARKS:
+		result_str = "%d marks" % result.value
+	print("  Result:        %s" % result_str)
+	print("")
 
 # ─── PLAY DECISION ───────────────────────────────────────────────────────────
 
