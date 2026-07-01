@@ -191,12 +191,37 @@ static func decide_bid(
 	if eval.get("trump_count", 0) >= 5:
 		control_score += 1.0
 
-	# (C) Final unified decision score
-	var final_score := ev_score + control_score
+	# (C) Auction stance — classifies bid intent before finalizing target
+	# This is a shape modifier on decision pressure, not a replacement of EV.
+	# Stance biases the final score and target upward or downward to express
+	# role (opener vs anchor vs defensive) without changing evaluation truth.
+	var has_double_trump: bool = eval.get("has_double_trump", false)
+	var auction_stance := "anchor"
+	if est_tricks >= 4.3 and has_double_trump:
+		auction_stance = "pressure_opener"
+	elif est_tricks >= 4.0 and eval.get("trump_count", 0) >= 4:
+		auction_stance = "solid_opener"
+	elif ev_score >= 24.0:
+		auction_stance = "competitive"
+	else:
+		auction_stance = "defensive"
+
+	var stance_bias := 0.0
+	match auction_stance:
+		"pressure_opener": stance_bias = 2.0
+		"solid_opener":    stance_bias = 1.0
+		"competitive":     stance_bias = 0.0
+		"defensive":       stance_bias = -1.5
+
+	# (D) Final unified decision score
+	var final_score := ev_score + control_score + stance_bias
 	var should_bid: bool = final_score >= 28.0
-	var target_bid: int = roundi(est_pts + risk_bias * 3.0)
+	var target_bid: int = roundi(est_pts + risk_bias * 3.0 + stance_bias)
 	target_bid = max(28, target_bid)
 	target_bid = min(target_bid, roundi(est_pts) + max_overbid)
+
+	eval["auction_stance"] = auction_stance
+	eval["stance_bias"]    = stance_bias
 
 	var control_hand := false  # kept for logging continuity
 
@@ -288,15 +313,20 @@ static func _log_bid_decision(
 		eval.get("estimated_tricks", 0.0),
 		eval.get("realization_bias", 0.0)
 	])
+	print("  Auction:       stance=%s  bias=%.1f" % [
+		eval.get("auction_stance", "unknown"),
+		eval.get("stance_bias", 0.0)
+	])
 	var ev_score_log := est_pts + risk_bias * 4.0
 	var est_tricks_log: float = eval.get("estimated_tricks", 0.0)
 	var control_score_log := est_tricks_log * 6.0 * 0.12
 	if eval.get("has_double_trump", false): control_score_log += 2.5
 	if eval.get("trump_count", 0) >= 4:    control_score_log += 1.5
 	if eval.get("trump_count", 0) >= 5:    control_score_log += 1.0
-	var final_score_log := ev_score_log + control_score_log
-	print("  Layer 2:       ev=%.1f  control=%.1f  final=%.1f  threshold=28.0  should_bid=%s  target=%d" % [
-		ev_score_log, control_score_log, final_score_log, str(should_bid), target_bid
+	var stance_bias_log: float = eval.get("stance_bias", 0.0)
+	var final_score_log := ev_score_log + control_score_log + stance_bias_log
+	print("  Layer 2:       ev=%.1f  control=%.1f  stance=%.1f  final=%.1f  threshold=28.0  should_bid=%s  target=%d" % [
+		ev_score_log, control_score_log, stance_bias_log, final_score_log, str(should_bid), target_bid
 	])
 	print("  Current high:  %s" % current_high_str)
 	var BidScript2 = load("res://bid.gd")
