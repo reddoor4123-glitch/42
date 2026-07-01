@@ -267,6 +267,16 @@ func _build_ui():
 	preset_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	preset_vbox.add_child(preset_subtitle)
 
+	var preset_back_btn = Button.new()
+	preset_back_btn.text = "← Back"
+	preset_back_btn.custom_minimum_size = Vector2(100, 40)
+	preset_back_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	preset_back_btn.pressed.connect(func():
+		preset_panel.visible = false
+		main_menu_panel.visible = true
+	)
+	preset_vbox.add_child(preset_back_btn)
+
 	_preset_status_label = Label.new()
 	_preset_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_preset_status_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4))
@@ -1483,14 +1493,14 @@ func _seat_label(pid: int) -> String:
 
 # ─── SETTINGS OVERLAY ────────────────────────────────────────────────────────
 
-func _show_settings_panel():
+func _show_settings_panel(from_create: bool = false):
 	_pending_settings = GameSettingsScript.standard_42() if game == null else _copy_settings(game.settings)
 	var vp = get_viewport().get_visible_rect().size
 	_settings_panel_inner.custom_minimum_size = vp * 0.92
-	_build_settings_content()
+	_build_settings_content(from_create)
 	settings_panel.visible = true
 
-func _build_settings_content():
+func _build_settings_content(from_create: bool = false):
 	for c in _settings_content_vbox.get_children():
 		c.queue_free()
 
@@ -1616,17 +1626,35 @@ func _build_settings_content():
 	home_btn.pressed.connect(_on_settings_home_pressed)
 	btn_row.add_child(home_btn)
 
-	var cancel_btn = Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(120, 44)
-	cancel_btn.pressed.connect(func(): settings_panel.visible = false)
-	btn_row.add_child(cancel_btn)
+	if from_create:
+		# Arrived from "Create New Ruleset" — intent is to save, not start a game.
+		var back_btn = Button.new()
+		back_btn.text = "← Back"
+		back_btn.custom_minimum_size = Vector2(120, 44)
+		back_btn.pressed.connect(func():
+			settings_panel.visible = false
+			preset_panel.visible = true
+		)
+		btn_row.add_child(back_btn)
 
-	var confirm_btn = Button.new()
-	confirm_btn.text = "Confirm & Restart"
-	confirm_btn.custom_minimum_size = Vector2(180, 44)
-	confirm_btn.pressed.connect(func(): _restart_game_with_settings(_pending_settings))
-	btn_row.add_child(confirm_btn)
+		var save_btn_bottom = Button.new()
+		save_btn_bottom.text = "Save Ruleset"
+		save_btn_bottom.custom_minimum_size = Vector2(180, 44)
+		save_btn_bottom.pressed.connect(_show_save_preset_popup)
+		btn_row.add_child(save_btn_bottom)
+	else:
+		# Arrived from gear icon mid-game — intent is to modify and restart.
+		var cancel_btn = Button.new()
+		cancel_btn.text = "Cancel"
+		cancel_btn.custom_minimum_size = Vector2(120, 44)
+		cancel_btn.pressed.connect(func(): settings_panel.visible = false)
+		btn_row.add_child(cancel_btn)
+
+		var confirm_btn = Button.new()
+		confirm_btn.text = "Confirm & Restart"
+		confirm_btn.custom_minimum_size = Vector2(180, 44)
+		confirm_btn.pressed.connect(func(): _restart_game_with_settings(_pending_settings))
+		btn_row.add_child(confirm_btn)
 
 func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
 	var header = Button.new()
@@ -1804,6 +1832,12 @@ func _on_menu_rules_pressed():
 	preset_panel.visible = true
 
 func _on_settings_home_pressed():
+	if game == null:
+		# No game in progress — return directly, no confirmation needed.
+		settings_panel.visible = false
+		main_menu_panel.visible = true
+		return
+
 	var confirm = ConfirmationDialog.new()
 	confirm.title = "Return to Menu?"
 	confirm.dialog_text = "Current game will be lost. Return to main menu?"
@@ -1874,7 +1908,7 @@ func _rebuild_preset_buttons():
 	create_btn.custom_minimum_size = Vector2(220, 44)
 	create_btn.pressed.connect(func():
 		preset_panel.visible = false
-		_show_settings_panel()
+		_show_settings_panel(true)
 	)
 	_preset_btn_container.add_child(create_btn)
 
