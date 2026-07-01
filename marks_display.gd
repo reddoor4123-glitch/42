@@ -41,7 +41,7 @@ func _draw():
 
 	# Draw all 7 strokes
 	var stroke_data = _get_strokes()
-	for i in range(7):
+	for i in [2, 1, 0, 3, 4, 5, 6]:
 		var color = STROKE_LIT if i < marks else STROKE_UNLIT
 		var s = stroke_data[i]
 		draw_line(Vector2(s[0], s[1]), Vector2(s[2], s[3]), color, STROKE_WIDTH, true)

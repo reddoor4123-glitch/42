@@ -95,7 +95,7 @@ var shuffle_style: String = "random"
 var allow_table_talk: bool = false
 var allow_early_hand_end: bool = true       # Lay-down / early stop once outcome is locked in
 var stack_tricks_display: bool = false      # Hide all but most recent 1-2 tricks per side instead of showing all flat
-var ai_difficulty: String = "standard"      # "easy", "standard", "hard"
+var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
 
 # ─────────────────────────────────────────────
 #  PRESET HELPERS

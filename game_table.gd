@@ -58,11 +58,21 @@ const DEBUG_FAST_MODE: bool = false
 var selected_tile: DominoTile = null
 var human_seat: int = 0
 var waiting_for_human: bool = false
+var _current_trick_reasons: Array = []  # accumulates {player, domino, reason} during a trick
+var _last_play_reason: String = ""      # set by AI chooser; read by _execute_play
+var replay_panel: Control = null
+var _replay_trick_index: int = 0
+var _replay_btn: Button = null
+var _continue_btn: Button = null
+var _replay_trick_label: Label = null
+var _replay_inner_panel: PanelContainer = null
+var _replay_hand_containers: Array = []
+var _replay_played_containers: Array = []
+var _replay_bubble_labels: Array = []
 var waiting_for_trump: bool = false
 var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
 var human_is_forced: bool = false
-var waiting_for_continue: bool = false
 
 func _ready():
 	_build_ui()
@@ -540,6 +550,168 @@ func _build_ui():
 	_settings_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_settings_scroll.add_child(_settings_content_vbox)
 
+	# --- Replay overlay (full-rect, sits on top of everything) ---
+	replay_panel = Control.new()
+	replay_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	replay_panel.visible = false
+	root.add_child(replay_panel)
+
+	var r_dim = ColorRect.new()
+	r_dim.color = Color(0, 0, 0, 0.75)
+	r_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	replay_panel.add_child(r_dim)
+
+	var r_center = CenterContainer.new()
+	r_center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	replay_panel.add_child(r_center)
+
+	_replay_inner_panel = PanelContainer.new()
+	var r_style = StyleBoxFlat.new()
+	r_style.bg_color = Color(0.06, 0.06, 0.09, 0.95)
+	r_style.corner_radius_top_left = 6
+	r_style.corner_radius_top_right = 6
+	r_style.corner_radius_bottom_left = 6
+	r_style.corner_radius_bottom_right = 6
+	r_style.content_margin_left = 12
+	r_style.content_margin_right = 12
+	r_style.content_margin_top = 12
+	r_style.content_margin_bottom = 12
+	_replay_inner_panel.add_theme_stylebox_override("panel", r_style)
+	r_center.add_child(_replay_inner_panel)
+
+	var r_vbox = VBoxContainer.new()
+	r_vbox.add_theme_constant_override("separation", 4)
+	_replay_inner_panel.add_child(r_vbox)
+
+	# Top bar: trick counter + close button
+	var r_top_bar = HBoxContainer.new()
+	r_top_bar.add_theme_constant_override("separation", 4)
+	r_vbox.add_child(r_top_bar)
+
+	_replay_trick_label = Label.new()
+	_replay_trick_label.text = "Replay — Trick 1 of 7"
+	_replay_trick_label.add_theme_font_size_override("font_size", 16)
+	_replay_trick_label.add_theme_color_override("font_color", Color.WHITE)
+	_replay_trick_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_top_bar.add_child(_replay_trick_label)
+
+	var r_close_btn = Button.new()
+	r_close_btn.text = "✕"
+	r_close_btn.custom_minimum_size = Vector2(36, 36)
+	r_close_btn.pressed.connect(_exit_replay)
+	r_top_bar.add_child(r_close_btn)
+
+	r_vbox.add_child(HSeparator.new())
+
+	# Table area — wrapped in a ScrollContainer so it degrades gracefully on small screens
+	var r_scroll = ScrollContainer.new()
+	r_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	r_vbox.add_child(r_scroll)
+
+	var r_table = VBoxContainer.new()
+	r_table.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r_table.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_table.add_theme_constant_override("separation", 4)
+	r_scroll.add_child(r_table)
+
+	# Pre-fill arrays so indices 0-3 exist before we assign them
+	for _i in range(4):
+		_replay_hand_containers.append(null)
+		_replay_played_containers.append(null)
+		_replay_bubble_labels.append(null)
+
+	# ── Partner (player 2) — top ──
+	var p2_sec = _build_replay_player_section("Partner")
+	r_table.add_child(p2_sec[0])
+	_replay_hand_containers[2]   = p2_sec[1]
+	_replay_played_containers[2] = p2_sec[2]
+	_replay_bubble_labels[2]     = p2_sec[3]
+
+	# ── Middle row: Left Opponent (player 3) | center spacer | Right Opponent (player 1) ──
+	var r_mid = HBoxContainer.new()
+	r_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r_mid.add_theme_constant_override("separation", 4)
+	r_table.add_child(r_mid)
+
+	var p3_sec = _build_replay_player_section("Left Opponent")
+	r_mid.add_child(p3_sec[0])
+	_replay_hand_containers[3]   = p3_sec[1]
+	_replay_played_containers[3] = p3_sec[2]
+	_replay_bubble_labels[3]     = p3_sec[3]
+
+	var r_spacer = Control.new()
+	r_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_mid.add_child(r_spacer)
+
+	var p1_sec = _build_replay_player_section("Right Opponent")
+	r_mid.add_child(p1_sec[0])
+	_replay_hand_containers[1]   = p1_sec[1]
+	_replay_played_containers[1] = p1_sec[2]
+	_replay_bubble_labels[1]     = p1_sec[3]
+
+	# ── Human (player 0) — bottom ──
+	var p0_sec = _build_replay_player_section("You")
+	r_table.add_child(p0_sec[0])
+	_replay_hand_containers[0]   = p0_sec[1]
+	_replay_played_containers[0] = p0_sec[2]
+	_replay_bubble_labels[0]     = p0_sec[3]
+
+	r_vbox.add_child(HSeparator.new())
+
+	# Bottom bar: navigation button
+	var r_bot_bar = HBoxContainer.new()
+	r_bot_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	r_vbox.add_child(r_bot_bar)
+
+	var r_next_btn = Button.new()
+	r_next_btn.text = "Continue →"
+	r_next_btn.custom_minimum_size = Vector2(140, 44)
+	r_next_btn.pressed.connect(_replay_next_trick)
+	r_bot_bar.add_child(r_next_btn)
+
+func _build_replay_player_section(label_text: String) -> Array:
+	var section = VBoxContainer.new()
+	section.alignment = BoxContainer.ALIGNMENT_CENTER
+	section.add_theme_constant_override("separation", 4)
+
+	var name_lbl = Label.new()
+	name_lbl.text = label_text
+	name_lbl.add_theme_font_size_override("font_size", 12)
+	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	section.add_child(name_lbl)
+
+	var hand_hbox = HBoxContainer.new()
+	hand_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hand_hbox.add_theme_constant_override("separation", 2)
+	section.add_child(hand_hbox)
+
+	var played_hbox = HBoxContainer.new()
+	played_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	section.add_child(played_hbox)
+
+	var bubble_lbl = Label.new()
+	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bubble_lbl.add_theme_font_size_override("font_size", 11)
+	bubble_lbl.add_theme_color_override("font_color", Color.WHITE)
+	bubble_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	var bubble_style = StyleBoxFlat.new()
+	bubble_style.bg_color = Color(0.08, 0.08, 0.10, 0.90)
+	bubble_style.corner_radius_top_left = 6
+	bubble_style.corner_radius_top_right = 6
+	bubble_style.corner_radius_bottom_left = 6
+	bubble_style.corner_radius_bottom_right = 6
+	bubble_style.content_margin_left = 6
+	bubble_style.content_margin_right = 6
+	bubble_style.content_margin_top = 4
+	bubble_style.content_margin_bottom = 4
+	bubble_lbl.add_theme_stylebox_override("normal", bubble_style)
+	bubble_lbl.visible = false
+	section.add_child(bubble_lbl)
+
+	return [section, hand_hbox, played_hbox, bubble_lbl]
+
 # ─── GAME FLOW ────────────────────────────────────────────────────────────────
 
 func _start_game():
@@ -573,6 +745,14 @@ func _on_preset_chosen(key: String):
 func _start_hand():
 	main_menu_panel.visible = false
 	preset_panel.visible = false
+	if _replay_btn and is_instance_valid(_replay_btn):
+		_replay_btn.queue_free()
+		_replay_btn = null
+	if _continue_btn and is_instance_valid(_continue_btn):
+		_continue_btn.queue_free()
+		_continue_btn = null
+	if replay_panel:
+		replay_panel.visible = false
 	_show_game_board(true)
 	game.deal_hands()
 	_refresh_all_hands()
@@ -967,6 +1147,7 @@ func _begin_play(leader_override: int = -1):
 
 func _play_trick(leader: int):
 	game.start_trick(leader)
+	_current_trick_reasons.clear()
 	_clear_play_area()
 	_set_status("%s leads the trick" % _seat_label(leader))
 	_play_next_in_trick()
@@ -1031,10 +1212,16 @@ func _ai_choose_domino(player: Player) -> Domino:
 	)
 	if reason_log.size() > 0:
 		_set_status("%s: %s" % [_seat_label(player.id), reason_log[0]])
+		_last_play_reason = reason_log[-1]
+	else:
+		_last_play_reason = ""
 	return chosen
 
 func _execute_play(player: Player, domino: Domino):
 	game.play_domino(player, domino)
+	var reason = _last_play_reason if _last_play_reason != "" else ("You played this" if player.is_human else "")
+	_current_trick_reasons.append({"player": player.id, "domino": domino, "reason": reason})
+	_last_play_reason = ""
 	_add_to_play_area(player.id, domino)
 	_refresh_hand(player)
 
@@ -1049,6 +1236,7 @@ func _execute_play(player: Player, domino: Domino):
 
 func _resolve_trick():
 	var winner_id = game.resolve_trick()
+	game.record_trick(game.current_trick, winner_id, _current_trick_reasons)
 	var winner_team = winner_id % 2
 	var win_verb = "win" if winner_id == human_seat else "wins"
 	_set_status("%s %s the trick!" % [_seat_label(winner_id), win_verb])
@@ -1095,20 +1283,40 @@ func _resolve_hand():
 	var winner_team = result.get("winner", 0)
 	var team_str = "Your team" if winner_team == 0 else "Their team"
 	var marks = result.get("team_marks", [0,0])
-	var msg = "Hand over! %s wins — %s\n\n(tap anywhere to continue)" % [team_str, result.get("reason", "")]
-	_set_status(msg)
+	_set_status("Hand over! %s wins — %s" % [team_str, result.get("reason", "")])
 
 	_us_marks.set_marks(marks[0])
 	_them_marks.set_marks(marks[1])
 	_set_info("Marks: You %d | Them %d" % [marks[0], marks[1]])
 
-	waiting_for_continue = true
+	_clear_play_area()
+
+	var btn_vbox = VBoxContainer.new()
+	btn_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_vbox.add_theme_constant_override("separation", 12)
+	play_area_container.add_child(btn_vbox)
+
+	if game.hand_history.size() > 0:
+		_replay_btn = Button.new()
+		_replay_btn.text = "Replay Hand →"
+		_replay_btn.custom_minimum_size = Vector2(180, 48)
+		_replay_btn.pressed.connect(_show_replay)
+		btn_vbox.add_child(_replay_btn)
+
+	_continue_btn = Button.new()
+	_continue_btn.text = "Next Hand →"
+	_continue_btn.custom_minimum_size = Vector2(160, 48)
+	_continue_btn.modulate = Color(0.95, 0.80, 0.15)
+	_continue_btn.pressed.connect(_on_hand_continue)
+	btn_vbox.add_child(_continue_btn)
 
 	var game_winner = game.check_game_over()
 	if game_winner >= 0:
 		var winner_str = "YOU WIN! 🎉" if game_winner == 0 else "Opponents win."
 		_set_status("GAME OVER — " + winner_str)
-		waiting_for_continue = false
+		if _continue_btn and is_instance_valid(_continue_btn):
+			_continue_btn.queue_free()
+			_continue_btn = null
 		return
 
 # ─── DISPLAY HELPERS ─────────────────────────────────────────────────────────
@@ -1275,9 +1483,9 @@ func _build_settings_content():
 	_settings_content_vbox.add_child(title)
 
 	_add_option_row(_settings_content_vbox, "AI Difficulty", [
-		["Easy",     "easy"],
+		["Beginner", "beginner"],
 		["Standard", "standard"],
-		["Hard",     "hard"],
+		["Expert",   "expert"],
 	], _pending_settings.ai_difficulty, func(v): _pending_settings.ai_difficulty = v)
 	_settings_content_vbox.add_child(HSeparator.new())
 
@@ -1778,9 +1986,9 @@ func _rebuild_difficulty_buttons():
 				current = str(data["ai_difficulty"])
 
 	var options = [
-		["Easy",     "Supportive partner, relaxed opponents", "easy"],
+		["Beginner", "Supportive partner, relaxed opponents", "beginner"],
 		["Standard", "Balanced play — the real game",         "standard"],
-		["Hard",     "Serious players, no mercy",             "hard"],
+		["Expert",   "Serious players, no mercy",             "expert"],
 	]
 	for opt in options:
 		var btn = Button.new()
@@ -1791,8 +1999,93 @@ func _rebuild_difficulty_buttons():
 		btn.pressed.connect(_on_difficulty_chosen.bind(opt[2]))
 		_difficulty_btn_container.add_child(btn)
 
-func _input(event: InputEvent):
-	if waiting_for_continue and event is InputEventMouseButton and event.pressed:
-		waiting_for_continue = false
-		game.advance_shaker()
-		_start_hand()
+func _input(_event: InputEvent):
+	pass  # tap-anywhere-to-continue replaced by explicit Next Hand button
+
+# ─── REPLAY ───────────────────────────────────────────────────────────────────
+
+func _on_hand_continue():
+	game.advance_shaker()
+	_start_hand()
+
+func _show_replay():
+	if game.hand_history.is_empty():
+		return
+	_replay_trick_index = 0
+	var vp = get_viewport().get_visible_rect().size
+	_replay_inner_panel.custom_minimum_size = vp * 0.96
+	replay_panel.visible = true
+	_render_replay_trick()
+
+func _render_replay_trick():
+	if _replay_trick_index >= game.hand_history.size():
+		_exit_replay()
+		return
+
+	var trick_record = game.hand_history[_replay_trick_index]
+
+	_replay_trick_label.text = "Replay — Trick %d of %d" % [
+		_replay_trick_index + 1,
+		game.hand_history.size()
+	]
+
+	# Render each player's hand at the start of this trick (face-up, small)
+	for pid in range(4):
+		var container = _replay_hand_containers[pid]
+		for child in container.get_children():
+			child.queue_free()
+		var hand_state = trick_record["hand_states"][pid]
+		for d in hand_state:
+			var tile = DominoTile.new()
+			tile.setup(d, true, trick_record["trump"])
+			tile.scale = Vector2(0.32, 0.32)
+			tile.custom_minimum_size = Vector2(
+				DominoTile.DOMINO_WIDTH * 0.32,
+				DominoTile.DOMINO_HEIGHT * 0.32
+			)
+			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			container.add_child(tile)
+
+	# Render each player's played domino and reasoning bubble
+	for play in trick_record["plays"]:
+		var pid = play["player"]
+
+		var played_container = _replay_played_containers[pid]
+		for child in played_container.get_children():
+			child.queue_free()
+		var played_tile = DominoTile.new()
+		played_tile.setup(play["domino"], true, trick_record["trump"])
+		played_tile.scale = Vector2(0.45, 0.45)
+		played_tile.custom_minimum_size = Vector2(
+			DominoTile.DOMINO_WIDTH * 0.45,
+			DominoTile.DOMINO_HEIGHT * 0.45
+		)
+		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		played_container.add_child(played_tile)
+
+		var bubble = _replay_bubble_labels[pid]
+		bubble.text = play["reason"] if play["reason"] != "" else "—"
+		bubble.visible = true
+
+	# Clear slots for players who didn't play this trick (e.g. Nello partner)
+	for pid in range(4):
+		var played = trick_record["plays"].any(func(p): return p["player"] == pid)
+		if not played:
+			_replay_bubble_labels[pid].visible = false
+			for child in _replay_played_containers[pid].get_children():
+				child.queue_free()
+
+	# Annotate the winner's bubble
+	var winner_id = trick_record["winner_id"]
+	if _replay_bubble_labels[winner_id] != null:
+		_replay_bubble_labels[winner_id].text += "\n✓ Won trick"
+
+func _replay_next_trick():
+	_replay_trick_index += 1
+	if _replay_trick_index >= game.hand_history.size():
+		_exit_replay()
+	else:
+		_render_replay_trick()
+
+func _exit_replay():
+	replay_panel.visible = false

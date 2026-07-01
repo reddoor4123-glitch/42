@@ -17,6 +17,8 @@ var nello_solo_player: int = -1
 var active_nello_doubles_mode: String = ""  # set per-hand; "" means use settings default
 var tricks_played: int = 0
 var current_trick: Trick = null
+var hand_history: Array = []         # Trick records for the current hand
+var deal_snapshot: Array = []        # Each player's full hand at deal time
 
 # Score tracking
 var team_marks: Array[int] = [0, 0]
@@ -51,6 +53,13 @@ func deal_hands():
 	trump = -1
 	nello_solo_player = -1
 	active_nello_doubles_mode = ""
+	hand_history.clear()
+	deal_snapshot.clear()
+	for i in range(4):
+		var snap: Array = []
+		for d in players[i].hand:
+			snap.append(d)
+		deal_snapshot.append(snap)
 
 # --- BIDDING ---
 
@@ -270,3 +279,28 @@ func check_game_over() -> int:
 
 func advance_shaker():
 	shaker = (shaker + 1) % 4
+
+# Record a completed trick into hand_history.
+# Call AFTER resolve_trick() (to get winner_id and the incremented tricks_played),
+# but while current_trick.plays is still populated.
+# Reconstructs each player's hand-at-start-of-trick by adding back what they played.
+func record_trick(trick: Trick, winner_id: int, plays_with_reasons: Array):
+	var hand_states: Array = []
+	for i in range(4):
+		var snapshot: Array = []
+		for d in players[i].hand:
+			snapshot.append(d)
+		for play in trick.plays:
+			if play["player"] == i:
+				snapshot.append(play["domino"])
+		hand_states.append(snapshot)
+
+	hand_history.append({
+		"trick_number":  tricks_played,      # 1-based: resolve_trick() already incremented it
+		"plays":         plays_with_reasons.duplicate(true),  # deep copy — caller clears the array
+		"winner_id":     winner_id,
+		"points":        trick.calculate_points(),
+		"hand_states":   hand_states,
+		"lead_suit":     trick.lead_suit,
+		"trump":         trump,
+	})

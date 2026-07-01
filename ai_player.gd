@@ -22,6 +22,33 @@ extends RefCounted
 # "That partner plays just like my uncle." — that's the target.
 # ═══════════════════════════════════════════════════════════════════
 
+# ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
+# Single source of truth for all AI behavioral parameters.
+# Add new modes here; decide_bid() and decide_play() read from this dict.
+const AI_MODES := {
+	"beginner": {
+		"confidence_multiplier": 0.75,
+		"bid_conservatism":      4.0,
+		"aggression_cap":        2,
+		"opportunism":           "low",
+		"cooperation_bias":      "high",
+	},
+	"standard": {
+		"confidence_multiplier": 1.0,
+		"bid_conservatism":      2.0,
+		"aggression_cap":        3,
+		"opportunism":           "medium",
+		"cooperation_bias":      "medium",
+	},
+	"expert": {
+		"confidence_multiplier": 1.1,
+		"bid_conservatism":      1.0,
+		"aggression_cap":        5,
+		"opportunism":           "high",
+		"cooperation_bias":      "medium",
+	},
+}
+
 # ─── HAND EVALUATION ─────────────────────────────────────────────────────────
 
 # Score a hand assuming a given trump suit.
@@ -127,24 +154,12 @@ static func decide_bid(
 	var trump_count = eval["trump_count"]
 
 	# Behavioral profile — difficulty adjusts social tone, not intelligence.
-	# Easy: underestimates hand, needs more cushion, won't push auctions hard.
-	# Hard: slight optimism, bids more readily, competes harder.
-	var confidence_multiplier: float
-	var bid_conservatism: float
-	var aggression_cap: int
-	match difficulty:
-		"easy":
-			confidence_multiplier = 0.75
-			bid_conservatism = 4.0
-			aggression_cap = 2
-		"hard":
-			confidence_multiplier = 1.1
-			bid_conservatism = 1.0
-			aggression_cap = 5
-		_:  # "standard"
-			confidence_multiplier = 1.0
-			bid_conservatism = 2.0
-			aggression_cap = 3
+	# Beginner: underestimates hand, needs more cushion, won't push auctions hard.
+	# Expert: slight optimism, bids more readily, competes harder.
+	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
+	var confidence_multiplier: float = mode["confidence_multiplier"]
+	var bid_conservatism: float      = mode["bid_conservatism"]
+	var aggression_cap: int          = mode["aggression_cap"]
 	est_pts = est_pts * confidence_multiplier
 
 	# Determine what minimum bid we need to beat
@@ -185,7 +200,7 @@ static func decide_bid(
 # ─── PLAY DECISION ───────────────────────────────────────────────────────────
 
 # Choose a domino to play.
-# difficulty: "beginner" | "standard" | "expert" — Phase 2 wires this to settings.
+# difficulty: "beginner" | "standard" | "expert" — wired to settings.
 # is_partner: true when this AI player is the human's partner (seat +2 from human).
 static func decide_play(
 	legal: Array[Domino],
@@ -202,6 +217,12 @@ static func decide_play(
 	var plays = trick.plays
 	var is_leading = plays.size() == 0
 	var lead_suit = trick.lead_suit
+
+	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
+	@warning_ignore("unused_variable")
+	var opportunism: String      = mode["opportunism"]       # Phase 3
+	@warning_ignore("unused_variable")
+	var cooperation_bias: String = mode["cooperation_bias"]  # Phase 3
 
 	# ── PARTNER BEHAVIOR ──────────────────────────────────────────────────────
 	# When is_partner == true, partner_id == human_seat.
@@ -257,14 +278,13 @@ static func decide_play(
 		var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit))
 
 		if can_win.size() > 0:
-			if difficulty == "easy":
-				# Easy Partner: always secure the trick without second-guessing card economy.
-				# TODO Phase 2: Easy Partner should signal rescue bid availability
+			if difficulty == "beginner":
+				# Beginner Partner: always secure the trick without second-guessing card economy.
 				var chosen = _lowest_in(can_win, trump, lead_suit)
-				reason_log.append("Easy mode — securing trick for partner — played %s" % chosen.debug_string())
+				reason_log.append("Beginner mode — securing trick for partner — played %s" % chosen.debug_string())
 				return chosen
 
-			# Standard and Hard: prefer non-trump winners to save trump.
+			# Standard and Expert: prefer non-trump winners to save trump.
 			var non_trump_wins = can_win.filter(func(d): return not d.is_trump(trump))
 			if non_trump_wins.size() > 0:
 				var chosen = _lowest_in(non_trump_wins, trump, lead_suit)
@@ -272,8 +292,8 @@ static func decide_play(
 				return chosen
 
 			# Only trump can win.
-			if difficulty == "hard":
-				# Hard Partner: no trust rule — play optimally for the contract.
+			if difficulty == "expert":
+				# Expert Partner: no trust rule — play optimally for the contract.
 				var chosen = _lowest_in(can_win, trump, lead_suit)
 				reason_log.append("Playing for contract — optimal play — played %s" % chosen.debug_string())
 				return chosen
@@ -298,14 +318,14 @@ static func decide_play(
 			return chosen
 
 		# Can't win — discard to protect point cards.
-		if difficulty == "easy":
-			# Easy Partner: more aggressive counter protection — discard highest
+		if difficulty == "beginner":
+			# Beginner Partner: more aggressive counter protection — discard highest
 			# non-counter non-trump first to protect every pip we have.
 			var safe_high = legal.filter(func(d):
 				return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 			if safe_high.size() > 0:
 				var discard = _highest_in(safe_high, trump, lead_suit)
-				reason_log.append("Easy mode — protecting team counters — played %s" % discard.debug_string())
+				reason_log.append("Beginner mode — protecting team counters — played %s" % discard.debug_string())
 				return discard
 
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
@@ -319,19 +339,19 @@ static func decide_play(
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
 	# Standard: solid casual play — not bloodthirsty, not passive.
-	# Easy: conservative opens, backs off human team tricks unless obvious.
-	# Hard: compete harder (handled in bidding); play TODO Phase 3 opportunism.
+	# Beginner: conservative opens, only contests tricks with counters already in them.
+	# Expert: compete harder (handled in bidding); TODO Phase 3 opportunism.
 
 	if is_leading:
-		# Easy: never lead trump on the opening trick of the hand.
-		if difficulty == "easy" and hand.size() == 7:
-			var non_trumps_easy = legal.filter(func(d): return not d.is_trump(trump))
-			if non_trumps_easy.size() > 0:
-				var best = _highest_in(non_trumps_easy, trump, lead_suit)
-				reason_log.append("Easy mode — conservative opening — played %s" % best.debug_string())
+		# Beginner: never lead trump on the opening trick of the hand.
+		if difficulty == "beginner" and hand.size() == 7:
+			var non_trumps_beginner = legal.filter(func(d): return not d.is_trump(trump))
+			if non_trumps_beginner.size() > 0:
+				var best = _highest_in(non_trumps_beginner, trump, lead_suit)
+				reason_log.append("Beginner mode — conservative opening — played %s" % best.debug_string())
 				return best
 
-		# TODO Phase 3: Hard — target known voids from trick history here.
+		# TODO Phase 3: Expert — target known voids from trick history here.
 
 		# Lead highest trump if we hold enough to control the suit.
 		var trumps = legal.filter(func(d): return d.is_trump(trump))
@@ -361,38 +381,32 @@ static func decide_play(
 		reason_log.append("Partner winning — played low %s to save strength" % lowest.debug_string())
 		return lowest
 
-	# Easy: back off when the human's team is currently winning the trick.
-	# Only attack if winner rank > 10 (impossible at rank 0-6, so effectively never).
-	# This makes Easy opponents feel unintimidating — they don't pile on the human.
-	if difficulty == "easy" and plays.size() > 0:
-		var winner_id = _find_current_winner_id(plays, trump, lead_suit)
-		var winner_is_human_team = (winner_id % 2 != player_id % 2)
-		if winner_is_human_team:
-			var winning_d = _current_winning_domino(plays, trump, lead_suit)
-			if winning_d.get_rank(trump, "high", lead_suit) <= 10:
-				var non_c = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
-				if non_c.size() > 0:
-					var discard = _lowest_in(non_c, trump, lead_suit)
-					reason_log.append("Easy mode — not pressing marginal advantage — played %s" % discard.debug_string())
-					return discard
-				var discard = _lowest_in(legal, trump, lead_suit)
-				reason_log.append("Easy mode — not pressing advantage — played %s" % discard.debug_string())
-				return discard
-
 	# Try to win the trick.
 	var current_winner_domino = _current_winning_domino(plays, trump, lead_suit)
 	var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit))
 
-	if can_win.size() > 0:
-		# Win with a counter if possible — pick up the points.
-		var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
-		if counter_wins.size() > 0:
-			var chosen = _lowest_in(counter_wins, trump, lead_suit)
-			reason_log.append("Won trick with counter — played %s" % chosen.debug_string())
+	if difficulty == "beginner":
+		# Beginner: only contest the trick if counters are already on the table.
+		# Low-value tricks aren't worth risking good cards over.
+		if can_win.size() > 0:
+			var trick_pts = _estimate_trick_value(plays, trump)
+			if trick_pts >= 5:
+				var chosen = _lowest_in(can_win, trump, lead_suit)
+				reason_log.append("Beginner mode — contesting valuable trick — played %s" % chosen.debug_string())
+				return chosen
+			# Trick not worth contesting — fall through to discard
+	else:
+		# Standard / Expert: try to win the trick.
+		if can_win.size() > 0:
+			# Win with a counter if possible — pick up the points.
+			var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
+			if counter_wins.size() > 0:
+				var chosen = _lowest_in(counter_wins, trump, lead_suit)
+				reason_log.append("Won trick with counter — played %s" % chosen.debug_string())
+				return chosen
+			var chosen = _lowest_in(can_win, trump, lead_suit)
+			reason_log.append("Won trick — played %s" % chosen.debug_string())
 			return chosen
-		var chosen = _lowest_in(can_win, trump, lead_suit)
-		reason_log.append("Won trick — played %s" % chosen.debug_string())
-		return chosen
 
 	# Can't win — discard lowest non-counter to protect point cards.
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
@@ -460,6 +474,17 @@ static func _find_player_play(plays: Array, player_id: int):
 		if play["player"] == player_id:
 			return play
 	return null
+
+# Estimate the point value already on the table in a trick.
+# Returns 1 (base trick point) plus any counter pip values played so far.
+# Used by beginner opponents to decide whether the trick is worth contesting.
+static func _estimate_trick_value(plays: Array, trump: int) -> int:
+	var pts = 1  # base 1 point for the trick itself
+	for play in plays:
+		var d: Domino = play["domino"]
+		if d.pip_sum() == 5 or d.pip_sum() == 10:
+			pts += d.pip_sum()
+	return pts
 
 static func _beats(challenger: Domino, current: Domino, trump: int, lead_suit: int) -> bool:
 	var c_suit = challenger.get_suit(trump, "high", lead_suit)
