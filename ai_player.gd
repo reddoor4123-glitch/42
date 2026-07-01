@@ -220,6 +220,11 @@ static func decide_bid(
 		should_bid = true
 		target_bid = max(target_bid, 30)
 
+	# If Layer 2 decided to bid but target is below the legal minimum, raise it.
+	# should_bid is already true — this preserves intent rather than silently passing.
+	if should_bid and target_bid < min_points:
+		target_bid = min_points
+
 	if should_bid and points_still_legal:
 		if min_points <= target_bid:
 			var final_bid = min(target_bid, min_points + max_overbid)
