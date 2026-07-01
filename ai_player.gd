@@ -53,7 +53,6 @@ const AI_MODES := {
 static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 	var trump_dominos: Array[Domino] = []
 	var off_dominos: Array[Domino] = []
-	var counter_points := 0      # Points from 5s and 10s we likely win
 	var estimated_tricks := 0.0
 	var has_double_trump := false
 
@@ -92,31 +91,44 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 		elif rank >= 5:
 			estimated_tricks += 0.3
 
-	# Count points we're likely to win
-	# We win counters if we have the winning domino in that suit or can trump them
-	for d in hand:
-		var pip = d.pip_sum()
-		if pip == 5 or pip == 10:
-			if d.is_trump(trump):
-				# Trump counters: very likely to win them
-				counter_points += pip * 0.9
-			elif d.get_rank(trump) >= 4:
-				# High off-suit counter
-				counter_points += pip * 0.6
-			else:
-				# Low counter — might lose it
-				counter_points += pip * 0.3
+	# ── CAPTURE MODEL ─────────────────────────────────────────────────────────
+	# Primary axis: expected tricks → expected points captured from the table.
+	# This is the ONLY value signal used for bidding strength.
+	var expected_capture := estimated_tricks * 6.0
 
-	# Add trick points (1 per trick)
-	var total_estimated_points = counter_points + estimated_tricks
+	# ── REALIZATION SIGNAL (diagnostic only) ──────────────────────────────────
+	# Measures how well known counter positions align with expected trick wins.
+	# Does NOT increase expected value — counters in hand do not add EV,
+	# they only indicate realization confidence for future use (Phase 2 risk).
+	var baseline_share := estimated_tricks / 7.0
+	var realization_bias := 0.0
+	var counter_points := 0.0  # logging only
+
+	for d in hand:
+		var pip := d.pip_sum()
+		if pip == 5 or pip == 10:
+			var win_prob: float
+			if d.is_trump(trump):
+				win_prob = 0.9
+			elif d.get_rank(trump) >= 4:
+				win_prob = 0.6
+			else:
+				win_prob = 0.3
+			counter_points += pip * win_prob
+			realization_bias += (win_prob - baseline_share) * pip
+
+	var estimated_points := expected_capture
+	# Do NOT add realization_bias to estimated_points.
 
 	return {
-		"trump": trump,
-		"trump_count": trump_count,
+		"trump":            trump,
+		"trump_count":      trump_count,
 		"has_double_trump": has_double_trump,
 		"estimated_tricks": estimated_tricks,
-		"estimated_points": total_estimated_points,
-		"counter_points": counter_points,
+		"expected_capture": expected_capture,   # primary bidding signal
+		"counter_points":   counter_points,     # diagnostic only
+		"realization_bias": realization_bias,   # diagnostic only
+		"estimated_points": estimated_points,   # used by best_trump / logging / bidding
 	}
 
 # Find the best trump suit for this hand
@@ -243,10 +255,11 @@ static func _log_bid_decision(
 		eval.get("trump_count", 0),
 		str(eval.get("has_double_trump", false))
 	])
-	print("  Eval:          est_pts=%.1f  est_tricks=%.2f  counter_pts=%.1f" % [
+	print("  Eval:          est_pts=%.1f  expected_capture=%.1f  est_tricks=%.2f  counter_bias=%.2f" % [
 		eval.get("estimated_points", 0.0),
+		eval.get("expected_capture", 0.0),
 		eval.get("estimated_tricks", 0.0),
-		eval.get("counter_points", 0.0)
+		eval.get("realization_bias", 0.0)
 	])
 	print("  Layer 2:       risk_bias=%.2f  max_overbid=%d  should_bid=%s  target=%d" % [
 		risk_bias, max_overbid, str(should_bid), target_bid
