@@ -164,37 +164,41 @@ static func decide_bid(
 	var est_pts: float = eval["estimated_points"]
 	var trump_count: int = eval["trump_count"]
 
-	# ── LAYER 2: INTENT (personality) ────────────────────────────────────────
+	# ── LAYER 2: SIGNAL COMBINER ─────────────────────────────────────────────
+	# Layer 2 does not score the hand — Layer 1 already did that.
+	# Layer 2 combines three independent signals into a single bid confidence:
+	#   (A) EV signal      — what is this hand worth?       (Layer 1 output)
+	#   (B) Control signal — how reliable is that value?    (structural shape)
+	#   (C) Risk signal    — how aggressive is this player? (AI_MODES personality)
+	# No signal overrides another. All three add. The threshold is fixed at 28.
+
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
 	var risk_bias: float = mode["risk_bias"]
 	var max_overbid: int = mode["max_overbid"]
 
-	# confidence is NOT used in Phase 1 decision logic.
-	# Reserved for Phase 2 Risk expansion (bidding style, aggression curves, etc.)
-	@warning_ignore("unused_variable")
-	var confidence: float = clamp((est_pts - 26.0) / 10.0 + risk_bias * 0.6, 0.0, 1.0)
+	# (A) EV signal — direct from Layer 1, shifted by personality
+	var ev_score := est_pts + risk_bias * 4.0
 
-	var should_bid: bool = (est_pts + risk_bias * 4.0) >= 28.0
+	# (B) Control signal — structural confidence, capped and smooth
+	#     Scales trick expectation lightly, then adds structure bonuses.
+	#     Does not replace EV; only nudges confidence upward.
+	var est_tricks: float = eval.get("estimated_tricks", 0.0)
+	var control_score := est_tricks * 6.0 * 0.12
+	if eval.get("has_double_trump", false):
+		control_score += 2.5
+	if eval.get("trump_count", 0) >= 4:
+		control_score += 1.5
+	if eval.get("trump_count", 0) >= 5:
+		control_score += 1.0
+
+	# (C) Final unified decision score
+	var final_score := ev_score + control_score
+	var should_bid: bool = final_score >= 28.0
 	var target_bid: int = roundi(est_pts + risk_bias * 3.0)
 	target_bid = max(28, target_bid)
 	target_bid = min(target_bid, roundi(est_pts) + max_overbid)
 
-	# ── CONTROL OVERRIDE (expert only) ───────────────────────────────────────
-	# Expert players recognize a category of hands that warrant a bid regardless
-	# of slight EV shortfall: sufficient trick expectation AND structural trump
-	# control. This is not numeric tuning — it is a hand archetype rule.
-	# Requires BOTH axes; neither is sufficient alone:
-	#   A) Trick expectation:  estimated_tricks >= 4.3
-	#   B) Structural control: double trump OR trump_count >= 4
-	var control_hand := false
-	if difficulty == "expert":
-		control_hand = (
-			eval.get("estimated_tricks", 0.0) >= 4.3 and
-			(eval.get("has_double_trump", false) or eval.get("trump_count", 0) >= 4)
-		)
-		if control_hand:
-			should_bid = true
-			target_bid = max(target_bid, 30)
+	var control_hand := false  # kept for logging continuity
 
 	# ── LAYER 3: EXECUTION (auction rules — no re-evaluation here) ───────────
 	# - respect current highest bid
@@ -279,11 +283,15 @@ static func _log_bid_decision(
 		eval.get("estimated_tricks", 0.0),
 		eval.get("realization_bias", 0.0)
 	])
-	print("  Layer 2:       risk_bias=%.2f  max_overbid=%d  control_override=%s  should_bid=%s  target=%d" % [
-		risk_bias, max_overbid, str(control_hand), str(should_bid), target_bid
-	])
-	print("  Threshold:     est_pts(%.1f) + risk_bias*4(%.1f) >= 28.0 → %s" % [
-		est_pts, risk_bias * 4.0, str((est_pts + risk_bias * 4.0) >= 28.0)
+	var ev_score_log := est_pts + risk_bias * 4.0
+	var est_tricks_log: float = eval.get("estimated_tricks", 0.0)
+	var control_score_log := est_tricks_log * 6.0 * 0.12
+	if eval.get("has_double_trump", false): control_score_log += 2.5
+	if eval.get("trump_count", 0) >= 4:    control_score_log += 1.5
+	if eval.get("trump_count", 0) >= 5:    control_score_log += 1.0
+	var final_score_log := ev_score_log + control_score_log
+	print("  Layer 2:       ev=%.1f  control=%.1f  final=%.1f  threshold=28.0  should_bid=%s  target=%d" % [
+		ev_score_log, control_score_log, final_score_log, str(should_bid), target_bid
 	])
 	print("  Current high:  %s" % current_high_str)
 	var BidScript2 = load("res://bid.gd")
