@@ -33,6 +33,8 @@ var trump_panel: PanelContainer
 var trump_buttons: HBoxContainer
 var _follow_me_sep: HSeparator = null
 var _follow_me_btn: Button = null
+var _doubles_trump_sep: HSeparator = null
+var _doubles_trump_btn: Button = null
 var nello_panel: PanelContainer
 var _nello_reversed_btn: Button = null
 var preset_panel: PanelContainer
@@ -437,6 +439,18 @@ func _build_ui():
 			row1.add_child(btn)
 		else:
 			row2.add_child(btn)
+
+	# Doubles as Trump — built once, visibility toggled in _show_trump_panel()
+	_doubles_trump_sep = HSeparator.new()
+	_doubles_trump_sep.visible = false
+	trump_vbox.add_child(_doubles_trump_sep)
+
+	_doubles_trump_btn = Button.new()
+	_doubles_trump_btn.text = "Doubles  (Trump Suit)"
+	_doubles_trump_btn.custom_minimum_size = Vector2(180, 40)
+	_doubles_trump_btn.visible = false
+	_doubles_trump_btn.pressed.connect(_on_trump_selected.bind(Domino.DOUBLES_TRUMP))
+	trump_vbox.add_child(_doubles_trump_btn)
 
 	# Follow Me / No Trump — built once, visibility toggled in _show_trump_panel()
 	_follow_me_sep = HSeparator.new()
@@ -1103,9 +1117,12 @@ func _finish_bidding(_unused: Array):
 
 func _show_trump_panel(message: String = "You won the bid — call your trump suit"):
 	waiting_for_trump = true
-	var allow = game.settings.allow_follow_me
-	_follow_me_sep.visible = allow
-	_follow_me_btn.visible = allow
+	var allow_follow = game.settings.allow_follow_me
+	_follow_me_sep.visible = allow_follow
+	_follow_me_btn.visible = allow_follow
+	var allow_doubles = game.settings.doubles_are_trump
+	_doubles_trump_sep.visible = allow_doubles
+	_doubles_trump_btn.visible = allow_doubles
 	trump_panel.visible = true
 	_set_status(message)
 
@@ -1834,11 +1851,20 @@ func _rebuild_preset_buttons():
 			_preset_btn_container.add_child(HSeparator.new())
 		for file_name in files:
 			var cname = file_name.left(file_name.length() - 5)
+			var row = HBoxContainer.new()
+			row.add_theme_constant_override("separation", 4)
 			var btn = Button.new()
 			btn.text = "★ %s\nCustom ruleset" % cname
-			btn.custom_minimum_size = Vector2(220, 60)
+			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			btn.custom_minimum_size = Vector2(0, 60)
 			btn.pressed.connect(_on_preset_chosen.bind("custom:" + cname))
-			_preset_btn_container.add_child(btn)
+			row.add_child(btn)
+			var opts_btn = Button.new()
+			opts_btn.text = "…"
+			opts_btn.custom_minimum_size = Vector2(36, 60)
+			opts_btn.pressed.connect(_show_custom_preset_options.bind(cname))
+			row.add_child(opts_btn)
+			_preset_btn_container.add_child(row)
 
 	_preset_btn_container.add_child(HSeparator.new())
 	var create_btn = Button.new()
@@ -1942,6 +1968,239 @@ func _save_custom_preset(cname: String):
 		f.store_string(JSON.stringify(GameSettingsScript.to_dict(_pending_settings), "\t"))
 		f.close()
 	settings_panel.visible = false
+
+func _show_custom_preset_options(cname: String):
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	preset_panel.add_child(popup)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(dim)
+
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(center)
+
+	var box = PanelContainer.new()
+	box.custom_minimum_size = Vector2(300, 0)
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box.add_theme_stylebox_override("panel", box_style)
+	center.add_child(box)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 10)
+	box.add_child(vb)
+
+	var title = Label.new()
+	title.text = cname
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_color", Color.WHITE)
+	title.add_theme_font_size_override("font_size", 16)
+	vb.add_child(title)
+
+	vb.add_child(HSeparator.new())
+
+	var rename_btn = Button.new()
+	rename_btn.text = "Rename…"
+	rename_btn.custom_minimum_size = Vector2(0, 44)
+	vb.add_child(rename_btn)
+
+	var delete_btn = Button.new()
+	delete_btn.text = "Delete"
+	delete_btn.custom_minimum_size = Vector2(0, 44)
+	vb.add_child(delete_btn)
+
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(0, 44)
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	vb.add_child(cancel_btn)
+
+	rename_btn.pressed.connect(func():
+		popup.queue_free()
+		_show_rename_preset_popup(cname)
+	)
+
+	delete_btn.pressed.connect(func():
+		popup.queue_free()
+		_show_delete_preset_confirm(cname)
+	)
+
+func _show_rename_preset_popup(old_name: String):
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	preset_panel.add_child(popup)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(dim)
+
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(center)
+
+	var box = PanelContainer.new()
+	box.custom_minimum_size = Vector2(320, 0)
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box.add_theme_stylebox_override("panel", box_style)
+	center.add_child(box)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	box.add_child(vb)
+
+	var prompt_lbl = Label.new()
+	prompt_lbl.text = "Rename \"%s\":" % old_name
+	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	prompt_lbl.add_theme_font_size_override("font_size", 16)
+	vb.add_child(prompt_lbl)
+
+	var line_edit = LineEdit.new()
+	line_edit.text = old_name
+	line_edit.custom_minimum_size = Vector2(280, 40)
+	vb.add_child(line_edit)
+
+	var btn_row = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 12)
+	vb.add_child(btn_row)
+
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(100, 40)
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	btn_row.add_child(cancel_btn)
+
+	var ok_btn = Button.new()
+	ok_btn.text = "Rename"
+	ok_btn.custom_minimum_size = Vector2(100, 40)
+	btn_row.add_child(ok_btn)
+
+	var do_rename = func():
+		var new_name = line_edit.text.strip_edges()
+		if new_name.is_empty() or new_name == old_name:
+			popup.queue_free()
+			return
+		popup.queue_free()
+		var old_path = "user://custom_rulesets/%s.json" % old_name
+		var new_path = "user://custom_rulesets/%s.json" % new_name
+		# Read old data
+		var fr = FileAccess.open(old_path, FileAccess.READ)
+		if fr:
+			var content = fr.get_as_text()
+			fr.close()
+			var fw = FileAccess.open(new_path, FileAccess.WRITE)
+			if fw:
+				fw.store_string(content)
+				fw.close()
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(old_path))
+		# Update last_used if it pointed to old name
+		var lu_data = {}
+		var lu_r = FileAccess.open("user://last_used.json", FileAccess.READ)
+		if lu_r:
+			var existing = JSON.parse_string(lu_r.get_as_text())
+			lu_r.close()
+			if existing is Dictionary:
+				lu_data = existing
+		if lu_data.get("last_preset", "") == "custom:" + old_name:
+			lu_data["last_preset"] = "custom:" + new_name
+			var lu_w = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+			if lu_w:
+				lu_w.store_string(JSON.stringify(lu_data))
+				lu_w.close()
+		_rebuild_preset_buttons()
+
+	ok_btn.pressed.connect(do_rename)
+	line_edit.text_submitted.connect(func(_t): do_rename.call())
+	line_edit.select_all()
+	line_edit.grab_focus()
+
+func _show_delete_preset_confirm(cname: String):
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	preset_panel.add_child(popup)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(dim)
+
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(center)
+
+	var box = PanelContainer.new()
+	box.custom_minimum_size = Vector2(300, 0)
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box.add_theme_stylebox_override("panel", box_style)
+	center.add_child(box)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	box.add_child(vb)
+
+	var lbl = Label.new()
+	lbl.text = "Delete \"%s\"?" % cname
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_color_override("font_color", Color.WHITE)
+	lbl.add_theme_font_size_override("font_size", 16)
+	vb.add_child(lbl)
+
+	var btn_row = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 12)
+	vb.add_child(btn_row)
+
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(100, 40)
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	btn_row.add_child(cancel_btn)
+
+	var del_btn = Button.new()
+	del_btn.text = "Delete"
+	del_btn.custom_minimum_size = Vector2(100, 40)
+	btn_row.add_child(del_btn)
+
+	del_btn.pressed.connect(func():
+		popup.queue_free()
+		var path = "user://custom_rulesets/%s.json" % cname
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		# Clear last_used if it pointed here
+		var lu_data = {}
+		var lu_r = FileAccess.open("user://last_used.json", FileAccess.READ)
+		if lu_r:
+			var existing = JSON.parse_string(lu_r.get_as_text())
+			lu_r.close()
+			if existing is Dictionary:
+				lu_data = existing
+		if lu_data.get("last_preset", "") == "custom:" + cname:
+			lu_data.erase("last_preset")
+			var lu_w = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+			if lu_w:
+				lu_w.store_string(JSON.stringify(lu_data))
+				lu_w.close()
+		_rebuild_preset_buttons()
+	)
 
 func _on_menu_difficulty_pressed():
 	main_menu_panel.visible = false

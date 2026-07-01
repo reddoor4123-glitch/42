@@ -271,10 +271,11 @@ func resolve_hand() -> Dictionary:
 	return result
 
 func check_game_over() -> int:
-	if team_marks[0] >= MARKS_TO_WIN:
-		return 0
-	if team_marks[1] >= MARKS_TO_WIN:
-		return 1
+	var target = settings.marks_to_win
+	for t in [0, 1]:
+		if team_marks[t] >= target:
+			if not settings.win_by_two or (team_marks[t] - team_marks[1 - t] >= 2):
+				return t
 	return -1
 
 func advance_shaker():

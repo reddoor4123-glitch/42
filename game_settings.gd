@@ -85,6 +85,7 @@ var points_to_win: int = 250
 var set_penalty: String = "bid"             # "bid" or "all_points"
 var count_dominos_in_tricks: bool = true
 var winning_trick_bonus: int = 0
+var win_by_two: bool = false
 
 # ─────────────────────────────────────────────
 #  GAME FLOW / DISPLAY
@@ -154,7 +155,7 @@ static func tournament_rules() -> GameSettings:
 static func lechner_hall() -> GameSettings:
 	# Aggie 42 — Lechner Hall Texas A&M rules per texas42.net/lechnerhall.html
 	# Splash min is 3 marks (not 2); Nello doubles configurable; Follow Me / Sevens allowed
-	# Note: Lechner rules require win by 2 marks — needs marks_win_by_two field (future addition)
+	# Lechner rules require win by 2 marks.
 	var s = GameSettings.new()
 	s.bid_direction = "shaker_left_first"
 	s.allow_forced_bid = true
@@ -178,6 +179,7 @@ static func lechner_hall() -> GameSettings:
 	s.allow_low_no = false
 	s.score_by_marks = true
 	s.marks_to_win = 7
+	s.win_by_two = true
 	s.ai_difficulty = "standard"
 	return s
 
@@ -275,6 +277,7 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"set_penalty": s.set_penalty,
 		"count_dominos_in_tricks": s.count_dominos_in_tricks,
 		"winning_trick_bonus": s.winning_trick_bonus,
+		"win_by_two": s.win_by_two,
 		"allow_renege_challenge": s.allow_renege_challenge,
 		"renege_penalty": s.renege_penalty,
 		"shuffle_style": s.shuffle_style,
@@ -333,6 +336,7 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.set_penalty = d.get("set_penalty", "bid")
 	s.count_dominos_in_tricks = d.get("count_dominos_in_tricks", true)
 	s.winning_trick_bonus = d.get("winning_trick_bonus", 0)
+	s.win_by_two = d.get("win_by_two", false)
 	s.allow_renege_challenge = d.get("allow_renege_challenge", true)
 	s.renege_penalty = d.get("renege_penalty", "set")
 	s.shuffle_style = d.get("shuffle_style", "random")
