@@ -76,6 +76,12 @@ var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
 var human_is_forced: bool = false
 
+# Viewport-proportional tile sizes — computed once in _build_ui()
+var TILE_FULL: Vector2
+var TILE_SMALL: Vector2
+var TILE_REPLAY_HAND: Vector2
+var TILE_REPLAY_PLAYED: Vector2
+
 func _ready():
 	_build_ui()
 	_start_game()
@@ -94,6 +100,13 @@ func _player_label(pid: int) -> String:
 		return "Left Opponent"
 
 func _build_ui():
+	var vp_w := get_viewport().get_visible_rect().size.x
+	var tile_w := min(64.0, floor(vp_w / 9.0))
+	TILE_FULL         = Vector2(tile_w,        tile_w * 2.0)
+	TILE_SMALL        = Vector2(tile_w * 0.45, tile_w * 2.0 * 0.45)
+	TILE_REPLAY_HAND  = Vector2(tile_w * 0.35, tile_w * 2.0 * 0.35)
+	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
+
 	# Root Control that fills the window
 	var root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1436,14 +1449,10 @@ func _populate_hand_container(container: Container, hand: Array, face: bool, sma
 		child.queue_free()
 	for d in hand:
 		var tile = DominoTile.new()
+		tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		container.add_child(tile)
 		tile.setup(d, face, game.trump)
-		if small:
-			tile.scale = Vector2(0.45, 0.45)
-			tile.custom_minimum_size = Vector2(
-				DominoTile.DOMINO_WIDTH * 0.45,
-				DominoTile.DOMINO_HEIGHT * 0.45
-			)
+		tile.custom_minimum_size = TILE_SMALL if small else TILE_FULL
 		if face:
 			tile.domino_pressed.connect(_on_human_domino_pressed)
 
@@ -1454,8 +1463,10 @@ func _add_to_play_area(player_id: int, domino: Domino):
 	play_area_container.add_child(vb)
 
 	var tile = DominoTile.new()
+	tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vb.add_child(tile)
 	tile.setup(domino, true, game.trump)
+	tile.custom_minimum_size = TILE_FULL
 
 	var lbl = Label.new()
 	lbl.text = _seat_label(player_id)
@@ -2399,14 +2410,11 @@ func _render_replay_trick():
 		var hand_state = trick_record["hand_states"][pid]
 		for d in hand_state:
 			var tile = DominoTile.new()
-			tile.setup(d, true, trick_record["trump"])
+			tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container.add_child(tile)
-			# Set AFTER add_child so it overrides _ready()'s reset
-			tile.custom_minimum_size = Vector2(
-				DominoTile.DOMINO_WIDTH * 0.25,
-				DominoTile.DOMINO_HEIGHT * 0.25
-			)
+			tile.setup(d, true, trick_record["trump"])
+			tile.custom_minimum_size = TILE_REPLAY_HAND
 
 	# Render each player's played domino and reasoning bubble
 	for play in trick_record["plays"]:
@@ -2416,14 +2424,11 @@ func _render_replay_trick():
 		for child in played_container.get_children():
 			child.queue_free()
 		var played_tile = DominoTile.new()
-		played_tile.setup(play["domino"], true, trick_record["trump"])
+		played_tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		played_container.add_child(played_tile)
-		# Set AFTER add_child so it overrides _ready()'s reset
-		played_tile.custom_minimum_size = Vector2(
-			DominoTile.DOMINO_WIDTH * 0.45,
-			DominoTile.DOMINO_HEIGHT * 0.45
-		)
+		played_tile.setup(play["domino"], true, trick_record["trump"])
+		played_tile.custom_minimum_size = TILE_REPLAY_PLAYED
 
 		var bubble = _replay_bubble_labels[pid]
 		bubble.text = play["reason"] if play["reason"] != "" else "—"
