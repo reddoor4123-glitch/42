@@ -2016,6 +2016,8 @@ func _save_custom_preset(cname: String):
 		f.store_string(JSON.stringify(GameSettingsScript.to_dict(_pending_settings), "\t"))
 		f.close()
 	settings_panel.visible = false
+	_rebuild_preset_buttons()
+	preset_panel.visible = true
 
 func _show_custom_preset_options(cname: String):
 	var popup = Control.new()
