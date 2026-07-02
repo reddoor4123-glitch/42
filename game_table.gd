@@ -1374,6 +1374,14 @@ func _resolve_hand():
 
 	var game_winner = game.check_game_over()
 	if game_winner >= 0:
+		if game.settings.win_by_two and abs(game.team_marks[0] - game.team_marks[1]) == 1:
+			var notice = AcceptDialog.new()
+			notice.title = "Lechner Hall Rule"
+			notice.dialog_text = "Traditional Lechner Hall rules require a team to win by two marks."
+			notice.ok_button_text = "Got it"
+			add_child(notice)
+			notice.popup_centered()
+			notice.confirmed.connect(func(): notice.queue_free())
 		var winner_str = "YOU WIN! 🎉" if game_winner == 0 else "Opponents win."
 		_set_status("GAME OVER — " + winner_str)
 		if _continue_btn and is_instance_valid(_continue_btn):

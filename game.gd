@@ -274,8 +274,7 @@ func check_game_over() -> int:
 	var target = settings.marks_to_win
 	for t in [0, 1]:
 		if team_marks[t] >= target:
-			if not settings.win_by_two or (team_marks[t] - team_marks[1 - t] >= 2):
-				return t
+			return t
 	return -1
 
 func advance_shaker():
