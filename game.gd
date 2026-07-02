@@ -279,7 +279,7 @@ func check_game_over() -> int:
 	return -1
 
 func advance_shaker():
-	shaker = (shaker + 1) % 4
+	shaker = (shaker + 3) % 4
 
 # Record a completed trick into hand_history.
 # Call AFTER resolve_trick() (to get winner_id and the incremented tricks_played),

@@ -1220,7 +1220,7 @@ func _play_next_in_trick():
 	if game.variant == BidScript.Type.NELLO:
 		var nello_partner = (game.current_bid.player_id + 2) % 4
 		if game.current_player == nello_partner:
-			game.current_player = (game.current_player + 1) % 4
+			game.current_player = (game.current_player + 3) % 4
 			if game.current_trick.plays.size() < 3:  # only 3 players in Nello
 				_play_next_in_trick()
 			else:
@@ -1287,7 +1287,7 @@ func _execute_play(player: Player, domino: Domino):
 	_add_to_play_area(player.id, domino)
 	_refresh_hand(player)
 
-	game.current_player = (game.current_player + 1) % 4
+	game.current_player = (game.current_player + 3) % 4
 
 	var trick_size = 3 if game.variant == BidScript.Type.NELLO else 4
 	if game.current_trick.plays.size() < trick_size:
