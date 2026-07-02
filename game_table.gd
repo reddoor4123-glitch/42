@@ -103,7 +103,7 @@ func _build_ui():
 	var vp_w: float = get_viewport().get_visible_rect().size.x
 	var tile_w: float = min(64.0, floor(vp_w / 9.0))
 	TILE_FULL         = Vector2(tile_w,        tile_w * 2.0)
-	TILE_SMALL        = Vector2(tile_w * 0.45, tile_w * 2.0 * 0.45)
+	TILE_SMALL        = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
 	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 
@@ -388,7 +388,7 @@ func _build_ui():
 
 	opponent_left_container = VBoxContainer.new()
 	opponent_left_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	opponent_left_container.custom_minimum_size = Vector2(40, 0)
+	opponent_left_container.custom_minimum_size = Vector2(60, 0)
 	hbox_mid.add_child(opponent_left_container)
 
 	# Play area (center)
@@ -435,7 +435,7 @@ func _build_ui():
 
 	opponent_right_container = VBoxContainer.new()
 	opponent_right_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	opponent_right_container.custom_minimum_size = Vector2(40, 0)
+	opponent_right_container.custom_minimum_size = Vector2(60, 0)
 	hbox_mid.add_child(opponent_right_container)
 
 	# --- Trump panel lives inside the play area ---
