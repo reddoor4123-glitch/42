@@ -2347,12 +2347,13 @@ func _render_replay_trick():
 			var tile = DominoTile.new()
 			tile.setup(d, true, trick_record["trump"])
 			tile.scale = Vector2(0.15, 0.15)
+			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			container.add_child(tile)
+			# Set AFTER add_child so it overrides _ready()'s reset
 			tile.custom_minimum_size = Vector2(
 				DominoTile.DOMINO_WIDTH * 0.15,
 				DominoTile.DOMINO_HEIGHT * 0.15
 			)
-			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			container.add_child(tile)
 
 	# Render each player's played domino and reasoning bubble
 	for play in trick_record["plays"]:
@@ -2364,12 +2365,13 @@ func _render_replay_trick():
 		var played_tile = DominoTile.new()
 		played_tile.setup(play["domino"], true, trick_record["trump"])
 		played_tile.scale = Vector2(0.45, 0.45)
+		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		played_container.add_child(played_tile)
+		# Set AFTER add_child so it overrides _ready()'s reset
 		played_tile.custom_minimum_size = Vector2(
 			DominoTile.DOMINO_WIDTH * 0.45,
 			DominoTile.DOMINO_HEIGHT * 0.45
 		)
-		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		played_container.add_child(played_tile)
 
 		var bubble = _replay_bubble_labels[pid]
 		bubble.text = play["reason"] if play["reason"] != "" else "—"
