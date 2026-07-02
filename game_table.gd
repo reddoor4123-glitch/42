@@ -2346,13 +2346,13 @@ func _render_replay_trick():
 		for d in hand_state:
 			var tile = DominoTile.new()
 			tile.setup(d, true, trick_record["trump"])
-			tile.scale = Vector2(0.15, 0.15)
+			tile.scale = Vector2(0.25, 0.25)
 			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container.add_child(tile)
 			# Set AFTER add_child so it overrides _ready()'s reset
 			tile.custom_minimum_size = Vector2(
-				DominoTile.DOMINO_WIDTH * 0.15,
-				DominoTile.DOMINO_HEIGHT * 0.15
+				DominoTile.DOMINO_WIDTH * 0.25,
+				DominoTile.DOMINO_HEIGHT * 0.25
 			)
 
 	# Render each player's played domino and reasoning bubble
