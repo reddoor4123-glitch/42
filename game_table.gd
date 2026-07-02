@@ -659,7 +659,7 @@ func _build_ui():
 		_replay_bubble_labels.append(null)
 
 	# ── Partner (player 2) — top ──
-	var p2_sec = _build_replay_player_section("Partner")
+	var p2_sec = _build_replay_player_section("Partner", "down")
 	r_table.add_child(p2_sec[0])
 	_replay_hand_containers[2]   = p2_sec[1]
 	_replay_played_containers[2] = p2_sec[2]
@@ -671,7 +671,7 @@ func _build_ui():
 	r_mid.add_theme_constant_override("separation", 4)
 	r_table.add_child(r_mid)
 
-	var p3_sec = _build_replay_player_section("Left Opponent")
+	var p3_sec = _build_replay_player_section("Left Opponent", "left")
 	r_mid.add_child(p3_sec[0])
 	_replay_hand_containers[3]   = p3_sec[1]
 	_replay_played_containers[3] = p3_sec[2]
@@ -681,14 +681,14 @@ func _build_ui():
 	r_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r_mid.add_child(r_spacer)
 
-	var p1_sec = _build_replay_player_section("Right Opponent")
+	var p1_sec = _build_replay_player_section("Right Opponent", "right")
 	r_mid.add_child(p1_sec[0])
 	_replay_hand_containers[1]   = p1_sec[1]
 	_replay_played_containers[1] = p1_sec[2]
 	_replay_bubble_labels[1]     = p1_sec[3]
 
 	# ── Human (player 0) — bottom ──
-	var p0_sec = _build_replay_player_section("You")
+	var p0_sec = _build_replay_player_section("You", "up")
 	r_table.add_child(p0_sec[0])
 	_replay_hand_containers[0]   = p0_sec[1]
 	_replay_played_containers[0] = p0_sec[2]
@@ -707,26 +707,20 @@ func _build_ui():
 	r_next_btn.pressed.connect(_replay_next_trick)
 	r_bot_bar.add_child(r_next_btn)
 
-func _build_replay_player_section(label_text: String) -> Array:
-	var section = VBoxContainer.new()
-	section.alignment = BoxContainer.ALIGNMENT_CENTER
-	section.add_theme_constant_override("separation", 4)
-
+func _build_replay_player_section(label_text: String, facing: String = "down") -> Array:
+	# Shared elements
 	var name_lbl = Label.new()
 	name_lbl.text = label_text
 	name_lbl.add_theme_font_size_override("font_size", 12)
 	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	section.add_child(name_lbl)
 
 	var hand_hbox = HBoxContainer.new()
 	hand_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hand_hbox.add_theme_constant_override("separation", 2)
-	section.add_child(hand_hbox)
 
 	var played_hbox = HBoxContainer.new()
 	played_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	section.add_child(played_hbox)
 
 	var bubble_lbl = Label.new()
 	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -745,7 +739,67 @@ func _build_replay_player_section(label_text: String) -> Array:
 	bubble_style.content_margin_bottom = 4
 	bubble_lbl.add_theme_stylebox_override("normal", bubble_style)
 	bubble_lbl.visible = false
-	section.add_child(bubble_lbl)
+
+	var section: Control
+	match facing:
+		"down":
+			# Partner — played below hand, toward screen center
+			section = VBoxContainer.new()
+			section.alignment = BoxContainer.ALIGNMENT_CENTER
+			section.add_theme_constant_override("separation", 4)
+			section.add_child(name_lbl)
+			section.add_child(hand_hbox)
+			section.add_child(played_hbox)
+			section.add_child(bubble_lbl)
+
+		"up":
+			# You — played above hand, toward screen center
+			section = VBoxContainer.new()
+			section.alignment = BoxContainer.ALIGNMENT_CENTER
+			section.add_theme_constant_override("separation", 4)
+			section.add_child(played_hbox)
+			section.add_child(bubble_lbl)
+			section.add_child(name_lbl)
+			section.add_child(hand_hbox)
+
+		"left":
+			# Left Opponent — played on the right (toward table center)
+			section = HBoxContainer.new()
+			section.alignment = BoxContainer.ALIGNMENT_CENTER
+			section.add_theme_constant_override("separation", 4)
+			var hand_vbox = VBoxContainer.new()
+			hand_vbox.add_theme_constant_override("separation", 4)
+			hand_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			hand_vbox.add_child(name_lbl)
+			hand_vbox.add_child(hand_hbox)
+			var played_vbox = VBoxContainer.new()
+			played_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+			played_vbox.add_theme_constant_override("separation", 4)
+			played_vbox.add_child(played_hbox)
+			played_vbox.add_child(bubble_lbl)
+			section.add_child(hand_vbox)
+			section.add_child(played_vbox)
+
+		"right":
+			# Right Opponent — played on the left (toward table center)
+			section = HBoxContainer.new()
+			section.alignment = BoxContainer.ALIGNMENT_CENTER
+			section.add_theme_constant_override("separation", 4)
+			var played_vbox = VBoxContainer.new()
+			played_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+			played_vbox.add_theme_constant_override("separation", 4)
+			played_vbox.add_child(played_hbox)
+			played_vbox.add_child(bubble_lbl)
+			var hand_vbox = VBoxContainer.new()
+			hand_vbox.add_theme_constant_override("separation", 4)
+			hand_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			hand_vbox.add_child(name_lbl)
+			hand_vbox.add_child(hand_hbox)
+			section.add_child(played_vbox)
+			section.add_child(hand_vbox)
+
+		_:
+			section = VBoxContainer.new()
 
 	return [section, hand_hbox, played_hbox, bubble_lbl]
 
@@ -2346,7 +2400,6 @@ func _render_replay_trick():
 		for d in hand_state:
 			var tile = DominoTile.new()
 			tile.setup(d, true, trick_record["trump"])
-			tile.scale = Vector2(0.25, 0.25)
 			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container.add_child(tile)
 			# Set AFTER add_child so it overrides _ready()'s reset
@@ -2364,7 +2417,6 @@ func _render_replay_trick():
 			child.queue_free()
 		var played_tile = DominoTile.new()
 		played_tile.setup(play["domino"], true, trick_record["trump"])
-		played_tile.scale = Vector2(0.45, 0.45)
 		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		played_container.add_child(played_tile)
 		# Set AFTER add_child so it overrides _ready()'s reset

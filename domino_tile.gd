@@ -53,40 +53,39 @@ func _on_gui_input(event: InputEvent):
 			domino_pressed.emit(self)
 
 func _draw():
-	var rect = Rect2(Vector2.ZERO, Vector2(DOMINO_WIDTH, DOMINO_HEIGHT))
+	var w := size.x
+	var h := size.y
+	var s := h / DOMINO_HEIGHT
 
-	# Border highlight
+	var rect = Rect2(Vector2.ZERO, Vector2(w, h))
+
 	var border_color = COLOR_BORDER
 	if is_selected:
 		border_color = COLOR_SELECTED
 	elif is_playable:
 		border_color = COLOR_PLAYABLE
 
-	# Draw shadow
-	draw_rect(Rect2(rect.position + Vector2(2, 3), rect.size), Color(0, 0, 0, 0.3))
-
-	# Draw border
+	draw_rect(Rect2(rect.position + Vector2(2, 3) * s, rect.size), Color(0, 0, 0, 0.3))
 	draw_rect(rect, border_color)
 
-	# Draw face or back
-	var inner = rect.grow(-3)
+	var inner = rect.grow(-3.0 * s)
 	if face_up and domino != null:
 		draw_rect(inner, COLOR_FACE)
-		_draw_pips(inner)
-		_draw_divider(inner)
+		_draw_pips(inner, s)
+		_draw_divider(inner, s)
 	else:
 		draw_rect(inner, COLOR_BACK)
-		_draw_back_pattern(inner)
+		_draw_back_pattern(inner, s)
 
-func _draw_divider(rect: Rect2):
+func _draw_divider(rect: Rect2, s: float):
 	var mid_y = rect.position.y + rect.size.y * 0.5
 	draw_line(
-		Vector2(rect.position.x + DIVIDER_MARGIN, mid_y),
-		Vector2(rect.position.x + rect.size.x - DIVIDER_MARGIN, mid_y),
-		COLOR_BORDER, 1.5
+		Vector2(rect.position.x + DIVIDER_MARGIN * s, mid_y),
+		Vector2(rect.position.x + rect.size.x - DIVIDER_MARGIN * s, mid_y),
+		COLOR_BORDER, max(1.0, 1.5 * s)
 	)
 
-func _draw_pips(rect: Rect2):
+func _draw_pips(rect: Rect2, s: float):
 	if domino == null:
 		return
 	var top_half = Rect2(rect.position, Vector2(rect.size.x, rect.size.y * 0.5 - 1))
@@ -94,15 +93,14 @@ func _draw_pips(rect: Rect2):
 		Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 + 1),
 		Vector2(rect.size.x, rect.size.y * 0.5 - 1)
 	)
-	# left pip is on bottom half, right pip on top (visual convention)
-	_draw_pip_value(domino.left, bot_half, domino.left == _trump)
-	_draw_pip_value(domino.right, top_half, domino.right == _trump)
+	_draw_pip_value(domino.left, bot_half, domino.left == _trump, s)
+	_draw_pip_value(domino.right, top_half, domino.right == _trump, s)
 
-func _draw_pip_value(value: int, rect: Rect2, is_trump_pip: bool):
+func _draw_pip_value(value: int, rect: Rect2, is_trump_pip: bool, s: float):
 	var color = COLOR_TRUMP_PIP if is_trump_pip else COLOR_PIP
 	var positions = _pip_positions(value, rect)
 	for pos in positions:
-		draw_circle(pos, PIP_RADIUS, color)
+		draw_circle(pos, max(1.0, PIP_RADIUS * s), color)
 
 func _pip_positions(value: int, rect: Rect2) -> Array:
 	var cx = rect.position.x + rect.size.x * 0.5
@@ -124,9 +122,8 @@ func _pip_positions(value: int, rect: Rect2) -> Array:
 				   Vector2(cx - ox, cy + oy), Vector2(cx + ox, cy + oy)]
 	return []
 
-func _draw_back_pattern(rect: Rect2):
-	# Simple crosshatch — easy to replace with a texture later
-	var step = 8.0
+func _draw_back_pattern(rect: Rect2, s: float):
+	var step = max(4.0, 8.0 * s)
 	var line_color = Color(COLOR_BACK.r + 0.08, COLOR_BACK.g + 0.08, COLOR_BACK.b + 0.08)
 	var x = rect.position.x
 	while x < rect.position.x + rect.size.x:
