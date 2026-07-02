@@ -154,7 +154,7 @@ func _build_ui():
 	opponent_top_container = HBoxContainer.new()
 	opponent_top_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	opponent_top_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	opponent_top_container.custom_minimum_size = Vector2(0, TILE_SMALL.y)
+	opponent_top_container.custom_minimum_size = Vector2(0, 80)
 	top_row.add_child(opponent_top_container)
 
 	# THEM side (team 1 = player 1 & 3)
@@ -389,6 +389,7 @@ func _build_ui():
 	opponent_left_container = VBoxContainer.new()
 	opponent_left_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	opponent_left_container.custom_minimum_size = Vector2(60, 0)
+	opponent_left_container.add_theme_constant_override("separation", -55)
 	hbox_mid.add_child(opponent_left_container)
 
 	# Play area (center)
@@ -436,6 +437,7 @@ func _build_ui():
 	opponent_right_container = VBoxContainer.new()
 	opponent_right_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	opponent_right_container.custom_minimum_size = Vector2(60, 0)
+	opponent_right_container.add_theme_constant_override("separation", -55)
 	hbox_mid.add_child(opponent_right_container)
 
 	# --- Trump panel lives inside the play area ---
