@@ -104,8 +104,8 @@ func _build_ui():
 	var tile_w: float = min(64.0, floor(vp_w / 9.0))
 	TILE_FULL         = Vector2(tile_w,        tile_w * 2.0)
 	TILE_SMALL        = Vector2(tile_w * 0.45, tile_w * 2.0 * 0.45)
-	TILE_REPLAY_HAND  = Vector2(tile_w * 0.35, tile_w * 2.0 * 0.35)
-	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
+	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
+	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 
 	# Root Control that fills the window
 	var root = Control.new()
