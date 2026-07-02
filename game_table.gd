@@ -245,37 +245,41 @@ func _build_ui():
 
 	# --- Preset picker panel ---
 	preset_panel = PanelContainer.new()
-	preset_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preset_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	preset_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	preset_panel.custom_minimum_size = Vector2(480, 0)
 	preset_panel.visible = false
+	var preset_style = StyleBoxFlat.new()
+	preset_style.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+	preset_style.corner_radius_top_left = 10
+	preset_style.corner_radius_top_right = 10
+	preset_style.corner_radius_bottom_left = 10
+	preset_style.corner_radius_bottom_right = 10
+	preset_style.content_margin_left = 32
+	preset_style.content_margin_right = 32
+	preset_style.content_margin_top = 40
+	preset_style.content_margin_bottom = 40
+	preset_panel.add_theme_stylebox_override("panel", preset_style)
 	vbox.add_child(preset_panel)
 
 	var preset_vbox = VBoxContainer.new()
 	preset_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	preset_vbox.add_theme_constant_override("separation", 12)
+	preset_vbox.add_theme_constant_override("separation", 16)
 	preset_panel.add_child(preset_vbox)
 
 	var preset_title = Label.new()
-	preset_title.text = "Welcome to 42 — Choose Your Rules"
+	preset_title.text = "Choose Your Rules"
 	preset_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	preset_title.add_theme_font_size_override("font_size", 18)
+	preset_title.add_theme_font_size_override("font_size", 28)
 	preset_title.add_theme_color_override("font_color", Color.WHITE)
 	preset_vbox.add_child(preset_title)
 
 	var preset_subtitle = Label.new()
 	preset_subtitle.text = "You can change this anytime from the menu"
 	preset_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	preset_subtitle.add_theme_font_size_override("font_size", 14)
 	preset_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	preset_vbox.add_child(preset_subtitle)
-
-	var preset_back_btn = Button.new()
-	preset_back_btn.text = "← Back"
-	preset_back_btn.custom_minimum_size = Vector2(100, 40)
-	preset_back_btn.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	preset_back_btn.pressed.connect(func():
-		preset_panel.visible = false
-		main_menu_panel.visible = true
-	)
-	preset_vbox.add_child(preset_back_btn)
 
 	_preset_status_label = Label.new()
 	_preset_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -293,6 +297,15 @@ func _build_ui():
 	_preset_btn_container.add_theme_constant_override("separation", 8)
 	_preset_btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	preset_scroll.add_child(_preset_btn_container)
+
+	var preset_back_btn = Button.new()
+	preset_back_btn.text = "← Menu"
+	preset_back_btn.custom_minimum_size = Vector2(160, 48)
+	preset_back_btn.pressed.connect(func():
+		preset_panel.visible = false
+		main_menu_panel.visible = true
+	)
+	preset_vbox.add_child(preset_back_btn)
 
 	# --- Difficulty picker panel ---
 	difficulty_panel = PanelContainer.new()
@@ -332,15 +345,6 @@ func _build_ui():
 	diff_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	diff_vbox.add_child(diff_subtitle)
 
-	var diff_back_btn = Button.new()
-	diff_back_btn.text = "← Menu"
-	diff_back_btn.custom_minimum_size = Vector2(100, 40)
-	diff_back_btn.pressed.connect(func():
-		difficulty_panel.visible = false
-		main_menu_panel.visible = true
-	)
-	diff_vbox.add_child(diff_back_btn)
-
 	var diff_scroll = ScrollContainer.new()
 	diff_scroll.custom_minimum_size = Vector2(240, 260)
 	diff_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -351,6 +355,15 @@ func _build_ui():
 	_difficulty_btn_container.add_theme_constant_override("separation", 8)
 	_difficulty_btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	diff_scroll.add_child(_difficulty_btn_container)
+
+	var diff_back_btn = Button.new()
+	diff_back_btn.text = "← Menu"
+	diff_back_btn.custom_minimum_size = Vector2(100, 40)
+	diff_back_btn.pressed.connect(func():
+		difficulty_panel.visible = false
+		main_menu_panel.visible = true
+	)
+	diff_vbox.add_child(diff_back_btn)
 
 	# --- Middle row: left opponent | play area | right opponent ---
 	_game_mid_row = HBoxContainer.new()
@@ -2261,8 +2274,7 @@ func _on_difficulty_chosen(key: String):
 	# Apply immediately to a running game
 	if game != null:
 		game.settings.ai_difficulty = key
-	difficulty_panel.visible = false
-	main_menu_panel.visible = true
+	_rebuild_difficulty_buttons()
 
 func _rebuild_difficulty_buttons():
 	for c in _difficulty_btn_container.get_children():
@@ -2332,10 +2344,10 @@ func _render_replay_trick():
 		for d in hand_state:
 			var tile = DominoTile.new()
 			tile.setup(d, true, trick_record["trump"])
-			tile.scale = Vector2(0.32, 0.32)
+			tile.scale = Vector2(0.25, 0.25)
 			tile.custom_minimum_size = Vector2(
-				DominoTile.DOMINO_WIDTH * 0.32,
-				DominoTile.DOMINO_HEIGHT * 0.32
+				DominoTile.DOMINO_WIDTH * 0.25,
+				DominoTile.DOMINO_HEIGHT * 0.25
 			)
 			tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			container.add_child(tile)
