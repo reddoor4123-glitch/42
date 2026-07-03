@@ -846,7 +846,7 @@ func _run_bidding_sequence():
 			waiting_for_bid = true
 			_show_bid_panel()
 			return
-		_set_status("%s is thinking..." % _seat_label(pid))
+		status_label.text = "%s is thinking..." % _seat_label(pid)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
@@ -1083,7 +1083,7 @@ func _run_post_human_bids():
 	var human_pos = bid_order.find(human_seat)
 	for i in range(human_pos + 1, 4):
 		var pid = bid_order[i]
-		_set_status("%s is thinking..." % _seat_label(pid))
+		status_label.text = "%s is thinking..." % _seat_label(pid)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
@@ -1235,7 +1235,7 @@ func _play_next_in_trick():
 		waiting_for_human = true
 		_set_status("Your turn — tap a domino to play")
 	else:
-		_set_status("%s is thinking..." % _seat_label(player.id))
+		status_label.text = "%s is thinking..." % _seat_label(player.id)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.4).timeout
 		var chosen = _ai_choose_domino(player)
 		_animate_ai_play(player, chosen)
