@@ -453,7 +453,7 @@ static func decide_play(
 				return best
 
 			var best = _highest_in(legal, trump, lead_suit)
-			reason_log.append("Keeping my counters safe — leading what I can.")
+			reason_log.append("Keeping my counts safe — leading what I can.")
 			return best
 
 		# ── FOLLOWING as Partner ──────────────────────────────────────────────
@@ -479,7 +479,7 @@ static func decide_play(
 							for c in counters_in_legal:
 								if c.pip_sum() > best_counter.pip_sum():
 									best_counter = c
-							reason_log.append("Adding my counter to your guaranteed win.")
+							reason_log.append("Adding my count to your guaranteed win.")
 							return best_counter
 			# Fall through to existing counter-protection logic for all other cases.
 
@@ -555,16 +555,16 @@ static func decide_play(
 				return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 			if safe_high.size() > 0:
 				var discard = _highest_in(safe_high, trump, lead_suit)
-				reason_log.append("Can't win this one — protecting our counters.")
+				reason_log.append("Can't win this one — protecting our counts.")
 				return discard
 
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
 			var discard = _lowest_in(non_counters_discard, trump, lead_suit)
-			reason_log.append("Can't win this one — saving my counter for later.")
+			reason_log.append("Can't win this one — saving my count for later.")
 			return discard
 		var discard = _lowest_in(legal, trump, lead_suit)
-		reason_log.append("Nowhere to hide — had to let a counter go.")
+		reason_log.append("Nowhere to hide — had to let a count go.")
 		return discard
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
@@ -594,7 +594,7 @@ static func decide_play(
 		var counters = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 		for c in counters:
 			if c.get_rank(trump, "high", lead_suit) >= 4:
-				reason_log.append("Leading my strong counter to lock in the points.")
+				reason_log.append("Leading my strong count to lock in the points.")
 				return c
 
 		# Lead highest available domino.
