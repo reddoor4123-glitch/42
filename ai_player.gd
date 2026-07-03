@@ -642,13 +642,24 @@ static func decide_play(
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
 		var discard = _lowest_in(non_counters, trump, lead_suit)
-		if hand.size() == 1:
+		if _beats(discard, current_winner_domino, trump, lead_suit):
+			reason_log.append("Taking this one.")
+		elif legal.size() == 1:
+			reason_log.append("Had to follow suit.")
+		elif hand.size() == 1:
 			reason_log.append("No way to win this one.")
 		else:
 			reason_log.append("Can't win this one — discarding low.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit)
-	reason_log.append("No way to win, and nothing safe to throw.")
+	if _beats(discard, current_winner_domino, trump, lead_suit):
+		reason_log.append("Taking this one.")
+	elif legal.size() == 1:
+		reason_log.append("Had to follow suit.")
+	elif hand.size() == 1:
+		reason_log.append("No way to win this one.")
+	else:
+		reason_log.append("No way to win, and nothing safe to throw.")
 	return discard
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
