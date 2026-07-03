@@ -19,7 +19,7 @@ extends RefCounted
 # Future: Named personalities as presets over these axes
 # Future: Family-observed behaviors as personality templates
 #
-# "That partner plays just like Uncle Ed." — that's the target.
+# "That partner plays like Uncle Ed." — that's the target.
 # ═══════════════════════════════════════════════════════════════════
 
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
@@ -486,10 +486,21 @@ static func decide_play(
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_follow.size() > 0:
 				var lowest = _lowest_in(non_counters_follow, trump, lead_suit)
-				reason_log.append("You've got this one — staying out of your way.")
+				var cur_winner = _current_winning_domino(plays, trump, lead_suit)
+				if _beats(lowest, cur_winner, trump, lead_suit):
+					reason_log.append("I've got this one.")
+				else:
+					if hand.size() == 1:
+						reason_log.append("Nice hand!")
+					else:
+						reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			var lowest = _lowest_in(legal, trump, lead_suit)
-			reason_log.append("You're winning, but I had to let a counter go.")
+			var cur_winner2 = _current_winning_domino(plays, trump, lead_suit)
+			if _beats(lowest, cur_winner2, trump, lead_suit):
+				reason_log.append("I've got this one.")
+			else:
+				reason_log.append("Putting my points on your trick.")
 			return lowest
 
 		# Human is not currently winning — try to win for the team.
@@ -631,7 +642,10 @@ static func decide_play(
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
 		var discard = _lowest_in(non_counters, trump, lead_suit)
-		reason_log.append("Can't win this one — discarding low.")
+		if hand.size() == 1:
+			reason_log.append("No way to win this one.")
+		else:
+			reason_log.append("Can't win this one — discarding low.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit)
 	reason_log.append("No way to win, and nothing safe to throw.")
