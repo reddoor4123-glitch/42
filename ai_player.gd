@@ -390,31 +390,37 @@ static func decide_play(
 		return lowest
 
 	# ── MARKS ─────────────────────────────────────────────────────────────────────
-	# Under a Marks contract, every trick matters equally — any lost trick sets
-	# the bid. Counters have no special status. Both partner and opponents play
-	# to win every trick; no pip_sum filtering anywhere in this branch.
+	# Under a Marks contract, every trick is worth exactly one mark.
+	# Counters have no special status — pip values are irrelevant.
+	# The only objective is to win as many tricks as possible.
+	# No counter protection, no pip filtering, no counter preference.
+	#
+	# NOTE: The cardinal rule (never steal a trick the human is already winning)
+	# is preserved here as a safe default. This needs revisit once examples of
+	# when partner should override it under Marks are collected. See design notes.
 	if contract == BidScript.Type.MARKS:
 		if is_leading:
 			var best = _highest_in(legal, trump, lead_suit)
-			reason_log.append("Leading my strongest tile.")
+			reason_log.append("Going for the trick.")
 			return best
 
-		var marks_partner_winning = _partner_is_winning(plays, partner_id, trump, lead_suit)
-		if marks_partner_winning:
+		var human_winning_marks = _partner_is_winning(plays, partner_id, trump, lead_suit)
+		if is_partner and human_winning_marks:
 			var lowest = _lowest_in(legal, trump, lead_suit)
-			reason_log.append("You've got this one — staying low.")
+			reason_log.append("You've got it — saving my strength.")
 			return lowest
 
-		var marks_winner = _current_winning_domino(plays, trump, lead_suit)
-		var marks_can_win = legal.filter(func(d): return _beats(d, marks_winner, trump, lead_suit))
-		if marks_can_win.size() > 0:
-			var chosen = _lowest_in(marks_can_win, trump, lead_suit)
-			reason_log.append("Winning the trick.")
+		var current_winner_marks = _current_winning_domino(plays, trump, lead_suit)
+		var can_win_marks = legal.filter(func(d): return _beats(d, current_winner_marks, trump, lead_suit))
+		if can_win_marks.size() > 0:
+			var chosen = _lowest_in(can_win_marks, trump, lead_suit)
+			reason_log.append("Taking this trick.")
 			return chosen
 
-		var discard = _lowest_in(legal, trump, lead_suit)
-		reason_log.append("Can't win this one — playing low.")
-		return discard
+		# Can't win — discard lowest with no pip filtering.
+		var lowest = _lowest_in(legal, trump, lead_suit)
+		reason_log.append("Can't win this one.")
+		return lowest
 
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
 	@warning_ignore("unused_variable")
@@ -462,45 +468,26 @@ static func decide_play(
 		# THE cardinal rule: never steal a trick the human is winning.
 		# Throw off lowest non-counter; only burn a counter if nothing else is available.
 		if human_is_winning:
-			# Guaranteed-win counter dump — Follow Me, follow-suit only.
-			# When trump == -1 and partner holds the double of the lead suit, the win
-			# is mathematically certain — no tile can beat the double with no trump.
-			# If we are following suit (not a free discard), dump a counter into the
-			# trick rather than protecting it. The counter is secured; holding it back
-			# only risks losing it to opponents in a later trick.
-			if trump == -1:
-				var gw_winning = _current_winning_domino(plays, trump, lead_suit)
-				if gw_winning.is_double():
-					var following_suit = legal.any(func(d): return d.get_suit(trump, "high", lead_suit) == lead_suit)
-					if following_suit:
-						var counters_in_legal = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
-						if counters_in_legal.size() > 0:
-							var best_counter = counters_in_legal[0]
-							for c in counters_in_legal:
-								if c.pip_sum() > best_counter.pip_sum():
-									best_counter = c
-							reason_log.append("Adding my count to your guaranteed win.")
-							return best_counter
-			# Fall through to existing counter-protection logic for all other cases.
-
+			var winning_domino = _current_winning_domino(plays, trump, lead_suit)
+			if winning_domino.is_double():
+				# Double is an unbeatable lead — guaranteed win.
+				# Dump counters into the trick to secure the points.
+				var counters_to_dump = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
+				if counters_to_dump.size() > 0:
+					var chosen = _highest_in(counters_to_dump, trump, lead_suit)
+					reason_log.append("That double's safe — putting my points on your trick.")
+					return chosen
+				var lowest = _lowest_in(legal, trump, lead_suit)
+				reason_log.append("You've got this one — staying out of your way.")
+				return lowest
+			# Not a guaranteed win — protect counters as normal.
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_follow.size() > 0:
 				var lowest = _lowest_in(non_counters_follow, trump, lead_suit)
-				var cur_winner = _current_winning_domino(plays, trump, lead_suit)
-				if _beats(lowest, cur_winner, trump, lead_suit):
-					reason_log.append("I've got this one.")
-				else:
-					if hand.size() == 1:
-						reason_log.append("Nice hand!")
-					else:
-						reason_log.append("You've got this one — staying out of your way.")
+				reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			var lowest = _lowest_in(legal, trump, lead_suit)
-			var cur_winner2 = _current_winning_domino(plays, trump, lead_suit)
-			if _beats(lowest, cur_winner2, trump, lead_suit):
-				reason_log.append("I've got this one.")
-			else:
-				reason_log.append("Putting my points on your trick.")
+			reason_log.append("Putting my points on your trick.")
 			return lowest
 
 		# Human is not currently winning — try to win for the team.
