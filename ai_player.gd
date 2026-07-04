@@ -366,7 +366,8 @@ static func decide_play(
 	difficulty: String = "standard",
 	is_partner: bool = false,
 	contract: int = -1,       # Bid.Type int; -1 = unknown/regular
-	bidder_id: int = -1       # player_id of whoever won the auction
+	bidder_id: int = -1,      # player_id of whoever won the auction
+	public_knowledge: PublicKnowledge = null
 ) -> Domino:
 
 	var plays = trick.plays
@@ -580,7 +581,24 @@ static func decide_play(
 				reason_log.append("Feeling out the hand before committing trump.")
 				return best
 
-		# TODO Phase 3: Expert — target known voids from trick history here.
+		# Expert: target a suit an opponent is known void in — leading it forces
+		# them to trump in (spending trump) or discard (possibly a counter).
+		# Runs before the trump-control check below, so a known void takes
+		# priority over a generic trump-control lead when both are available.
+		if difficulty == "expert" and public_knowledge != null:
+			var opponents = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
+			var void_leads = legal.filter(func(d):
+				if d.is_trump(trump):
+					return false
+				var suit = d.get_suit(trump, "high", -1)
+				for opp in opponents:
+					if public_knowledge.void_suits(opp).has(suit):
+						return true
+				return false)
+			if void_leads.size() > 0:
+				var best = _highest_in(void_leads, trump, lead_suit)
+				reason_log.append("Leading a suit I know you're out of.")
+				return best
 
 		# Lead highest trump if we hold enough to control the suit.
 		var trumps = legal.filter(func(d): return d.is_trump(trump))

@@ -1267,13 +1267,16 @@ func _ai_choose_domino(player: Player) -> Domino:
 	var partner_id = (player.id + 2) % 4
 	var is_partner = (player.id == (human_seat + 2) % 4)
 	var reason_log: Array = []
+	var frame = PublicFrame.new(game.hand_history, game.current_trick)
+	var knowledge = PublicKnowledge.from_state(frame)
 	var chosen = AIPlayer.decide_play(
 		legal, player.hand, game.current_trick,
 		player.id, partner_id, game.trump, reason_log,
 		game.settings.ai_difficulty,
 		is_partner,
 		game.variant,
-		game.current_bid.player_id if game.current_bid != null else -1
+		game.current_bid.player_id if game.current_bid != null else -1,
+		knowledge
 	)
 	if reason_log.size() > 0:
 		_last_play_reason = reason_log[-1]
