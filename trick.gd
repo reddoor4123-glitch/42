@@ -39,7 +39,21 @@ func add_play(player_index: int, domino: Domino, declared_suit: int = -1):
 
 func get_legal_moves(hand: Array[Domino]) -> Array[Domino]:
 	if variant == BidScript.Type.SEVENS:
-		return hand
+		# Sevens has no suits, no trump, no follow-suit — the only legal
+		# plays are whichever domino(es) in hand are closest to a pip-sum
+		# of 7 right now. Recomputed fresh every call, since the answer
+		# shifts as the hand shrinks trick to trick. Ties are legal together;
+		# nothing picks a "winner" among them here — that's the player's choice.
+		var best_dist := 999
+		for d in hand:
+			var dist = abs(d.pip_sum() - 7)
+			if dist < best_dist:
+				best_dist = dist
+		var closest: Array[Domino] = []
+		for d in hand:
+			if abs(d.pip_sum() - 7) == best_dist:
+				closest.append(d)
+		return closest
 	if plays.size() == 0:
 		return hand
 	var must_follow: Array[Domino] = []
