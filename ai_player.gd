@@ -800,14 +800,7 @@ static func _lowest_in(dominos: Array, trump: int, lead_suit: int) -> Domino:
 static func _partner_is_winning(plays: Array, partner_id: int, trump: int, lead_suit: int) -> bool:
 	if plays.size() == 0:
 		return false
-	var best_play = plays[0]
-	var best_d: Domino = best_play["domino"]
-	for play in plays:
-		var d: Domino = play["domino"]
-		if _beats(d, best_d, trump, lead_suit):
-			best_play = play
-			best_d = d
-	return best_play["player"] == partner_id
+	return _find_current_winner_id(plays, trump, lead_suit) == partner_id
 
 static func _current_winning_domino(plays: Array, trump: int, lead_suit: int) -> Domino:
 	var best: Domino = plays[0]["domino"]
