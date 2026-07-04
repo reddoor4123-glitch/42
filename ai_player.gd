@@ -68,7 +68,9 @@ extends RefCounted
 #                information asymmetry (inference, derived facts like
 #                voids, anything not equally available to every seat)
 #                belongs behind the project's knowledge/inference layer,
-#                not a difficulty string.
+#                not a difficulty string. That layer is PublicKnowledge —
+#                see its header for the vocabulary-layer contract every
+#                Knowledge-classified branch here ultimately defers to.
 #
 #   EVALUATION — Everyone can use the same information; difficulties differ
 #                only in whether they act on it, or how they weigh it. This
