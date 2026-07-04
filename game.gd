@@ -61,6 +61,7 @@ func deal_hands():
 	bid_decisions.clear()
 	hand_result = {}
 	flags.clear()
+	HandRecordWriter.reset_for_new_hand()
 	for i in range(4):
 		var snap: Array = []
 		for d in players[i].hand:
@@ -325,6 +326,7 @@ func flag_hand(trick_index: int, categories: Array = [], note: String = "") -> v
 		"categories":  categories.duplicate(),
 		"note":        note,
 	})
+	HandRecordWriter.on_flag(build_hand_record())
 
 # Assemble a complete, self-contained snapshot of the current hand.
 # Called for EVERY finished hand, whether or not it ends up being saved —
