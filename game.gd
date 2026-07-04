@@ -303,4 +303,6 @@ func record_trick(trick: Trick, winner_id: int, plays_with_reasons: Array):
 		"hand_states":   hand_states,
 		"lead_suit":     trick.lead_suit,
 		"trump":         trump,
+		"nello_doubles": trick.nello_doubles,
+		"doubles_trump_reversed": trick.doubles_trump_reversed,
 	})
