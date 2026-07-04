@@ -617,6 +617,11 @@ static func decide_play(
 				return false)
 			if void_leads.size() > 0:
 				var best = _highest_in(void_leads, trump, lead_suit)
+				var targeted_suit = best.get_suit(trump, trick.nello_doubles, -1)
+				print("[Void Lead] P%d leading suit %d — void opponents: %s" % [
+					player_id, targeted_suit,
+					opponents.filter(func(p): return public_knowledge.void_suits(p).has(targeted_suit))
+				])
 				reason_log.append("Leading a suit I know you're out of.")
 				return best
 
