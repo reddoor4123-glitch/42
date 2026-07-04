@@ -850,7 +850,7 @@ func _run_bidding_sequence():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
@@ -1072,6 +1072,12 @@ func _on_bid_submitted(bid: RefCounted):
 	waiting_for_bid = false
 	if bid.type != BidScript.Type.PASS:
 		game.current_bid = bid
+	game.bid_decisions.append({
+		"player_id": human_seat,
+		"source":    "human",
+		"bid_type":  bid.type,
+		"bid_value": bid.value,
+	})
 	_show_bid_bubble(human_seat, "You\n%s" % bid.debug_string())
 	_set_status("You: %s" % bid.debug_string())
 	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
@@ -1087,7 +1093,7 @@ func _run_post_human_bids():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])

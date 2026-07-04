@@ -166,7 +166,8 @@ static func decide_bid(
 	current_high: RefCounted,  # Bid or null
 	settings: RefCounted,      # GameSettings
 	is_forced: bool = false,
-	difficulty: String = "standard"
+	difficulty: String = "standard",
+	bid_decisions: Array = []   # out-parameter, mirrors reason_log convention
 ) -> RefCounted:
 
 	var BidScript = load("res://bid.gd")
@@ -269,7 +270,7 @@ static func decide_bid(
 			final_bid = min(final_bid, 42)
 			var pts_bid = BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
 			_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand)
+				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand, bid_decisions)
 			return pts_bid
 
 	# Marks bid — strong hand requirement (unchanged)
@@ -277,19 +278,19 @@ static func decide_bid(
 	   (current_high == null or current_high.type != BidScript.Type.MARKS):
 		var marks_bid = BidScript.new(BidScript.Type.MARKS, 1, player_id)
 		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand)
+			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand, bid_decisions)
 		return marks_bid
 
 	# Forced minimum fallback
 	if is_forced:
 		var forced_bid = BidScript.new(BidScript.Type.POINTS, 30, player_id)
 		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-			should_bid, target_bid, est_pts, current_high, forced_bid, control_hand)
+			should_bid, target_bid, est_pts, current_high, forced_bid, control_hand, bid_decisions)
 		return forced_bid
 
 	var pass_bid = BidScript.new(BidScript.Type.PASS, 0, player_id)
 	_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-		should_bid, target_bid, est_pts, current_high, pass_bid, control_hand)
+		should_bid, target_bid, est_pts, current_high, pass_bid, control_hand, bid_decisions)
 	return pass_bid
 
 static func _log_bid_decision(
@@ -303,7 +304,8 @@ static func _log_bid_decision(
 	est_pts: float,
 	current_high: RefCounted,
 	result: RefCounted,
-	control_hand: bool = false
+	control_hand: bool = false,
+	bid_decisions: Array = []
 ) -> void:
 	var hand_str = ", ".join(hand.map(func(d): return d.debug_string()))
 	var doubles_in_hand = hand.filter(func(d): return d.is_double()).size()
@@ -349,6 +351,24 @@ static func _log_bid_decision(
 		result_str = "%d marks" % result.value
 	print("  Result:        %s" % result_str)
 	print("")
+
+	# Structured capture for HandRecord — parallel to the prints above, not a
+	# replacement. hand.duplicate() is a SHALLOW copy: it severs the alias to
+	# player.hand (which decide_bid() receives by reference) so that later
+	# play_domino() calls erasing dominoes from the live hand during tricks
+	# don't retroactively shrink this "hand at bid time" snapshot. The Domino
+	# objects inside are never mutated in place, so a shallow copy is enough.
+	bid_decisions.append({
+		"player_id":   result.player_id,
+		"source":      "ai",
+		"difficulty":  difficulty,
+		"bid_type":    result.type,
+		"bid_value":   result.value,
+		"hand":        hand.duplicate(),
+		"eval":        eval.duplicate(true),
+		"should_bid":  should_bid,
+		"target_bid":  target_bid,
+	})
 
 # ─── PLAY DECISION ───────────────────────────────────────────────────────────
 

@@ -19,6 +19,9 @@ var tricks_played: int = 0
 var current_trick: Trick = null
 var hand_history: Array = []         # Trick records for the current hand
 var deal_snapshot: Array = []        # Each player's full hand at deal time
+var bid_decisions: Array = []        # Structured bid events for the current hand
+var hand_result: Dictionary = {}     # Stored result of resolve_hand()
+var flags: Array = []                # Tester-added annotations for the current hand
 
 # Score tracking
 var team_marks: Array[int] = [0, 0]
@@ -55,6 +58,9 @@ func deal_hands():
 	active_nello_doubles_mode = ""
 	hand_history.clear()
 	deal_snapshot.clear()
+	bid_decisions.clear()
+	hand_result = {}
+	flags.clear()
 	for i in range(4):
 		var snap: Array = []
 		for d in players[i].hand:
@@ -268,6 +274,7 @@ func resolve_hand() -> Dictionary:
 
 	result["team_marks"] = team_marks.duplicate()
 	result["team_points"] = team_points.duplicate()
+	hand_result = result.duplicate(true)
 	return result
 
 func check_game_over() -> int:
@@ -306,3 +313,44 @@ func record_trick(trick: Trick, winner_id: int, plays_with_reasons: Array):
 		"nello_doubles": trick.nello_doubles,
 		"doubles_trump_reversed": trick.doubles_trump_reversed,
 	})
+
+# Append a tester annotation to the current hand. Call from the replay UI
+# when the flag button is pressed. Multiple flags per hand are expected —
+# each call adds one more entry. flag_order preserves the sequence the
+# tester interacted in, including re-flagging the same trick more than once.
+func flag_hand(trick_index: int, categories: Array = [], note: String = "") -> void:
+	flags.append({
+		"flag_order":  flags.size(),
+		"trick_index": trick_index,
+		"categories":  categories.duplicate(),
+		"note":        note,
+	})
+
+# Assemble a complete, self-contained snapshot of the current hand.
+# Called for EVERY finished hand, whether or not it ends up being saved —
+# persistence is entirely the caller's decision, not this function's concern.
+#
+# Everything returned is duplicated at assembly time. hand_history,
+# bid_decisions, deal_snapshot, and flags are all live arrays that get
+# cleared or appended to by the next deal_hands()/hand — without duplicating,
+# a record held past that point would corrupt or empty out from underneath
+# the caller. One rule, no exceptions: everything in the returned record is
+# an independent snapshot.
+func build_hand_record() -> Dictionary:
+	var winning_bid_data = null
+	if current_bid != null:
+		winning_bid_data = {
+			"type":      current_bid.type,
+			"value":     current_bid.value,
+			"player_id": current_bid.player_id,
+		}
+	return {
+		"trump":          trump,
+		"variant":        variant,
+		"winning_bid":    winning_bid_data,
+		"deal_snapshot":  deal_snapshot.duplicate(true),
+		"bid_decisions":  bid_decisions.duplicate(true),
+		"hand_history":   hand_history.duplicate(true),
+		"hand_result":    hand_result.duplicate(true),
+		"flags":          flags.duplicate(true),
+	}
