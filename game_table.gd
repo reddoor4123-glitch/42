@@ -60,6 +60,7 @@ const DEBUG_FAST_MODE: bool = false
 var selected_tile: DominoTile = null
 var human_seat: int = 0
 var waiting_for_human: bool = false
+var _armed_domino: Domino = null   # human's pre-selected play for later this trick, if any
 var _current_trick_reasons: Array = []  # accumulates {player, domino, reason} during a trick
 var _last_play_reason: String = ""      # set by AI chooser; read by _execute_play
 var replay_panel: Control = null
@@ -870,6 +871,7 @@ func _on_preset_chosen(key: String):
 	_start_hand()
 
 func _start_hand():
+	_armed_domino = null
 	main_menu_panel.visible = false
 	preset_panel.visible = false
 	if _replay_btn and is_instance_valid(_replay_btn):
@@ -1281,6 +1283,7 @@ func _begin_play(leader_override: int = -1):
 	_play_trick(leader)
 
 func _play_trick(leader: int):
+	_armed_domino = null
 	game.start_trick(leader)
 	_current_trick_reasons.clear()
 	_clear_play_area()
@@ -1303,6 +1306,16 @@ func _play_next_in_trick():
 			return
 
 	if player.is_human:
+		if _armed_domino != null:
+			var legal = game.get_legal_moves(game.players[human_seat])
+			var armed = _armed_domino
+			_armed_domino = null
+			if legal.has(armed):
+				_clear_highlights()
+				_execute_play(game.players[human_seat], armed)
+				return
+			# Defensive fallback if it were ever somehow invalid — falls through
+			# to the normal wait-for-tap path below instead of dropping the turn.
 		_highlight_legal_moves()
 		waiting_for_human = true
 		_set_status("Your turn — tap a domino to play")
@@ -1320,16 +1333,62 @@ func _highlight_legal_moves():
 			child.set_playable(playable)
 			child.mouse_filter = Control.MOUSE_FILTER_STOP if playable else Control.MOUSE_FILTER_IGNORE
 
+func _human_already_played_this_trick() -> bool:
+	for play in game.current_trick.plays:
+		if play["player"] == human_seat:
+			return true
+	return false
+
+func _update_armable_highlights():
+	if waiting_for_human:
+		return  # your actual turn owns highlighting via _highlight_legal_moves()
+
+	var can_arm := true
+	if game.current_trick.plays.size() == 0:
+		can_arm = false  # trick not led yet — led suit unknown
+	elif _human_already_played_this_trick():
+		can_arm = false
+	elif game.variant == BidScript.Type.NELLO and human_seat == (game.current_bid.player_id + 2) % 4:
+		can_arm = false  # Nello partner sits out this hand — nothing to arm
+
+	var legal: Array[Domino] = []
+	if can_arm:
+		legal = game.get_legal_moves(game.players[human_seat])
+
+	for child in player_hand_container.get_children():
+		if child is DominoTile:
+			var playable = can_arm and legal.has(child.domino)
+			child.set_playable(playable)
+			child.set_selected(playable and child.domino == _armed_domino)
+			child.mouse_filter = Control.MOUSE_FILTER_STOP if playable else Control.MOUSE_FILTER_IGNORE
+
 func _on_human_domino_pressed(tile: DominoTile):
-	if not waiting_for_human:
+	if waiting_for_human:
+		var legal = game.get_legal_moves(game.players[human_seat])
+		if not legal.has(tile.domino):
+			return
+		waiting_for_human = false
+		_armed_domino = null
+		_clear_highlights()
+		_execute_play(game.players[human_seat], tile.domino)
+		return
+
+	# Pre-arming: only once the trick has been led, and only before your turn.
+	if game.current_trick.plays.size() == 0:
+		return
+	if _human_already_played_this_trick():
+		return
+	if game.variant == BidScript.Type.NELLO and human_seat == (game.current_bid.player_id + 2) % 4:
 		return
 	var legal = game.get_legal_moves(game.players[human_seat])
 	if not legal.has(tile.domino):
 		return
 
-	waiting_for_human = false
-	_clear_highlights()
-	_execute_play(game.players[human_seat], tile.domino)
+	if _armed_domino == tile.domino:
+		_armed_domino = null   # tapping the armed tile again cancels it
+	else:
+		_armed_domino = tile.domino
+	_update_armable_highlights()
 
 func _animate_ai_play(player: Player, domino: Domino):
 	_execute_play(player, domino)
@@ -1366,6 +1425,7 @@ func _execute_play(player: Player, domino: Domino):
 	_refresh_hand(player)
 
 	game.current_player = (game.current_player + 3) % 4
+	_update_armable_highlights()
 
 	var trick_size = 3 if game.variant == BidScript.Type.NELLO else 4
 	if game.current_trick.plays.size() < trick_size:
@@ -1393,6 +1453,7 @@ func _resolve_trick():
 
 	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 2.2).timeout
 	_clear_play_area()
+	_clear_highlights()
 
 	# Check if the bid is already mathematically lost
 	if _is_bid_mathematically_set(winner_id):
