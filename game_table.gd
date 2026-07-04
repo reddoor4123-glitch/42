@@ -1285,7 +1285,7 @@ func _execute_play(player: Player, domino: Domino):
 	game.play_domino(player, domino)
 	var reason = _last_play_reason if _last_play_reason != "" else ("You played this" if player.is_human else "")
 	_current_trick_reasons.append({"player": player.id, "domino": domino, "reason": reason})
-	print("  [%s] %s" % [_player_label(player.id), reason])
+	print("  [Trick %d] [%s] %s" % [game.tricks_played + 1, _player_label(player.id), reason])
 	_last_play_reason = ""
 	_add_to_play_area(player.id, domino)
 	_refresh_hand(player)

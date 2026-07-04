@@ -182,7 +182,7 @@ func resolve_trick() -> int:
 	team_points[winner_team] += pts
 	players[winner_id].tricks_won += 1
 	tricks_played += 1
-	print("Trick won by Player ", winner_id, " (Team ", winner_team, ") for ", pts, " points [trump=", trump, "]")
+	print("[Trick ", tricks_played, "] Trick won by Player ", winner_id, " (Team ", winner_team, ") for ", pts, " points [trump=", trump, "]")
 	print("  Plays: ", current_trick.debug_string())
 	return winner_id
 
