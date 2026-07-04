@@ -189,7 +189,12 @@ func resolve_trick() -> int:
 	team_points[winner_team] += pts
 	players[winner_id].tricks_won += 1
 	tricks_played += 1
-	print("[Trick ", tricks_played, "] Trick won by Player ", winner_id, " (Team ", winner_team, ") for ", pts, " points [trump=", trump, "]")
+	var mode_str = ""
+	if variant == BidScript.Type.NELLO:
+		mode_str = " nello_doubles=%s" % current_trick.nello_doubles
+	elif trump == Domino.DOUBLES_TRUMP:
+		mode_str = " doubles_trump_reversed=%s" % str(current_trick.doubles_trump_reversed)
+	print("[Trick ", tricks_played, "] Trick won by Player ", winner_id, " (Team ", winner_team, ") for ", pts, " points [trump=", trump, mode_str, "]")
 	print("  Plays: ", current_trick.debug_string())
 	return winner_id
 
