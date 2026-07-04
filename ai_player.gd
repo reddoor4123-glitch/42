@@ -610,7 +610,7 @@ static func decide_play(
 			var void_leads = legal.filter(func(d):
 				if d.is_trump(trump):
 					return false
-				var suit = d.get_suit(trump, "high", -1)
+				var suit = d.get_suit(trump, trick.nello_doubles, -1)
 				for opp in opponents:
 					if public_knowledge.void_suits(opp).has(suit):
 						return true
