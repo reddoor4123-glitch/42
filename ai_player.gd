@@ -67,10 +67,22 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 	# Trump tricks: each trump domino is likely to win a trick
 	# Double trump is almost guaranteed; others depend on how many we hold
 	var trump_count = trump_dominos.size()
-	if trump_count >= 1:
-		estimated_tricks += trump_count * 0.85
-	if has_double_trump:
-		estimated_tricks += 0.15  # Bonus for certainty
+	# Score each trump tile individually based on its rank within the suit.
+	# Flat per-trump rates ignored rank entirely — a rank-6 trump and a rank-1
+	# trump scored identically. This caused best_trump() to select wrong suits
+	# on marginal hands where off-suit accidents broke the tie.
+	#
+	# Scale: double=0.95, rank 6=0.85, rank 3=0.60, rank 0=0.35.
+	# The has_double_trump bonus is removed — the double earns its extra weight
+	# through the rank calculation (0.95 vs 0.85), not a separate addend.
+	for d in trump_dominos:
+		var rank = d.get_rank(trump)
+		var win_prob: float
+		if d.is_double():
+			win_prob = 0.95
+		else:
+			win_prob = 0.35 + (rank / 6.0) * 0.50
+		estimated_tricks += win_prob
 
 	# Off-suit: high dominos in suits where we hold 2+ are stronger
 	var suit_counts := {}
