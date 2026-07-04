@@ -1147,7 +1147,6 @@ func _on_bid_submitted(bid: RefCounted):
 	})
 	_show_bid_bubble(human_seat, "You\n%s" % bid.debug_string())
 	_set_status("You: %s" % bid.debug_string())
-	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 	await _run_post_human_bids()
 	_finish_bidding([])
 
