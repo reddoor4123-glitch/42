@@ -22,6 +22,70 @@ extends RefCounted
 # "That partner plays like Uncle Ed." — that's the target.
 # ═══════════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════════
+#  DECISION GEOMETRY — VISIBLY DERIVABLE STRUCTURAL FACTS
+# ═══════════════════════════════════════════════════════════════════
+# Some decision-relevant facts are neither hidden information nor
+# behavioral weighting — they are directly observable properties of
+# the current decision moment, true for every seat regardless of
+# difficulty. Examples: is this player last to act in the trick?
+# How many legal moves exist? Is the partner currently winning?
+#
+# These are pure helper predicates over visible plays/legal state.
+# They are NOT part of PublicKnowledge (no hidden info, no inference,
+# no accumulation over hand_history) and they are NOT difficulty
+# gates (every seat computes the same answer to the same question).
+#
+# Existing helpers already in this family (see HELPERS section below):
+#   _current_winning_domino, _find_current_winner_id,
+#   _partner_is_winning, _estimate_trick_value, _find_player_play,
+#   _is_last_to_act
+#
+# IMPORTANT — do not prematurely unify these into a single
+# "trick is decided" predicate. A trick can become locked for at
+# least three structurally different reasons — a double led (rule
+# of tiles), last-to-act (turn arithmetic, this file), or a known-
+# safe high trump whose only beater has already fallen (hidden
+# information — depends on Phase 4 knowledge/inference). They are
+# not branches of one concept; they are three different subsystems
+# that sometimes produce the same outcome. Do not write
+# _trick_is_decided() until Phase 4 can actually supply the third
+# case — see AI_Play_Behavior_Bug_Log.md, Pattern A / BUG-004.
+# ═══════════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════════
+#  DIFFICULTY DIFFERENCES — THE KNOWLEDGE/EVALUATION LITMUS TEST
+# ═══════════════════════════════════════════════════════════════════
+# The goal is for different difficulties to arrive at different decisions
+# for understandable reasons — not because they run different games.
+#
+# Difficulty is not a library of special-case plays. All difficulties share
+# one decision engine; they differ only in what a player knows and how they
+# weigh what they know. Before adding an `if difficulty == "..."` branch,
+# classify what's actually going on:
+#
+#   KNOWLEDGE  — What information is this player allowed to use? Genuine
+#                information asymmetry (inference, derived facts like
+#                voids, anything not equally available to every seat)
+#                belongs behind the project's knowledge/inference layer,
+#                not a difficulty string.
+#
+#   EVALUATION — Everyone can use the same information; difficulties differ
+#                only in whether they act on it, or how they weigh it. This
+#                belongs in the shared decision logic, parameterized by an
+#                AI_MODES axis (risk_bias, cooperation_bias, opportunism,
+#                ...) — not a bare difficulty check.
+#
+#   NEITHER    — No information- or evaluation-based model fits. Only then
+#                is a direct difficulty branch acceptable, and it should be
+#                treated as a last resort, not a default.
+#
+# If a proposed change starts with `if difficulty == ...`, stop first and
+# classify it as a Knowledge difference, an Evaluation difference, or a
+# genuine special case. The classification should drive the implementation
+# — not the other way around.
+# ═══════════════════════════════════════════════════════════════════
+
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
 # Single source of truth for all AI behavioral parameters.
 # Add new modes here; decide_bid() and decide_play() read from this dict.
@@ -773,6 +837,13 @@ static func _find_player_play(plays: Array, player_id: int):
 		if play["player"] == player_id:
 			return play
 	return null
+
+# Decision geometry — visible turn arithmetic, not knowledge, not
+# difficulty-gated. True for every seat regardless of AI_MODES.
+# `plays` is the current trick's plays so far, BEFORE the acting
+# player's own play is added (same contract as PublicFrame.current_trick).
+static func _is_last_to_act(plays: Array) -> bool:
+	return plays.size() == 3
 
 # Estimate the point value already on the table in a trick.
 # Returns 1 (base trick point) plus any counter pip values played so far.
