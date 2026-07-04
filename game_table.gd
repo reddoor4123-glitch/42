@@ -71,6 +71,11 @@ var _replay_inner_panel: PanelContainer = null
 var _replay_hand_containers: Array = []
 var _replay_played_containers: Array = []
 var _replay_bubble_labels: Array = []
+var _flag_panel: PanelContainer = null
+var _flag_toggle_bidding: Button = null
+var _flag_toggle_gameplay: Button = null
+var _flag_toggle_explanation: Button = null
+var _flag_note_edit: LineEdit = null
 var waiting_for_trump: bool = false
 var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
@@ -647,6 +652,12 @@ func _build_ui():
 	_replay_trick_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r_top_bar.add_child(_replay_trick_label)
 
+	var r_flag_btn = Button.new()
+	r_flag_btn.text = "🚩 Flag"
+	r_flag_btn.custom_minimum_size = Vector2(70, 36)
+	r_flag_btn.pressed.connect(_toggle_flag_panel)
+	r_top_bar.add_child(r_flag_btn)
+
 	var r_close_btn = Button.new()
 	r_close_btn.text = "✕"
 	r_close_btn.custom_minimum_size = Vector2(36, 36)
@@ -654,6 +665,54 @@ func _build_ui():
 	r_top_bar.add_child(r_close_btn)
 
 	r_vbox.add_child(HSeparator.new())
+
+	# ── Flag panel (hidden by default; toggled by the Flag button) ──
+	_flag_panel = PanelContainer.new()
+	_flag_panel.visible = false
+	var flag_style = StyleBoxFlat.new()
+	flag_style.bg_color = Color(0.12, 0.10, 0.05, 0.95)
+	flag_style.corner_radius_top_left = 4
+	flag_style.corner_radius_top_right = 4
+	flag_style.corner_radius_bottom_left = 4
+	flag_style.corner_radius_bottom_right = 4
+	flag_style.content_margin_left = 10
+	flag_style.content_margin_right = 10
+	flag_style.content_margin_top = 8
+	flag_style.content_margin_bottom = 8
+	_flag_panel.add_theme_stylebox_override("panel", flag_style)
+	r_vbox.add_child(_flag_panel)
+
+	var flag_vbox = VBoxContainer.new()
+	flag_vbox.add_theme_constant_override("separation", 6)
+	_flag_panel.add_child(flag_vbox)
+
+	var flag_hint = Label.new()
+	flag_hint.text = "What felt off about this trick?"
+	flag_hint.add_theme_font_size_override("font_size", 13)
+	flag_hint.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
+	flag_vbox.add_child(flag_hint)
+
+	var flag_toggle_row = HBoxContainer.new()
+	flag_toggle_row.add_theme_constant_override("separation", 6)
+	flag_vbox.add_child(flag_toggle_row)
+
+	_flag_toggle_bidding = _make_flag_toggle("Bidding")
+	flag_toggle_row.add_child(_flag_toggle_bidding)
+	_flag_toggle_gameplay = _make_flag_toggle("Gameplay")
+	flag_toggle_row.add_child(_flag_toggle_gameplay)
+	_flag_toggle_explanation = _make_flag_toggle("Explanation")
+	flag_toggle_row.add_child(_flag_toggle_explanation)
+
+	_flag_note_edit = LineEdit.new()
+	_flag_note_edit.placeholder_text = "Optional note..."
+	_flag_note_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flag_vbox.add_child(_flag_note_edit)
+
+	var flag_submit_btn = Button.new()
+	flag_submit_btn.text = "Submit Flag"
+	flag_submit_btn.custom_minimum_size = Vector2(0, 40)
+	flag_submit_btn.pressed.connect(_submit_flag)
+	flag_vbox.add_child(flag_submit_btn)
 
 	# Table area — wrapped in a ScrollContainer so it degrades gracefully on small screens
 	var r_scroll = ScrollContainer.new()
@@ -721,6 +780,14 @@ func _build_ui():
 	r_next_btn.custom_minimum_size = Vector2(140, 44)
 	r_next_btn.pressed.connect(_replay_next_trick)
 	r_bot_bar.add_child(r_next_btn)
+
+func _make_flag_toggle(label_text: String) -> Button:
+	var btn = Button.new()
+	btn.text = label_text
+	btn.toggle_mode = true
+	btn.custom_minimum_size = Vector2(0, 32)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return btn
 
 func _build_replay_player_section(label_text: String, invert: bool = false) -> Array:
 	var name_lbl = Label.new()
@@ -2437,6 +2504,7 @@ func _render_replay_trick():
 		_replay_bubble_labels[winner_id].text += "\n✓ " + value_str
 
 func _replay_next_trick():
+	_reset_flag_panel()
 	_replay_trick_index += 1
 	if _replay_trick_index >= game.hand_history.size():
 		_exit_replay()
@@ -2444,4 +2512,29 @@ func _replay_next_trick():
 		_render_replay_trick()
 
 func _exit_replay():
+	_reset_flag_panel()
 	replay_panel.visible = false
+
+func _toggle_flag_panel():
+	_flag_panel.visible = not _flag_panel.visible
+
+func _submit_flag():
+	var categories: Array = []
+	if _flag_toggle_bidding.button_pressed:
+		categories.append("bidding")
+	if _flag_toggle_gameplay.button_pressed:
+		categories.append("gameplay")
+	if _flag_toggle_explanation.button_pressed:
+		categories.append("explanation")
+	var note = _flag_note_edit.text
+
+	game.flag_hand(_replay_trick_index, categories, note)
+
+	_reset_flag_panel()
+
+func _reset_flag_panel():
+	_flag_toggle_bidding.button_pressed = false
+	_flag_toggle_gameplay.button_pressed = false
+	_flag_toggle_explanation.button_pressed = false
+	_flag_note_edit.text = ""
+	_flag_panel.visible = false
