@@ -1048,7 +1048,7 @@ func _show_bid_panel():
 		row.add_child(marks_col)
 
 		var marks_lbl = Label.new()
-		marks_lbl.text = "Marks"
+		marks_lbl.text = _contract_label(_selected_contract_type) if (_bid_panel_expanded and _selected_contract_type != BidScript.Type.MARKS) else "Marks"
 		marks_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		marks_lbl.add_theme_color_override("font_color", Color.WHITE)
 		marks_lbl.add_theme_font_size_override("font_size", 13)
