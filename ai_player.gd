@@ -441,6 +441,112 @@ static func _log_bid_decision(
 # Choose a domino to play.
 # difficulty: "beginner" | "standard" | "expert" — wired to settings.
 # is_partner: true when this AI player is the human's partner (seat +2 from human).
+
+# ═══════════════════════════════════════════════════════════════════
+#  TRICK OBJECTIVES — NAMING WHAT THE BRANCHES ALREADY DECIDE
+# ═══════════════════════════════════════════════════════════════════
+# This is not a new subsystem. No TrickObjective enum, no class, no
+# stored state. It's a naming convention for something decide_play()
+# already does implicitly: before comparing any dominoes, the branch
+# structure has effectively already chosen a mission for the trick —
+# decided before most domino comparison happens, not all of it
+# (comparisons like "cheapest winner" or "highest available" still
+# occur, but downstream of the mission, not in place of it). Naming
+# these objectives makes the Phase 3 difficulty-branch collapse (see
+# below) tractable — it gives each bare `difficulty ==` check a
+# concrete thing to be evaluated against, instead of being judged in
+# isolation.
+#
+# Two tiers exist. Don't conflate them:
+#
+#   CONTRACT-LEVEL intent — decided once, for the whole hand, at the
+#   very top of decide_play(). Already fully explicit as the Sevens /
+#   Nello / Marks early-return branches. Nothing to change here; this
+#   *is* the pattern working correctly at a coarser grain.
+#
+#   TRICK-LEVEL intent — decided fresh every trick, inside standard
+#   play. Currently implicit in branch order. This is the new naming.
+#
+# Objectives are read off decision geometry, not personality —
+# partner_winning == true is geometry; "protect partner" is the
+# objective that geometry implies. Evaluation (AI_MODES) then decides
+# how well that objective gets executed. Geometry → objective →
+# evaluation is the intended chain; personality never skips ahead to
+# pick a different objective for the same geometry.
+#
+# The trick-level objectives that already exist in the code today:
+#
+#   PROTECT_PARTNER_WIN   — partner (human) is currently winning.
+#                            Line ~570. Stay out of the way; dump
+#                            counters only if the win is guaranteed
+#                            (double led).
+#   SECURE_FOR_PARTNER     — partner is not winning, we can win.
+#                            Line ~594. Win it, preferring non-trump,
+#                            with a trust-based hold-back for standard
+#                            difficulty when someone else might cover.
+#   CASH_COUNTERS          — (opponent side) can win, prefer winning
+#                            with a counter over a plain domino.
+#                            Line ~741.
+#   CONTEST_IF_WORTHWHILE  — (opponent side, beginner only) can win,
+#                            but only bother if the trick already
+#                            holds enough value. Line ~727.
+#   ESCAPE                 — can't win this trick. Discard to protect
+#                            counters, cheapest safe tile first.
+#                            Lines ~637, ~750.
+#   CONTROL_TRUMP          — leading, hold enough trump to draw
+#                            opponents out. Line ~695.
+#   FORCE_A_VOID           — leading, expert + PublicKnowledge only,
+#                            target a suit a known-void opponent can't
+#                            follow. Line ~675.
+#   FEEL_OUT_THE_HAND      — leading, beginner, opening trick only,
+#                            avoid committing trump early. Line ~662.
+#
+# Note: these aren't all the same grain. PROTECT_PARTNER_WIN,
+# SECURE_FOR_PARTNER, and ESCAPE are true objectives — what you're
+# trying to accomplish. CONTROL_TRUMP and FORCE_A_VOID are closer to
+# strategies/tactics in service of an objective ("gain control,"
+# "extend the lead") that isn't separately named here. Left as-is
+# deliberately — naming that parent objective isn't needed for the
+# Phase 3 collapse, and forcing everything to one grain would be
+# taxonomy for its own sake.
+#
+# For each objective, the Phase 3 question is not "does difficulty
+# change this play" but "does difficulty change which objective gets
+# selected, or just how well the selected objective is executed":
+#
+#   - PROTECT_PARTNER_WIN, SECURE_FOR_PARTNER, ESCAPE, CONTROL_TRUMP
+#     are difficulty-invariant in *selection* — every seat reaches
+#     them from the same geometry (partner_winning, can_win, etc,
+#     already Decision Geometry, not knowledge). Difficulty may only
+#     change execution quality within the objective (e.g. the
+#     standard trust-hold inside SECURE_FOR_PARTNER). That's
+#     Evaluation, and it already lives where it should.
+#   - CONTEST_IF_WORTHWHILE is a beginner-only *threshold* on top of
+#     CASH_COUNTERS, not a separate mission — the objective is the
+#     same ("win it if it's worth it"), difficulty only moves the bar
+#     for "worth it." Also Evaluation.
+#   - FORCE_A_VOID is Knowledge-gated by construction (requires
+#     PublicKnowledge) and is correctly expert-only for that reason,
+#     not because lower difficulties have a different mission when
+#     leading — they simply can't see the void.
+#   - FEEL_OUT_THE_HAND is the one true exception: a beginner-only
+#     opening-trick objective with no standard/expert equivalent.
+#     This is a genuine case where difficulty changes which mission
+#     is even in play, not just how well it's carried out.
+#
+# Net effect for the Phase 3 collapse: five of the six current bare
+# `difficulty ==` branches are Evaluation-tuning *within* a shared,
+# difficulty-invariant objective, and belong as AI_MODES parameters
+# (e.g. a "contest_threshold" or "trust_others" knob) rather than
+# inline branches. Only FEEL_OUT_THE_HAND is a real branch-level
+# difference in mission, and it's fine to leave it as a direct
+# difficulty check per the Neither category — it doesn't have a
+# clean Knowledge or Evaluation shape to collapse into.
+#
+# This naming is documentation only. reason_log strings, branch
+# order, and helper functions are unchanged by this section — it's a
+# map for the collapse work, not a rewrite in itself.
+# ═══════════════════════════════════════════════════════════════════
 static func decide_play(
 	legal: Array[Domino],
 	hand: Array[Domino],
