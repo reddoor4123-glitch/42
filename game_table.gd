@@ -1412,7 +1412,9 @@ func _ai_choose_domino(player: Player) -> Domino:
 		is_partner,
 		game.variant,
 		game.current_bid.player_id if game.current_bid != null else -1,
-		knowledge
+		knowledge,
+		game.team_points,
+		game.current_bid.value if game.current_bid != null else 0
 	)
 	if reason_log.size() > 0:
 		_last_play_reason = reason_log[-1]
