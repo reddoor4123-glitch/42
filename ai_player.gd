@@ -317,7 +317,12 @@ static func decide_bid(
 		min_points = current_high.value + 1
 		if min_points > 42:
 			points_still_legal = false
-	elif current_high != null and current_high.type == BidScript.Type.MARKS:
+	elif current_high != null and current_high.type != BidScript.Type.POINTS:
+		# Any non-points bid on the table (MARKS, NELLO, SEVENS, PLUNGE, SPLASH,
+		# LOW_NO) already has a mark-equivalent of at least 0.42 — a points bid
+		# (max 42 = 0.42) can never legally raise it. Points is the only bid
+		# type that gets a "raise by value" path; everything else closes points
+		# off entirely.
 		points_still_legal = false
 
 	if is_forced:
