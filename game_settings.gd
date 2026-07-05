@@ -44,6 +44,9 @@ var nello_doubles_mode: String = "high"
 # "low"      — doubles are lowest of their suit
 # "own_suit" — doubles are a suit unto themselves
 var nello_doubles_reversed: bool = false    # Within own_suit mode, double-blank is highest
+# Ruleset toggle: whether "Own Suit (Reversed)" is offered as a doubles-mode
+# choice at all. Does not represent live game state — see
+# game.active_nello_doubles_reversed for that.
 
 var nello_bid_value: int = 42
 var nello_count_as_marks: bool = true

@@ -15,6 +15,7 @@ var trump: int = -1
 var variant: int = 0                 # BidScript.Type value
 var nello_solo_player: int = -1
 var active_nello_doubles_mode: String = ""  # set per-hand; "" means use settings default
+var active_nello_doubles_reversed: bool = false
 var tricks_played: int = 0
 var current_trick: Trick = null
 var hand_history: Array = []         # Trick records for the current hand
@@ -56,6 +57,7 @@ func deal_hands():
 	trump = -1
 	nello_solo_player = -1
 	active_nello_doubles_mode = ""
+	active_nello_doubles_reversed = false
 	hand_history.clear()
 	deal_snapshot.clear()
 	bid_decisions.clear()
@@ -173,7 +175,8 @@ func start_trick(leading_player: int):
 	current_player = leading_player
 	current_trick = Trick.new()
 	var doubles_mode = active_nello_doubles_mode if variant == BidScript.Type.NELLO and active_nello_doubles_mode != "" else "high"
-	current_trick.setup(trump, variant, doubles_mode, settings.doubles_trump_reversed)
+	var doubles_rev = active_nello_doubles_reversed if variant == BidScript.Type.NELLO else false
+	current_trick.setup(trump, variant, doubles_mode, settings.doubles_trump_reversed, doubles_rev)
 
 func get_legal_moves(player: Player) -> Array[Domino]:
 	return current_trick.get_legal_moves(player.hand)
@@ -192,6 +195,8 @@ func resolve_trick() -> int:
 	var mode_str = ""
 	if variant == BidScript.Type.NELLO:
 		mode_str = " nello_doubles=%s" % current_trick.nello_doubles
+		if current_trick.nello_doubles == "own_suit":
+			mode_str += " own_suit_reversed=%s" % str(current_trick.own_suit_reversed)
 	elif trump == Domino.DOUBLES_TRUMP:
 		mode_str = " doubles_trump_reversed=%s" % str(current_trick.doubles_trump_reversed)
 	print("[Trick ", tricks_played, "] Trick won by Player ", winner_id, " (Team ", winner_team, ") for ", pts, " points [trump=", trump, mode_str, "]")

@@ -592,7 +592,7 @@ static func decide_play(
 	# (play lowest legal) for opposite reasons. Standard evaluation does not apply.
 	# Note: the bidder's partner sits out and never reaches this code.
 	if contract == BidScript.Type.NELLO:
-		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if player_id == bidder_id:
 			reason_log.append("Playing low to avoid taking this trick.")
 		else:
@@ -611,25 +611,25 @@ static func decide_play(
 	# when partner should override it under Marks are collected. See design notes.
 	if contract == BidScript.Type.MARKS or contract == BidScript.Type.PLUNGE or contract == BidScript.Type.SPLASH:
 		if is_leading:
-			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Going for the trick.")
 			return best
 
-		var human_winning_marks = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var human_winning_marks = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if is_partner and human_winning_marks:
-			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("You've got it — saving my strength.")
 			return lowest
 
-		var current_winner_marks = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
-		var can_win_marks = legal.filter(func(d): return _beats(d, current_winner_marks, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed))
+		var current_winner_marks = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		var can_win_marks = legal.filter(func(d): return _beats(d, current_winner_marks, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 		if can_win_marks.size() > 0:
-			var chosen = _lowest_in(can_win_marks, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var chosen = _lowest_in(can_win_marks, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Taking this trick.")
 			return chosen
 
 		# Can't win — discard lowest with no pip filtering.
-		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		reason_log.append("Can't win this one.")
 		return lowest
 
@@ -651,78 +651,78 @@ static func decide_play(
 			var off_safe = legal.filter(func(d):
 				return not d.is_trump(trump) and d.pip_sum() != 5 and d.pip_sum() != 10)
 			if off_safe.size() > 0:
-				var best = _highest_in(off_safe, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var best = _highest_in(off_safe, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Opening a safe suit for you to follow.")
 				return best
 
 			# Draw out opponents' trump when we hold enough to control the suit.
 			var trumps = legal.filter(func(d): return d.is_trump(trump))
 			if trumps.size() >= 3:
-				var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("I have trump control — drawing out the opponents.")
 				return best
 
 			# Counter protection: prefer non-counter leads even if that's all that's left.
 			var non_counters_lead = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_lead.size() > 0:
-				var best = _highest_in(non_counters_lead, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var best = _highest_in(non_counters_lead, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Leading strong to set up a good trick for us.")
 				return best
 
-			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Keeping my counts safe — leading what I can.")
 			return best
 
 		# ── FOLLOWING as Partner ──────────────────────────────────────────────
-		var human_is_winning = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var human_is_winning = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 
 		# THE cardinal rule: never steal a trick the human is winning.
 		# Throw off lowest non-counter; only burn a counter if nothing else is available.
 		if human_is_winning:
-			var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			if winning_domino.is_double():
 				# Double is an unbeatable lead — guaranteed win.
 				# Dump counters into the trick to secure the points.
 				var counters_to_dump = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 				if counters_to_dump.size() > 0:
-					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("That double's safe — putting my points on your trick.")
 					return chosen
-				var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			# Not a guaranteed win — protect counters as normal.
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_follow.size() > 0:
-				var lowest = _lowest_in(non_counters_follow, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var lowest = _lowest_in(non_counters_follow, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("You've got this one — staying out of your way.")
 				return lowest
-			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Putting my points on your trick.")
 			return lowest
 
 		# Human is not currently winning — try to win for the team.
-		var current_winner_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
-		var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed))
+		var current_winner_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 
 		if can_win.size() > 0:
 			if difficulty == "beginner":
 				# Beginner Partner: always secure the trick without second-guessing card economy.
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Stepping in to win this for us.")
 				return chosen
 
 			# Standard and Expert: prefer non-trump winners to save trump.
 			var non_trump_wins = can_win.filter(func(d): return not d.is_trump(trump))
 			if non_trump_wins.size() > 0:
-				var chosen = _lowest_in(non_trump_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var chosen = _lowest_in(non_trump_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("You couldn't hold it — I've got this trick.")
 				return chosen
 
 			# Only trump can win.
 			if difficulty == "expert":
 				# Expert Partner: no trust rule — play optimally for the contract.
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Trumping in — the contract needs this trick.")
 				return chosen
 
@@ -732,16 +732,16 @@ static func decide_play(
 			var human_play = _find_player_play(plays, partner_id)
 			var is_last_player = (plays.size() == 3)
 			if human_play != null and not is_last_player:
-				var trump_held = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var trump_held = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				var safe_discard = legal.filter(func(d):
 					return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 				if safe_discard.size() > 0:
-					var discard = _lowest_in(safe_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+					var discard = _lowest_in(safe_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("Saving my trump — there's still a chance someone else covers.")
 					return discard
 
 			# Last player or no safe discard — trump in to secure the trick.
-			var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Trumping in to secure this trick for us.")
 			return chosen
 
@@ -752,16 +752,16 @@ static func decide_play(
 			var safe_high = legal.filter(func(d):
 				return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
 			if safe_high.size() > 0:
-				var discard = _highest_in(safe_high, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var discard = _highest_in(safe_high, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Can't win this one — protecting our counts.")
 				return discard
 
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
-			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Can't win this one — saving my count for later.")
 			return discard
-		var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		reason_log.append("Nowhere to hide — had to let a count go.")
 		return discard
 
@@ -775,7 +775,7 @@ static func decide_play(
 		if difficulty == "beginner" and hand.size() == 7:
 			var non_trumps_beginner = legal.filter(func(d): return not d.is_trump(trump))
 			if non_trumps_beginner.size() > 0:
-				var best = _highest_in(non_trumps_beginner, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var best = _highest_in(non_trumps_beginner, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Feeling out the hand before committing trump.")
 				return best
 
@@ -794,7 +794,7 @@ static func decide_play(
 						return true
 				return false)
 			if void_leads.size() > 0:
-				var best = _highest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var best = _highest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				var targeted_suit = best.get_suit(trump, trick.nello_doubles, -1)
 				print("[Void Lead] P%d leading suit %d — void opponents: %s" % [
 					player_id, targeted_suit,
@@ -806,34 +806,34 @@ static func decide_play(
 		# Lead highest trump if we hold enough to control the suit.
 		var trumps = legal.filter(func(d): return d.is_trump(trump))
 		if trumps.size() >= 3:
-			var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("I have trump control — drawing out the opponents.")
 			return best
 
 		# Lead a strong counter if we're confident it will win.
 		var counters = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 		for c in counters:
-			if c.get_rank(trump, trick.nello_doubles, lead_suit, trick.doubles_trump_reversed) >= 4:
+			if c.get_rank(trump, trick.nello_doubles, lead_suit, trick.doubles_trump_reversed, trick.own_suit_reversed) >= 4:
 				reason_log.append("Leading my strong count to lock in the points.")
 				return c
 
 		# Lead highest available domino.
-		var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		reason_log.append("Leading my best domino.")
 		return best
 
 	# ── FOLLOWING as Opponent ──────────────────────────────────────────────────
-	var partner_winning = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+	var partner_winning = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 
 	# Partner is winning — save strength, don't over-contribute.
 	if partner_winning:
-		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		reason_log.append("My partner has this one — saving my strength.")
 		return lowest
 
 	# Try to win the trick.
-	var current_winner_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
-	var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed))
+	var current_winner_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+	var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 
 	if difficulty == "beginner":
 		# Beginner: only contest the trick if counters are already on the table.
@@ -841,7 +841,7 @@ static func decide_play(
 		if can_win.size() > 0:
 			var trick_pts = _estimate_trick_value(plays, trump)
 			if trick_pts >= 5:
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("These points are worth contesting.")
 				return chosen
 			# Trick not worth contesting — fall through to discard
@@ -851,18 +851,18 @@ static func decide_play(
 			# Win with a counter if possible — pick up the points.
 			var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 			if counter_wins.size() > 0:
-				var chosen = _lowest_in(counter_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+				var chosen = _lowest_in(counter_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Winning the trick and picking up the points.")
 				return chosen
-			var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
+			var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			reason_log.append("Winning the trick.")
 			return chosen
 
 	# Can't win — discard lowest non-counter to protect point cards.
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
-		var discard = _lowest_in(non_counters, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
-		if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed):
+		var discard = _lowest_in(non_counters, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 			reason_log.append("Taking this one.")
 		elif legal.size() == 1:
 			reason_log.append("Had to follow suit.")
@@ -871,8 +871,8 @@ static func decide_play(
 		else:
 			reason_log.append("Can't win this one — discarding low.")
 		return discard
-	var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed)
-	if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed):
+	var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+	if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 		reason_log.append("Taking this one.")
 	elif legal.size() == 1:
 		reason_log.append("Had to follow suit.")
@@ -885,10 +885,10 @@ static func decide_play(
 # ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 static func _highest_in(dominos: Array, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> Domino:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
 	var best: Domino = dominos[0]
 	for d in dominos:
-		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed) > best.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed):
+		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed) > best.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed):
 			best = d
 	return best
 
@@ -906,38 +906,38 @@ static func _closest_to_seven(dominos: Array) -> Domino:
 	return best
 
 static func _lowest_in(dominos: Array, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> Domino:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
 	var lowest: Domino = dominos[0]
 	for d in dominos:
-		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed) < lowest.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed):
+		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed) < lowest.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed):
 			lowest = d
 	return lowest
 
 static func _partner_is_winning(plays: Array, partner_id: int, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> bool:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> bool:
 	if plays.size() == 0:
 		return false
-	return _find_current_winner_id(plays, trump, lead_suit, nello_doubles, doubles_trump_reversed) == partner_id
+	return _find_current_winner_id(plays, trump, lead_suit, nello_doubles, doubles_trump_reversed, own_suit_reversed) == partner_id
 
 static func _current_winning_domino(plays: Array, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> Domino:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
 	var best: Domino = plays[0]["domino"]
 	for play in plays:
 		var d: Domino = play["domino"]
-		if _beats(d, best, trump, lead_suit, nello_doubles, doubles_trump_reversed):
+		if _beats(d, best, trump, lead_suit, nello_doubles, doubles_trump_reversed, own_suit_reversed):
 			best = d
 	return best
 
 # Returns the player_id of whoever is currently winning the trick.
 static func _find_current_winner_id(plays: Array, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> int:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> int:
 	if plays.size() == 0:
 		return -1
 	var best_play = plays[0]
 	var best_d: Domino = best_play["domino"]
 	for play in plays:
 		var d: Domino = play["domino"]
-		if _beats(d, best_d, trump, lead_suit, nello_doubles, doubles_trump_reversed):
+		if _beats(d, best_d, trump, lead_suit, nello_doubles, doubles_trump_reversed, own_suit_reversed):
 			best_play = play
 			best_d = d
 	return best_play["player"]
@@ -969,11 +969,11 @@ static func _estimate_trick_value(plays: Array, trump: int) -> int:
 	return pts
 
 static func _beats(challenger: Domino, current: Domino, trump: int, lead_suit: int,
-		nello_doubles: String = "high", doubles_trump_reversed: bool = false) -> bool:
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> bool:
 	var c_suit = challenger.get_suit(trump, nello_doubles, lead_suit)
 	var b_suit = current.get_suit(trump, nello_doubles, lead_suit)
-	var c_rank = challenger.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed)
-	var b_rank = current.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed)
+	var c_rank = challenger.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
+	var b_rank = current.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
 
 	var c_is_trump = (c_suit == trump)
 	var b_is_trump = (b_suit == trump)

@@ -9,12 +9,14 @@ var trump: int = -1
 var variant: int = 0
 var nello_doubles: String = "high"
 var doubles_trump_reversed: bool = false
+var own_suit_reversed: bool = false
 
-func setup(trump_suit: int, bid_type: int, doubles_mode: String = "high", doubles_trump_rev: bool = false):
+func setup(trump_suit: int, bid_type: int, doubles_mode: String = "high", doubles_trump_rev: bool = false, own_suit_rev: bool = false):
 	trump = trump_suit
 	variant = bid_type
 	nello_doubles = doubles_mode
 	doubles_trump_reversed = doubles_trump_rev
+	own_suit_reversed = own_suit_rev
 
 # `declared_suit` is only used for the very first play of the trick, and
 # only matters when it's a deliberate override (the "small-end opening
@@ -74,12 +76,12 @@ func _determine_winner_standard() -> int:
 	var best_play = plays[0]
 	var best_domino: Domino = best_play["domino"]
 	var best_suit = best_domino.get_suit(trump, nello_doubles, lead_suit)
-	var best_rank = best_domino.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed)
+	var best_rank = best_domino.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
 	for i in range(1, plays.size()):
 		var play = plays[i]
 		var d: Domino = play["domino"]
 		var d_suit = d.get_suit(trump, nello_doubles, lead_suit)
-		var d_rank = d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed)
+		var d_rank = d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
 		# Must match lead suit or be trump to win
 		var can_win = (d_suit == lead_suit or d_suit == trump)
 		if not can_win:

@@ -537,10 +537,10 @@ func _build_ui():
 		nello_row.add_child(btn)
 
 	_nello_reversed_btn = Button.new()
-	_nello_reversed_btn.text = "Reversed"
-	_nello_reversed_btn.custom_minimum_size = Vector2(110, 40)
+	_nello_reversed_btn.text = "Own Suit (Reversed)"
+	_nello_reversed_btn.custom_minimum_size = Vector2(140, 40)
 	_nello_reversed_btn.visible = false
-	_nello_reversed_btn.pressed.connect(_on_nello_mode_selected.bind("reversed"))
+	_nello_reversed_btn.pressed.connect(_on_nello_mode_selected.bind("own_suit_reversed"))
 	nello_row.add_child(_nello_reversed_btn)
 
 	# --- Human player hand ---
@@ -1267,7 +1267,12 @@ func _show_nello_panel():
 func _on_nello_mode_selected(mode: String):
 	nello_panel.visible = false
 	waiting_for_nello_mode = false
-	game.active_nello_doubles_mode = mode
+	if mode == "own_suit_reversed":
+		game.active_nello_doubles_mode = "own_suit"
+		game.active_nello_doubles_reversed = true
+	else:
+		game.active_nello_doubles_mode = mode
+		game.active_nello_doubles_reversed = false
 	game.apply_bid_result(-1)
 	_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 	_refresh_all_hands()
@@ -1724,6 +1729,8 @@ func _build_settings_content(from_create: bool = false):
 	_add_option_row(nello_sub, "Doubles Mode", [
 		["High (standard)", "high"], ["Low", "low"], ["Own Suit", "own_suit"]
 	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
+	_add_checkbox_row(nello_sub, "Allow Own Suit (Reversed)", _pending_settings.nello_doubles_reversed,
+		func(v): _pending_settings.nello_doubles_reversed = v)
 	_add_checkbox_row(nello_sub, "Allow Exchange", _pending_settings.allow_nello_exchange,
 		func(v): _pending_settings.allow_nello_exchange = v)
 

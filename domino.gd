@@ -49,7 +49,10 @@ func get_suit(trump: int, nello_doubles: String = "high", lead_suit: int = -1) -
 #   or reversed (0-0 high -> 6-6 low) if doubles_trump_reversed is set.
 # Non-trump: the pip that is NOT the suit pip is the rank.
 # Nello "low": doubles rank lowest (-1).
-func get_rank(trump: int, nello_doubles: String = "high", lead_suit: int = -1, doubles_trump_reversed: bool = false) -> int:
+# Nello "own_suit": doubles rank by pip value (6-6 high -> 0-0 low),
+#   or reversed (0-0 high -> 6-6 low) if own_suit_reversed is set —
+#   same shape as doubles_trump_reversed above, deliberately.
+func get_rank(trump: int, nello_doubles: String = "high", lead_suit: int = -1, doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> int:
 	if trump >= 0 and is_trump(trump):
 		if trump == DOUBLES_TRUMP:
 			return (6 - left) if doubles_trump_reversed else left
@@ -59,6 +62,8 @@ func get_rank(trump: int, nello_doubles: String = "high", lead_suit: int = -1, d
 	if is_double():
 		if nello_doubles == "low":
 			return -1
+		if nello_doubles == "own_suit":
+			return (6 - left) if own_suit_reversed else left
 		return 13
 	var suit = get_suit(trump, nello_doubles, lead_suit)
 	return left if right == suit else right
