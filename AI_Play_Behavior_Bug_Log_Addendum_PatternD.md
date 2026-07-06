@@ -48,6 +48,13 @@ if human_play != null and not is_last_player:
 
 **Why this belongs in the bug log rather than staying a design note:** the mismatch between condition, fallback, and reason string was found and confirmed against real code, not just discussed in the abstract — it meets the same bar as BUG-003/004 (a demonstrable gap between what the code does and what it should do), it's just that the "should do" side needed a real player's table reasoning to pin down rather than a replay trace.
 
-**Status:** Confirmed mismatch, fix direction agreed, not yet specced. Marked ⚑ rather than → because the three deterministic factors above still need to be turned into an actual evaluation (thresholds, ordering, interaction with `value_gate`'s parallel opponent-side logic) before this is ready to hand to Claude Code — that specification is the intended next step after this entry is logged.
+**Status:** ✓ Fixed (July 5, 2026). Specced in `BUG-005_Fix_Spec.md`, implemented in `ai_player.gd`,
+and playtest-confirmed working. The three deterministic factors (contract margin, live-counter
+status via `_live_counter_for_suit()`, lead economy) replace the turn-order gate, fallback, and
+reason string described above — all three original mismatches are resolved together, matching
+the "unifying root cause, not three unrelated symptoms" diagnosis. Originally marked ⚑; upgrading
+to ✓ per the housekeeping note in `Texas_42_Session_Summary_July_5_2026_Phase2Architecture.md`.
+This standalone addendum has not yet been merged into `AI_Play_Behavior_Bug_Log.md` proper — that
+merge is still an open housekeeping item, tracked there, not done as part of this status update.
 
 **Relationship to Phase 2 architecture work:** this branch was originally the primary source example for `trust_threshold` as a candidate `AI_MODES` Commitment-gate parameter (see `Phase2_Control_Layer_Audit.md`). That candidate parameter's *shape* (a scalar gating a fallback) is unaffected by this finding, but its *signal* can no longer be "some measure of trust in a partner" — there is no partner-trust content anywhere in the corrected version. If this gets rebuilt as a Commitment gate, the scalar it thresholds should be built from the three factors above, not from anything resembling the current turn-order check.

@@ -114,20 +114,29 @@ it already has the branch table, the two confirmed commitment-gate
 instances (#16 `trust_gate`, #25 `value_gate`), and the surfaced
 `AI_MODES` candidates (`trust_threshold`, `contest_threshold`).
 
-Suggested order for tomorrow's design conversation, once #1 and #2 above
-are settled or at least framed:
+**Superseded (July 5, 2026, same day).** `trust_gate` (#16) was rebuilt under BUG-005 the same
+day this prep doc was written for — see `AI_Play_Behavior_Bug_Log.md` and
+`Phase3_Objective_Audit.md`. It no longer has any trust content, which changes both items below:
 
-1. Revisit whether `trust_gate` and the void-lead fork (from §2) really do
+1. ~~Revisit whether `trust_gate` and the void-lead fork (from §2) really do
    share one mechanism — if so, design it as one thing with multiple
-   inputs, not two unrelated parameters.
-2. Settle the still-open Expert-partner trust question from the Ranking
+   inputs, not two unrelated parameters.~~ Moot as originally framed — `trust_gate` isn't a trust
+   mechanism anymore, so there's nothing of that shape left to share with the void-lead fork. The
+   void-lead aggressive/conservative fork itself (§2) is still open on its own merits.
+2. ~~Settle the still-open Expert-partner trust question from the Ranking
    Unification session: does the Expert partner's "no trust rule" represent
    *better judgment* or *reduced trust*? This has to be answered before
    `cooperation_bias` → `trust_threshold` can be renamed correctly, since
-   the rename's meaning depends on the answer.
+   the rename's meaning depends on the answer.~~ Reframed by `Difficulty_Feed_Points_Inventory.md`
+   as a concrete, testable question instead: does Expert still need a separate bypass at all, now
+   that the branch it bypasses has no trust content? Recommended as the next thing to try, not
+   yet tested. `trust_threshold` currently has no confirmed source branch regardless of the
+   answer — don't resume that rename by default.
 3. Only after 1–2: start actually collapsing the six bare `difficulty ==`
    branches into named `AI_MODES` parameters, branch by branch, using the
-   audit's Knowledge/Evaluation/Neither classification per branch.
+   audit's Knowledge/Evaluation/Neither classification per branch. See
+   `Difficulty_Feed_Points_Inventory.md` for the current per-branch breakdown of which of the six
+   are ready to leave alone, ready to test, or still need their own audit session.
 
 **Small flagged item to fold in whenever convenient (not urgent, not
 blocking):** branch #25 (`value_gate`)'s failure path currently reuses a
@@ -139,8 +148,11 @@ reason-string rewrite, not something to fix in isolation.
 
 ## Backlog — unchanged, no urgency
 
-- MARKS cardinal-rule branch (stealing a partner's already-winning trick
-  under Marks) — deferred pending concrete example hands from Katy.
+- ~~MARKS cardinal-rule branch (stealing a partner's already-winning trick
+  under Marks) — deferred pending concrete example hands from Katy.~~
+  **Resolved July 5, 2026** (same day, later session) — this turned out not to be a Marks-specific
+  question at all. It's the long-horizon lead-control concept, now permanently parked in
+  `Phase1_Control_Layer_Audit.md`: not blocked on more examples, deliberately not being built.
 - Phase 1 reason-string rewrite (~24 strings, fully specced, not applied).
 - Orphaned settings sweep beyond `nello_doubles_reversed`:
   `follow_me_doubles_mode`, `follow_me_allow_as_points_bid`,

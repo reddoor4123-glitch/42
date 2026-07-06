@@ -91,7 +91,10 @@ concept the way there is under a points contract).
 `PROTECT_PARTNER_WIN` objective, explicitly flagged **"duplicate of #11 — reimplemented, not
 shared."**
 
-**Status:** Active code. This is where the open MARKS question (#10 below) actually lives.
+**Status:** Active code. The open MARKS question this entry pointed to (#10 below) is now resolved
+— see `Phase1_Control_Layer_Audit.md`: this branch (trick-protection under Marks) is ordinary
+Selection, closed. The harder half of what #10 was actually asking about turned out to be a
+separate, non-Marks-specific concept, now permanently parked there instead.
 
 ---
 
@@ -269,8 +272,12 @@ carve-out.
 
 **Candidate layer:** Selection (execution variant), not a new category.
 
-**Status:** ⚑ Deferred pending concrete example hands from Katy — unchanged blocker, only the
-framing is newly proposed here.
+**Status:** ✓ Resolved (July 5, 2026), during the Phase 1 resolution session —
+see `Phase1_Control_Layer_Audit.md`. What this entry was asking turned out to split in two:
+whether `PROTECT_PARTNER_WIN`'s execution needs anything Marks-specific (answered: no, ordinary
+Selection, same as the standard case), and a separate, harder concept — declining a guaranteed
+win to hand lead control to a better-positioned teammate for a future trick, which isn't actually
+Marks-specific either — now permanently parked in that document, deliberately not being built.
 
 ---
 
@@ -293,7 +300,11 @@ code, and only one of them ran it through the discriminator test.
 **Candidate layer:** None as written — this entry exists to flag that a claim about layering,
 not a behavior, needs to be reconciled or retracted once the Phase 1 classification pass runs.
 
-**Status:** Needs correction or reconciliation — flagged here as raw material, not resolved.
+**Status:** ✓ Resolved (July 5, 2026), by the Phase 1 classification pass this entry called for.
+`Phase1_Control_Layer_Audit.md` confirms the "sits above the pipeline" claim was wrong: the
+cardinal rule is ordinary Selection (`PROTECT_PARTNER_WIN`), the same shape as every other
+objective — not a hard invariant sitting above the pipeline. `Phase2_Control_Layer_Audit.md` has
+been corrected to remove that framing.
 
 ---
 
@@ -364,7 +375,10 @@ objective rather than a partner-only special case.
 
 **Candidate layer:** Selection — same objective as #1/#2/#3, different seat.
 
-**Status:** Not previously framed as a Phase 1 question at all; raised here for the first time.
+**Status:** ✓ Resolved (July 5, 2026). `Phase1_Control_Layer_Audit.md`'s resolution session tested
+this directly: "Confirmed symmetric — opponents protecting their own partner's winning trick run
+the identical objective from the other side of the table. No separate concept." `PROTECT_PARTNER_WIN`
+is one unified Selection objective covering every seat, not a partner-only special case.
 
 ---
 
@@ -395,11 +409,14 @@ Distinct, still-open Phase 1 items after this inventory:
 
 1. ~~**BUG-003/003b** (#5) — real bug, agreed fix shape, one threshold judgment call outstanding.~~
    **✓ Fixed July 5, 2026** — see #5 above.
-2. **MARKS cardinal-rule override** (#10) — design question, needs Katy's example hands,
-   reframed above as an ordinary Selection execution-variant question.
-3. **The "sits above the pipeline" claim** (#11) — needs reconciliation against
-   `Phase3_Objective_Audit.md`'s existing classification.
-4. **The opponent-mirror boundary question** (#14) — newly raised, not previously scoped.
+2. ~~**MARKS cardinal-rule override** (#10) — design question, needs Katy's example hands,
+   reframed above as an ordinary Selection execution-variant question.~~
+   **✓ Resolved July 5, 2026** — see #10 above and `Phase1_Control_Layer_Audit.md`.
+3. ~~**The "sits above the pipeline" claim** (#11) — needs reconciliation against
+   `Phase3_Objective_Audit.md`'s existing classification.~~ **✓ Resolved July 5, 2026** — see #11
+   above and `Phase1_Control_Layer_Audit.md`.
+4. ~~**The opponent-mirror boundary question** (#14) — newly raised, not previously scoped.~~
+   **✓ Resolved July 5, 2026** — see #14 above and `Phase1_Control_Layer_Audit.md`.
 5. **Two open reason-string entries** (#13, Issues 1 and 7) — presentation debt, low complexity.
 6. ~~**The doctrine header's overstatement relative to BUG-003** (#8) — resolves itself once #5 is
    fixed; no separate action.~~ **✓ Resolved July 5, 2026** — #5 is fixed, see #8 above.

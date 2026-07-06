@@ -94,7 +94,7 @@ per the project's own "Neither" category.
 | 1 | SEVENS (early return) | none | none | mechanical override | NONE | bypasses `decide_play()` entirely |
 | 2 | NELLO (early return) | none (role-keyed) | none | mechanical override | NONE | bypasses `decide_play()` entirely |
 | 3 | MARKS/PLUNGE/SPLASH, leading | `is_leading` | `CONTROL_TRUMP`-adjacent, unconditional | constrained | NONE | stricter than standard `CONTROL_TRUMP` (no trump-count threshold) |
-| 4 | MARKS, partner-winning | `partner_winning` | `PROTECT_PARTNER_WIN` | constrained | NONE (flagged open Q) | **duplicate of #11** — reimplemented, not shared |
+| 4 | MARKS, partner-winning | `partner_winning` | `PROTECT_PARTNER_WIN` | constrained | NONE | **duplicate of #11** — reimplemented, not shared. **Open-Q tag resolved (July 5, 2026):** the MARKS cardinal-rule question this branch was flagged for has been split and closed — see `Phase1_Control_Layer_Audit.md`. Trick-protection half is ordinary Selection (this row, no special treatment needed); the harder half (declining a guaranteed win to hand lead control to a better-positioned teammate for a future trick) turned out not to be Marks-specific at all and is permanently parked there. |
 | 5 | MARKS, can-win | `can_win` | `SECURE_FOR_PARTNER` | constrained | NONE | economy/trust stripped — arguably correct for Marks |
 | 6 | MARKS, can't win | `!can_win` | `ESCAPE` | constrained | NONE | no pip filtering (correct — counters irrelevant under Marks) |
 | 7 | Partner leading, `off_safe` | `is_leading`, `is_partner` | `OPEN_SAFE_SUIT` | geometric | NONE | — |

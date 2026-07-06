@@ -176,21 +176,29 @@ feeding one path that was always going to run.
 never acted on (`@warning_ignore("unused_variable")`). Unlike `opportunism`,
 its intended destination isn't a Selection predicate — the design docs
 consistently describe it as feeding *Trust*, which is Commitment-shaped
-(a threshold a gate compares against). If renamed to `trust_threshold` per
-the standing proposal, it would supply the scalar `trust_gate` currently
-lacks (see Category 2 table). **Can be built as a Commitment-layer scalar without waiting on the still-open
-question of what it means:** does the Expert partner's "no trust rule"
+(a threshold a gate compares against).
+
+**Updated (July 5, 2026) — the rename target itself changed underneath this entry.** The standing
+proposal was to rename this to `trust_threshold` so it could supply the scalar `trust_gate`
+lacked. Post-BUG-005, `trust_gate` (branch #16, see Category 2 table) no longer has a scalar to
+supply at all — it's rebuilt on deterministic contract-margin/live-counter/lead-economy checks,
+none of which are a trust threshold. `trust_threshold` currently has **no confirmed source
+branch**. The old blocking question below (better judgment vs. reduced trust) is effectively moot
+either way, since there's no trust concept left in the branch it was meant to describe —
+`Difficulty_Feed_Points_Inventory.md` reframes it instead as a concrete testable question: does
+Expert still need a separate bypass, now that the logic underneath is difficulty-agnostic in
+principle? Not yet tested. Original framing kept below for history:
+
+Does the Expert partner's "no trust rule"
 represent better judgment (evaluation-quality, arguably not a Commitment
 concept at all) or reduced trust in teammates (a personality value, same
 family as `risk_bias`)? Both interpretations currently produce identical
 Expert-level behavior, which is exactly why this is easy to mistake for
-resolved once a scalar exists. It only becomes structurally relevant once
-(a) more than one system reads the value for different purposes, or (b) it
-starts influencing Selection or Modulation indirectly — neither is true
-yet. Until the ruling is made, `trust_threshold` should be treated and
-documented as a **semantically underspecified axis**: constructable now,
-not yet meaningful. See
-`Texas_42_Session_Summary_July_4_2026_RankingUnification.md`, Finding 5.
+resolved once a scalar exists. Until a ruling is made (if one is still needed at all),
+`cooperation_bias`/`trust_threshold` should be treated and
+documented as a **semantically underspecified axis with no confirmed source branch**: not
+constructable in the way originally planned. See
+`Texas_42_Session_Summary_July_4_2026_RankingUnification.md`, Finding 5, for the original framing.
 
 **Win Safety / Trust-as-probability** — Defined only in prose (July 1/2
 session summaries): a probability estimate of whether a partner's winning
@@ -202,12 +210,16 @@ The ~0.8 and ~0.6 rows are explicitly marked as needing Phase 4 inference
 that doesn't exist yet. This remains a narrative concept without
 implementable structure — not wrong, just not yet buildable.
 
-**MARKS cardinal-rule override** — Separate from the above:  whether a
-partner should ever steal a trick the human is winning under a Marks/Plunge/
-Splash contract (where every trick matters). This is a Phase 1 question, not
-Phase 2 — flagged here only because it sits immediately adjacent to the
-Commitment category and could be mistaken for one. Deferred pending concrete
-example hands from Katy, per existing backlog.
+**MARKS cardinal-rule override** — **Resolved (July 5, 2026), no longer unresolved.** This entry
+asked whether a partner should ever steal a trick the human is winning under a Marks/Plunge/
+Splash contract. Per `Phase1_Control_Layer_Audit.md`'s resolution, the question splits in two:
+the ordinary trick-protection half is ordinary Selection (`PROTECT_PARTNER_WIN`), same as the
+standard-contract case, no Marks-specific treatment needed. The harder half — declining a
+guaranteed win to hand lead control to a better-positioned teammate for a *future* trick — turned
+out not to be Marks-specific at all, doesn't fit Selection/Commitment/Modulation (all three are
+scoped to the trick in front of you), and is permanently parked in that document. Left here only
+as a pointer, since this was a Phase 1 question misfiled adjacent to Phase 2's Commitment category,
+not a Phase 2 concept.
 
 ---
 

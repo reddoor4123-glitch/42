@@ -150,9 +150,18 @@ immediately, for the opposite stated reason).
 suppressing a valid, already-selected objective (`SECURE_FOR_PARTNER`) rather than executing or
 replacing it. On failure it falls through to `ESCAPE`.
 
-**Status:** Active code. Named `trust_gate` only in `Phase3_Objective_Audit.md` — this exact
-string does not appear as an identifier anywhere in `ai_player.gd` itself; it's an audit-assigned
-label for an anonymous inline branch.
+**Status:** ✓ Superseded (July 5, 2026, same session this raw audit was likely written in, but
+after this entry). **The code shown above no longer exists.** BUG-005 rewrote this branch entirely
+— it no longer looks at turn order/`plays.size()` at all. The new version evaluates a
+deterministic worst-case counter bound (`_live_counter_for_suit()`, which *does* now query
+`PublicKnowledge.is_void_in()`/`has_been_played()`), a symmetric contract-margin reachability
+check, and lead economy. This entry's "pure geometry — no probability, no `PublicKnowledge` query"
+characterization is no longer accurate for this branch; kept here as the historical record of what
+the code looked like before the fix. See `Phase3_Objective_Audit.md` branch #16 and
+`ai_player.gd`'s `decide_play()` for the current version. Named `trust_gate` only in
+`Phase3_Objective_Audit.md` — this exact string does not appear as an identifier anywhere in
+`ai_player.gd` itself; it's an audit-assigned label for an anonymous inline branch, and the name
+is now a misnomer kept only for cross-reference continuity (there is no trust content left).
 
 ---
 
@@ -178,11 +187,15 @@ if difficulty == "expert":
 rather than a gate that can fail — different mechanical shape from #5 even though both are
 difficulty-conditioned forks off the same geometric branch point.
 
-**Status:** Active code. **Explicitly flagged as an unresolved conceptual question** in the
-Ranking Unification summary and repeated in Next Session Prep: does "no trust rule" mean the
-expert partner has *better judgment* (sees that holding back is never actually correct) or
-*reduced cooperation* (trusts the team's plan less)? Katy's ruling is a named blocker for the
-`cooperation_bias` → `trust_threshold` rename. Not resolved as of the most recent doc.
+**Status:** Active code, question reframed (July 5, 2026). This was flagged as an unresolved
+conceptual question in the Ranking Unification summary and Next Session Prep: does "no trust rule"
+mean better judgment or reduced cooperation? BUG-005's fix to #5 changed what's actually being
+asked — the standard-difficulty branch this bypass skips no longer has any trust content, only
+deterministic margin/counter/lead-economy evaluation. `Difficulty_Feed_Points_Inventory.md` reframes
+this as a concrete, testable question instead: does expert still need a separate bypass at all,
+now that the underlying logic it skips is difficulty-agnostic in principle? Recommended as the
+next thing to try, not yet tested. The original "better judgment vs. reduced trust" framing is
+effectively moot either way, since there's no trust concept left to have an opinion about.
 
 ---
 
@@ -237,8 +250,11 @@ as a **candidate** `AI_MODES` parameter. Does not exist in `ai_player.gd`.
 **What it would look at:** Proposed as the generalized form of `trust_gate` (#5) — "trust in
 downstream player" as a scalar rather than a bare difficulty string.
 
-**Status:** Design document only. Explicitly held pending (a) resolution of #6 above, and
-(b) the broader Phase 3 `AI_MODES` collapse being deferred until this audit round is complete.
+**Status:** Design document only, and now **has no confirmed source branch** (updated July 5,
+2026) — #5, the branch this was supposed to generalize, no longer has trust content after
+BUG-005. Whether `trust_threshold` should still be built, and for what, is the open question now
+(not "held pending #6's resolution" as previously framed) — see `Phase3_Objective_Audit.md`'s
+post-BUG-005 correction. Don't resume this design work by default.
 
 **Also called** `trust_others` in one place (the doctrine-block comment in `ai_player.gd`
 itself: *"an AI_MODES axis (risk_bias, cooperation_bias, opportunism, ...)"* elsewhere lists
@@ -331,9 +347,12 @@ Phase 1 counter-dumping fix, itself only partially implemented per the Phase 1 g
 not probabilities. "Opportunity cost" bypass has no code representation anywhere.
 
 **Status:** Design document only. This is the most elaborate Phase 2 concept in the docs and the
-least connected to actual code — only `trust_gate`'s narrow standard-difficulty branch implements
-any piece of it, and that branch doesn't reference "Win Safety," "P=1.0," or "opportunity cost" —
-it's pure turn-order geometry (see #5).
+least connected to actual code. Previously the only implemented fragment was `trust_gate`'s
+narrow standard-difficulty branch, itself pure turn-order geometry with no reference to "Win
+Safety," "P=1.0," or "opportunity cost" — that's now stale too (see #5): the branch no longer
+exists in that form, and its replacement (contract margin/live counter/lead economy) still
+doesn't implement Win Safety or probability-based Trust in any form. This concept remains design
+document only.
 
 **Separately noted, narrative only:** *"Phase 2 also governs opponent play aggression — how hard
 they contest tricks, how much they push back under pressure."* This sentence has no attached

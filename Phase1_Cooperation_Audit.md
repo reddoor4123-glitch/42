@@ -109,7 +109,7 @@ above rather than leaving it open.
 
 ---
 
-## 3. MARKS / PLUNGE / SPLASH — cardinal rule override question
+## 3. MARKS / PLUNGE / SPLASH — cardinal rule override question ✓ Resolved (July 5, 2026)
 
 The dedicated MARKS/PLUNGE/SPLASH block (added since the original "Gap 2"
 was identified — see §4) currently preserves the cardinal rule as a safe
@@ -120,7 +120,14 @@ if is_partner and human_winning_marks:
     return lowest(legal)   # "You've got it — saving my strength."
 ```
 
-**Status: ⚑ open design question, not a bug.** Under Marks/Plunge/Splash,
+**Status: ✓ Resolved.** Per `Phase1_Control_Layer_Audit.md`'s Phase 1 resolution session, this
+question splits in two: the trick-protection half (this branch, above) is ordinary Selection —
+the code as written is correct, no Marks-specific change needed. The harder half — declining a
+guaranteed win to hand lead control to a better-positioned teammate for a *future* trick — turned
+out to not really be a Marks question at all, and is now permanently parked in that document. The
+original framing below is left intact as the record of what was asked before resolution.
+
+**Original open-question framing (superseded, kept for history):** Under Marks/Plunge/Splash,
 every trick matters — there's no "give count, doesn't matter which trick
 wins it" slack the way there is under a points contract. The question this
 audit surfaces (matching `Phase2_Control_Layer_Audit.md`'s framing) is
@@ -166,10 +173,10 @@ not generic polish:
   (`"staying out of your way"`). Not wrong, just doesn't reflect that this
   is the partner *choosing* team-first play, which is the entire point of
   Phase 1 as a design pillar.
-- The **MARKS cardinal-rule branch (§3)**, once resolved, will need its own
-  string — currently it borrows the standard-contract yield string verbatim,
-  which will misstate intent if the resolution in §3 changes the underlying
-  behavior.
+- The **MARKS cardinal-rule branch (§3)** — now resolved (§3 above) as ordinary Selection with no
+  behavior change, so this string debt is confirmed real rather than conditional: it still borrows
+  the standard-contract yield string verbatim, which doesn't reflect that this is a
+  contract-type-specific decision, not the generic case.
 
 These are already captured in the general Phase 1 reason-string rewrite
 (~24 strings, specced, not yet applied) — flagged here only so that rewrite
@@ -187,13 +194,16 @@ partner it's being."
    in-scope Phase 1 bug. Needs the trump-count threshold judgment call
    settled first (⚑), but the reordering fix shape itself is agreed.~~
    **✓ Fixed July 5, 2026** — see §2 above.
-3. **Decide the MARKS cardinal-rule override question (§3)** — needs
-   example hands from Katy before it can be specced either direction.
+3. ~~**Decide the MARKS cardinal-rule override question (§3)** — needs
+   example hands from Katy before it can be specced either direction.~~
+   **✓ Resolved July 5, 2026** — see §3 above.
 4. **Fold the three Phase-1-specific strings into the reason-string
    rewrite pass** when that work is picked back up, prioritized ahead of
    the other ~21 strings in that spec.
 
 Net read: **Phase 1 is closer to done than the "two known bugs" framing
-suggested** — both original gaps are fixed, and BUG-003/003b (the
-lead-ordering bug) is now fixed too (July 5, 2026). What's left is one open
-design question (needs Katy's examples), not a broad correctness problem.
+suggested** — both original gaps are fixed, BUG-003/003b (the lead-ordering
+bug) is now fixed too (July 5, 2026), and the MARKS cardinal-rule override
+question (§3) is resolved the same day. What's left is the permanently
+parked long-horizon lead-control concept (`Phase1_Control_Layer_Audit.md`),
+deliberately not being built, not a broad correctness problem.
