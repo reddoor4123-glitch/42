@@ -713,10 +713,20 @@ static func decide_play(
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_follow.size() > 0:
 				var lowest = _lowest_in(non_counters_follow, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("You've got this one — staying out of your way.")
+				# The "lowest" legal tile can still end up winning if we're void
+				# in the lead suit and every legal tile happens to be trump —
+				# picking the smallest trump doesn't stop it from beating a
+				# non-trump winner. Check before assuming this is a yield.
+				if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
+					reason_log.append("Nice hand!" if hand.size() == 1 else "I've got this one.")
+				else:
+					reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("Putting my points on your trick.")
+			if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
+				reason_log.append("Nice hand!" if hand.size() == 1 else "I've got this one.")
+			else:
+				reason_log.append("Putting my points on your trick.")
 			return lowest
 
 		# Human is not currently winning — try to win for the team.

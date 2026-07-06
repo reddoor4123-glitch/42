@@ -149,11 +149,17 @@ happened yet as far as this doc set shows.
 
 **`AI_Explanation_Bug_Log.md`** — reason-string mismatches (wrong tone,
 wrong actor, inaccurate belief state), example-numbered rather than
-pattern-numbered. This is the intake log the Phase 1 reason-string rewrite
-spec draws from, and where the audit's `value_gate` reason-string gap
-(inaccurate "can't win this one" on a branch that actually can win) should
-eventually land — flagged in multiple other docs but not yet logged here
-as far as the current file set shows.
+pattern-numbered. Added to this repo July 6, 2026 — a first-pass log (one
+game context, Issues 1–7) written to find where structure was needed before
+pausing to build that structure; the next testing pass will likely start a
+fresh log rather than append here. Two entries (Issues 3/6) were marked ✓
+at the time but the described fix had never actually been applied to the
+code — caught during reconciliation and implemented for real the same day
+(see `ai_player.gd`'s `human_is_winning` partner-following block). This is
+the intake log the Phase 1 reason-string rewrite spec draws from, and where
+the audit's `value_gate` reason-string gap (inaccurate "can't win this one"
+on a branch that actually can win) should eventually land — still not
+logged here as of this file's creation.
 
 **`AI_Play_Behavior_Bug_Log_Addendum_PatternD.md`** — the original BUG-005
 write-up (Pattern D: `trust_gate` gated on the wrong fact). Append-only
@@ -230,8 +236,9 @@ existing entries.
   least three docs (`Phase3_Objective_Audit.md`, `Phase2_Raw_Concept_Audit.md`,
   `Texas_42_Next_Session_Prep_July_5_2026.md`) but doesn't appear to have
   actually been logged into `AI_Explanation_Bug_Log.md` yet.
-- This map itself was significantly out of date until July 5, 2026 — nine
-  of the eighteen `.md` files in the repo weren't listed here at all, and
-  several entries described pre-BUG-005/pre-BUG-003 states. If you're
-  reading this after a substantial gap, do a fresh `find *.md` against this
-  map's file list before trusting it fully.
+- This map itself was significantly out of date until July 5-6, 2026 — nine
+  of the eighteen `.md` files in the repo (as of July 5) weren't listed here
+  at all, and several entries described pre-BUG-005/pre-BUG-003 states.
+  `AI_Explanation_Bug_Log.md` (making it nineteen files) arrived July 6. If
+  you're reading this after a substantial gap, do a fresh `find *.md`
+  against this map's file list before trusting it fully.
