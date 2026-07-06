@@ -334,6 +334,22 @@ static func decide_bid(
 	if should_bid and target_bid < min_points:
 		target_bid = min_points
 
+	# Marks bid — evaluated BEFORE the points return (Defect 1: marks was
+	# previously unreachable on any hand strong enough to trigger should_bid).
+	# Requires trump control (5+ trump, holds the double) AND off-suit
+	# viability — an off-suit double, or trump_count >= 6 as an alternative
+	# path that bypasses the off-suit requirement entirely (Defect 2: the old
+	# gate only checked trump shape, with no way to see exposed off-suit risk).
+	# See AI_Bid_Behavior_Bug_Log.md, Pattern A.
+	var off_suit_has_double: bool = hand.any(func(d): return d.is_double() and not d.is_trump(eval["trump"]))
+	if trump_count >= 5 and eval["has_double_trump"] \
+	   and (off_suit_has_double or trump_count >= 6) \
+	   and (current_high == null or current_high.type != BidScript.Type.MARKS):
+		var marks_bid = BidScript.new(BidScript.Type.MARKS, 1, player_id)
+		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
+			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand, bid_decisions)
+		return marks_bid
+
 	if should_bid and points_still_legal:
 		if min_points <= target_bid:
 			var final_bid = min(target_bid, min_points + max_overbid)
@@ -343,14 +359,6 @@ static func decide_bid(
 			_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
 				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand, bid_decisions)
 			return pts_bid
-
-	# Marks bid — strong hand requirement (unchanged)
-	if trump_count >= 5 and eval["has_double_trump"] and \
-	   (current_high == null or current_high.type != BidScript.Type.MARKS):
-		var marks_bid = BidScript.new(BidScript.Type.MARKS, 1, player_id)
-		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
-			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand, bid_decisions)
-		return marks_bid
 
 	# Forced minimum fallback
 	if is_forced:
@@ -650,18 +658,26 @@ static func decide_play(
 		if is_leading:
 			# Lead high non-trump non-counter: gives human a safe suit to follow
 			# without burning trump or risking a vulnerable point card.
+			# Trump control checked FIRST — a partner who holds enough trump to draw
+			# opponents out should lead it before defaulting to a safe off-suit tile.
+			# Threshold: 3+ trumps if the holding includes the double trump (the
+			# double itself supplies the control), otherwise 4+ is required. See
+			# AI_Play_Behavior_Bug_Log.md, BUG-003/003b.
+			var trumps = legal.filter(func(d): return d.is_trump(trump))
+			var holds_double_trump = trumps.any(func(d): return d.is_double())
+			var trump_control = (trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4
+			if trump_control:
+				var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("I have trump control — drawing out the opponents.")
+				return best
+
+			# Safe off-suit lead — now the fallback tier, only reached when trump
+			# control doesn't apply.
 			var off_safe = legal.filter(func(d):
 				return not d.is_trump(trump) and d.pip_sum() != 5 and d.pip_sum() != 10)
 			if off_safe.size() > 0:
 				var best = _highest_in(off_safe, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Opening a safe suit for you to follow.")
-				return best
-
-			# Draw out opponents' trump when we hold enough to control the suit.
-			var trumps = legal.filter(func(d): return d.is_trump(trump))
-			if trumps.size() >= 3:
-				var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("I have trump control — drawing out the opponents.")
 				return best
 
 			# Counter protection: prefer non-counter leads even if that's all that's left.
