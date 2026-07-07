@@ -34,6 +34,7 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 **Why this one *is* a knowledge gap (unlike BUG-004):** "has the trump double already been played" is not equally visible to every seat — it depends on tracking what's happened over the course of the hand. That's genuine information asymmetry, so unlike BUG-004 this one correctly belongs behind the project's knowledge/inference layer, not an evaluation axis.
 **Depends on:** Phase 4 knowledge/inference layer — specifically, "has the trump double already been played" needs to become a queryable fact, then the `is_double()` check widens to `is_double() or is_known_safe_high_trump(winning_domino)`.
 **Supporting example (BUG-002b):** Same root cause, confirmed independently — Trump=1, P0 leads 1:6 after 1:1 is already gone, P2 holds 0:5 counter, plays 0:6 instead. Same fix, same dependency.
+**Cross-reference (BUG-006, added July 6, 2026):** the "Depends on Phase 4" framing above may not hold. BUG-006 solves a structurally similar "is this actually guaranteed" question using `PublicKnowledge.count_remaining_trump()` minus the AI's own trump count in hand — no new knowledge-layer query, no new helper. Worth revisiting BUG-002/002b with the same count-based check (does every remaining trump reduce to "already played or in my own hand"?) before assuming this needs new infrastructure that may already exist.
 
 ---
 
@@ -63,11 +64,33 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 ---
 
+## Pattern E — Guaranteed-lead detection doesn't extend to trump exhaustion
+
+*Named Pattern E rather than D since `AI_Play_Behavior_Bug_Log_Addendum_PatternD.md`
+(BUG-005) already reserves that letter for whenever it's merged into this file.*
+
+### → BUG-006 — Partner doesn't lead a safe counter-double once trump is exhausted
+
+**Where:** `decide_play()`, partner-leading branch, `off_safe` check (branch #7, `OPEN_SAFE_SUIT`). File: `ai_player.gd`.
+
+**What happens:** `off_safe`'s filter excludes any tile where `pip_sum() == 5 or 10` unconditionally — so 5:5 is always filtered out of a safe lead, even once it can't possibly lose. Once every trump tile is accounted for (all played, or in this AI's own hand), 5:5 is a guaranteed-unbeatable lead within its own suit, and leading it immediately cashes 10 points the team already holds instead of delaying for no benefit.
+
+**Fix shape:** `PublicKnowledge.count_remaining_trump()` already returns the count of trump tiles not yet played, across the whole game. Pair it with the AI's own trump count in `hand` (already available locally, no query needed): if `count_remaining_trump() - own_trump_count_in_hand == 0`, every remaining trump is either already played or in this AI's own hand — none can be in an opponent's hand, so 5:5 (or any counter-double under trump) is provably safe to lead. No new `PublicKnowledge` query and no new `AIPlayer` helper are required; this is a wiring/condition change inside branch #7 itself.
+
+**Reveals:** AVAILABLE — the fact (`count_remaining_trump()`) already exists and is correctly implemented; it simply wasn't consulted at this branch.
+
+**Relationship to existing bugs:** BUG-002/002b (partner not dumping counters onto guaranteed winners for high non-double trumps) was previously described as blocked on "Phase 4 trump exhaustion tracking." Given this simpler count-based approach, that block may not be needed either — worth revisiting BUG-002/002b with the same `count_remaining_trump() - own_trump_count` check before assuming it needs new infrastructure.
+
+**Status:** Open, not specced. Found during the Phase 3 branch-by-branch trace (branch #7), no code changed.
+
+---
+
 ## Summary — suggested order of attack
 
 1. ~~**BUG-003 reorder** — real bug (unreachable branch), independent of Phase 4 and of the Phase 3 design pause, but needs the BUG-003b threshold question settled first so you don't fix it twice. This is now the cheapest fully-ready item in the log.~~ **✓ Fixed July 5, 2026** — see entry above.
 2. **BUG-002 / BUG-002b** — correctly parked behind Phase 4; nothing to do until the knowledge/inference layer can answer "has the double for this suit been played."
 3. **BUG-004** — paused pending a full Phase 3 (Opportunism) design pass. Not abandoned; it's the case that surfaced the need for that design work in the first place, and should be one of its first test cases once that pass happens.
 4. **BUG-001** — standalone, low priority, whenever there's room for a new heuristic rather than a fix to an existing one.
+5. **BUG-006** — cheap and self-contained (AVAILABLE, no new infrastructure), and worth doing alongside a revisit of BUG-002/002b since the same `count_remaining_trump()`-based check may resolve both.
 
 **Naming note carried forward:** "locked-in trick" is a reusable concept (double led / last to play / known-safe high trump), and it's worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be knowledge-agnostic (most of its cases need no inference at all); only the high-trump case would reach into the knowledge/inference layer. Whether and how each difficulty *checks* that predicate is then a separate, Phase 3 Opportunism question — which is exactly the Knowledge/Evaluation split the new philosophy header in `ai_player.gd` describes. Worth wiring up once both Phase 3 and Phase 4 have landed.

@@ -23,7 +23,12 @@ and `Phase3_Objective_Audit.md`. This is the inventory below.
 
 ---
 
-## The six branches, classified individually
+## The branches, classified individually
+
+*Originally six (the project doctrine's own count); #7 is a new addition
+(July 6, 2026), found independently rather than part of the original
+doctrine-flagged set — same execution-tier shape as #1/#6, added here for
+consistency rather than opened as a separate inventory.*
 
 | # | Branch | What it does | Classification | Recommendation |
 |---|---|---|---|---|
@@ -33,6 +38,7 @@ and `Phase3_Objective_Audit.md`. This is the inventory below.
 | 4 | `trust_gate` (#16) — standard branch itself | Was the original bare-check branch this session rebuilt | **Already substantially resolved.** No longer placeholder logic — replaced with deterministic margin/counter/lead-economy evaluation (BUG-005 fix, implemented and playtest-confirmed). | Nothing further needed here specifically — its remaining tie to difficulty is only the branch that decides whether expert bypasses it (see #3). |
 | 5 | `value_gate` (#25) — beginner's `trick_pts >= 5` threshold | Beginner-only opponent contest threshold, hardcoded | **Genuinely unvalidated — hasn't gotten the #16 treatment yet.** Nobody has walked through real hands with this the way we just did for `trust_gate`. This session's core lesson was that "looks like placeholder" and "confirmed placeholder" aren't the same claim — this one hasn't been checked either way yet. | **Needs its own audit conversation before any decision** — same process #16 got (real table scenarios, not assumptions), not a blanket strip. |
 | 6 | Beginner's "always secure the trick without second-guessing" (fork just above #16) | Beginner skips all economy/margin reasoning, always takes a winning trick | **Confirmed, deliberate design — not scaffolding.** This is the exact behavior Katy signed off on in `AI_Play_Behavior_Bug_Log.md`, BUG-004: *"a stranded counter behind a friendly trick is a believable Uncle Ed mistake."* A real decision, already made, just not yet expressed as a scalar. | Leave behavior alone. Same optional future note as #2 — eventually worth an `AI_MODES` parameter rather than a bare check, but not because the current behavior is wrong. |
+| 7 | `CONTROL_TRUMP` (branch #8, partner leading) — highest-vs-lowest trump lead when control applies without the double | Beginner (and anyone holding the double) leads highest trump; standard/expert without the double lead lowest instead, to draw the double out of an opponent's hand first | **New (July 6, 2026), same shape as #1/#6 — execution-tier, not a new selection or knowledge concept.** The `trump_control` predicate itself stays difficulty-invariant Selection; only which trump gets led within that objective differs, and only in the no-double case. A real table technique a standard/expert player would apply and a beginner-level player realistically wouldn't know — models a genuine skill gap, not an artificial handicap. | Leave behavior alone. Same optional future note as #2/#6 — eventually worth an `AI_MODES` parameter (e.g. a shared "technique" axis with #6) rather than a bare `difficulty ==` check, but not because the current behavior is wrong. |
 
 ---
 

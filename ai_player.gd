@@ -667,8 +667,13 @@ static func decide_play(
 			var holds_double_trump = trumps.any(func(d): return d.is_double())
 			var trump_control = (trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4
 			if trump_control:
-				var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("I have trump control — drawing out the opponents.")
+				var best: Domino
+				if difficulty == "beginner" or holds_double_trump:
+					best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("I have trump control — drawing out the opponents.")
+				else:
+					best = _lowest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Leading low trump to draw out the double first.")
 				return best
 
 			# Safe off-suit lead — now the fallback tier, only reached when trump
