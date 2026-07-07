@@ -83,6 +83,54 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Status:** Open, not specced. Found during the Phase 3 branch-by-branch trace (branch #7), no code changed.
 
+**Cross-reference (BUG-007, added July 6, 2026):** same "safe counter lead" family, found during the same branch-by-branch trace one branch later (#10 vs. #7). Not the same bug — BUG-007 is about void-awareness, not trump exhaustion — but worth resolving both with a shared mental model of what "safe counter lead" means, once this one lands.
+
+### → BUG-007 — Branch #10 (forced counter lead) doesn't consult known-void suits
+
+**Where:** `decide_play()`, partner-leading branch, final fallback when no non-counter tile is available (branch #10, `PROTECT_COUNTERS_WHILE_LEADING`, degraded). File: `ai_player.gd`.
+
+**What happens:** When forced to lead a counter (every legal tile is a 5-count or 10-count), the current code always picks the highest available via `_highest_in(legal, ...)`, with no regard for which suit each candidate belongs to. If opponents are already known-void in one of the candidate counters' suits (via `PublicKnowledge.void_suits()`), leading into that suit is meaningfully safer than leading into a suit an opponent can still follow naturally — no opponent can beat it by following suit, though they could still trump in.
+
+**Example:** Partner holds 6:4 and 4:1, both counters, and both are the only legal leads. If opponents are void in suit 4, leading 4:1 is safer than 6:4 (a live suit), because it can only be beaten by a trump-in, not by a natural follow.
+
+**Fix shape (not yet decided, flagging the open question rather than prescribing it):** `PublicKnowledge.void_suits()` already exists and is the right query — same one Expert's void-lead targeting (branch #20) already consumes. The open design question is whether "opponents void in this suit" alone is a strong enough safety signal to act on, or whether it needs to be paired with a trump-exhaustion check (same shape as BUG-006) to be a true safety guarantee — since a void opponent can still trump in and beat the lead. This needs a decision before implementation, not just wiring.
+
+**Reveals:** AVAILABLE — `void_suits()` already exists and is correctly implemented; it simply isn't consulted at this branch. (Note: if the eventual fix requires pairing it with trump-exhaustion tracking, that half would be a second AVAILABLE fact per BUG-006's resolution, not UNBUILT — worth confirming once BUG-006 is implemented, since the same `count_remaining_trump()`-based approach may apply here too.)
+
+**Relationship to existing bugs:** Same family as BUG-006 (found during the same branch-by-branch trace, same "counter safety at a leading branch" shape) — not the same bug, but worth resolving both with a shared mental model of what "safe counter lead" means, once BUG-006 lands.
+
+**Status:** Open, not specced, deliberately deferred pending a design decision on the trump-interaction question. Found during the Phase 3 branch-by-branch trace (branch #10), no code changed.
+
+---
+
+## Design notes — guaranteed-win detection generalization (July 6, 2026, not blocking)
+
+Logged alongside the branch #11 guaranteed-win generalization (see
+`Phase3_Objective_Audit.md` branch #11 and `public_knowledge.gd`'s
+`highest_remaining_trump()`/`best_remaining_card_for_suit()`). Not a bug —
+design notes for future, deeper work in the same "guaranteed-safety
+detection" family as BUG-006/BUG-007.
+
+- **Generalize beyond branch #11.** The same "provably highest remaining
+  in suit + trump exhausted" predicate is a good candidate for a proper
+  reusable `AIPlayer` helper (e.g. `_is_guaranteed_win(winning_domino, ...)`),
+  reused at #11, the opponent-mirror branch (#24), and possibly future
+  leading-side safety checks (BUG-006, BUG-007) instead of staying
+  branch-local.
+- **Compose with void-suit knowledge (BUG-007).** Currently the trump
+  threat check is all-or-nothing (`count_remaining_trump() -
+  own_trump_count == 0`). A partial-safety version — "opponents are void
+  in the winning suit AND trump is provably exhausted or void for them
+  specifically" — could recognize more guaranteed wins than the strict
+  version above, at the cost of more complexity. Worth revisiting once
+  BUG-007 itself is designed.
+- **`own_suit_reversed` / Nello doubles-own-suit interaction.** Not
+  explicitly tested against these two new queries yet — flag for
+  playtest coverage the same way Fix 1's rollout was tracked in the July
+  4 session.
+
+**Status:** Design notes only, not blocking this fix.
+
 ---
 
 ## Summary — suggested order of attack
@@ -92,5 +140,6 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 3. **BUG-004** — paused pending a full Phase 3 (Opportunism) design pass. Not abandoned; it's the case that surfaced the need for that design work in the first place, and should be one of its first test cases once that pass happens.
 4. **BUG-001** — standalone, low priority, whenever there's room for a new heuristic rather than a fix to an existing one.
 5. **BUG-006** — cheap and self-contained (AVAILABLE, no new infrastructure), and worth doing alongside a revisit of BUG-002/002b since the same `count_remaining_trump()`-based check may resolve both.
+6. **BUG-007** — deliberately deferred pending a design decision (does void-awareness alone suffice, or does it need pairing with BUG-006's trump-exhaustion check to be a real safety guarantee) — not blocked on missing infrastructure, blocked on a judgment call. Revisit once BUG-006 is implemented.
 
 **Naming note carried forward:** "locked-in trick" is a reusable concept (double led / last to play / known-safe high trump), and it's worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be knowledge-agnostic (most of its cases need no inference at all); only the high-trump case would reach into the knowledge/inference layer. Whether and how each difficulty *checks* that predicate is then a separate, Phase 3 Opportunism question — which is exactly the Knowledge/Evaluation split the new philosophy header in `ai_player.gd` describes. Worth wiring up once both Phase 3 and Phase 4 have landed.

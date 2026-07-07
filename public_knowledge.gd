@@ -52,6 +52,7 @@ var _current_trick: RefCounted = null  # Trick, or null
 var _trump: int = -1
 var _nello_doubles: String = "high"
 var _doubles_trump_reversed: bool = false
+var _own_suit_reversed: bool = false
 var _variant: int = -1  # Bid.Type int, or -1 if unknown
 
 static func from_state(frame: PublicFrame) -> PublicKnowledge:
@@ -65,6 +66,7 @@ static func from_state(frame: PublicFrame) -> PublicKnowledge:
 		knowledge._trump = record["trump"]
 		knowledge._nello_doubles = record.get("nello_doubles", "high")
 		knowledge._doubles_trump_reversed = record.get("doubles_trump_reversed", false)
+		knowledge._own_suit_reversed = record.get("own_suit_reversed", false)
 	if frame.current_trick != null:
 		var t = frame.current_trick
 		knowledge._absorb_trick(t.plays, t.lead_suit, t.trump, t.nello_doubles)
@@ -73,6 +75,7 @@ static func from_state(frame: PublicFrame) -> PublicKnowledge:
 		knowledge._trump = t.trump
 		knowledge._nello_doubles = t.nello_doubles
 		knowledge._doubles_trump_reversed = t.doubles_trump_reversed
+		knowledge._own_suit_reversed = t.own_suit_reversed
 		knowledge._variant = t.variant
 	return knowledge
 
@@ -140,6 +143,51 @@ func count_remaining_trump() -> int:
 		if d.is_trump(_trump):
 			count += 1
 	return count
+
+# Highest-ranked trump domino not yet played, or null if none remain / no
+# trump concept applies (Sevens, or Follow Me where trump == -1). Ranking
+# delegates entirely to Domino.get_rank() — never re-derived locally, per
+# file header contract.
+func highest_remaining_trump() -> Domino:
+	if _variant == BidScript.Type.SEVENS or _trump < 0:
+		return null
+	var deck = Deck.new()
+	deck.build_deck()
+	var best: Domino = null
+	var best_rank = -999
+	for d in deck.dominoes:
+		if _played_tiles.has(d.debug_string()):
+			continue
+		if not d.is_trump(_trump):
+			continue
+		var r = d.get_rank(_trump, _nello_doubles, -1, _doubles_trump_reversed, _own_suit_reversed)
+		if r > best_rank:
+			best_rank = r
+			best = d
+	return best
+
+# Highest-ranked domino not yet played within `suit` (under this hand's
+# current trump/mode). Returns null under Sevens (no suit concept), or if
+# no unplayed domino currently classifies into that suit. Same delegation
+# rule: ranking goes through Domino.get_rank()/get_suit(), never redefined
+# here.
+func best_remaining_card_for_suit(suit: int) -> Domino:
+	if _variant == BidScript.Type.SEVENS:
+		return null
+	var deck = Deck.new()
+	deck.build_deck()
+	var best: Domino = null
+	var best_rank = -999
+	for d in deck.dominoes:
+		if _played_tiles.has(d.debug_string()):
+			continue
+		if d.get_suit(_trump, _nello_doubles, suit) != suit:
+			continue
+		var r = d.get_rank(_trump, _nello_doubles, suit, _doubles_trump_reversed, _own_suit_reversed)
+		if r > best_rank:
+			best_rank = r
+			best = d
+	return best
 
 # ─── SNAPSHOT ACCESSORS ─────────────────────────────────────────────────────
 # These do no inference and derive no facts — they're pure encapsulation

@@ -703,8 +703,23 @@ static func decide_play(
 		# Throw off lowest non-counter; only burn a counter if nothing else is available.
 		if human_is_winning:
 			var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			if winning_domino.is_double():
-				# Double is an unbeatable lead — guaranteed win.
+			var guaranteed_win = winning_domino.is_double()
+
+			if not guaranteed_win and public_knowledge != null and not winning_domino.is_trump(trump):
+				var winning_suit = winning_domino.get_suit(trump, trick.nello_doubles, lead_suit)
+				var best_in_suit = public_knowledge.best_remaining_card_for_suit(winning_suit)
+				if best_in_suit != null and best_in_suit.debug_string() == winning_domino.debug_string():
+					var own_trump_count = hand.filter(func(d): return d.is_trump(trump)).size()
+					var trump_exhausted = trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
+					if trump_exhausted:
+						guaranteed_win = true
+
+			if guaranteed_win:
+				# Double is an unbeatable lead, OR the winning tile is provably
+				# the highest remaining in its suit with no trump threat left.
+				# TODO: reason string below assumes "double" specifically —
+				# will read oddly for the new non-double guaranteed-win case;
+				# revisit once the dedicated reason-string pass runs.
 				# Dump counters into the trick to secure the points.
 				var counters_to_dump = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
 				if counters_to_dump.size() > 0:

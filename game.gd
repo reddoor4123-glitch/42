@@ -323,6 +323,7 @@ func record_trick(trick: Trick, winner_id: int, plays_with_reasons: Array):
 		"trump":         trump,
 		"nello_doubles": trick.nello_doubles,
 		"doubles_trump_reversed": trick.doubles_trump_reversed,
+		"own_suit_reversed": trick.own_suit_reversed,
 	})
 
 # Append a tester annotation to the current hand. Call from the replay UI
