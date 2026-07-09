@@ -649,8 +649,12 @@ static func decide_play(
 
 		var human_winning_marks = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if is_partner and human_winning_marks:
+			var winning_domino_marks = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("You've got it — saving my strength.")
+			if _beats(lowest, winning_domino_marks, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
+				reason_log.append("Nice hand!" if hand.size() == 1 else "I've got this one.")
+			else:
+				reason_log.append("Good job!" if hand.size() == 1 else "You've got it — saving my strength.")
 			return lowest
 
 		var current_winner_marks = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
@@ -780,7 +784,7 @@ static func decide_play(
 				return best
 
 			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("Keeping my counts safe — leading what I can.")
+			reason_log.append("Nothing safe to lead — playing a count.")
 			return best
 
 		# ── FOLLOWING as Partner ──────────────────────────────────────────────
@@ -791,6 +795,7 @@ static func decide_play(
 		if human_is_winning:
 			var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			var guaranteed_win = winning_domino.is_double()
+			var guaranteed_via_double = guaranteed_win
 
 			if not guaranteed_win and public_knowledge != null and not winning_domino.is_trump(trump):
 				var winning_suit = winning_domino.get_suit(trump, trick.nello_doubles, lead_suit)
@@ -800,13 +805,11 @@ static func decide_play(
 					var trump_exhausted = trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
 					if trump_exhausted:
 						guaranteed_win = true
+						guaranteed_via_double = false
 
 			if guaranteed_win:
 				# Double is an unbeatable lead, OR the winning tile is provably
 				# the highest remaining in its suit with no trump threat left.
-				# TODO: reason string below assumes "double" specifically —
-				# will read oddly for the new non-double guaranteed-win case;
-				# revisit once the dedicated reason-string pass runs.
 				# Dump counters into the trick to secure the points — but only tiles
 				# that actually stay a dump. If we're void in the lead suit and
 				# holding trump, a trump counter doesn't yield to a non-trump winning
@@ -818,7 +821,7 @@ static func decide_play(
 						and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 				if counters_to_dump.size() > 0:
 					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					reason_log.append("That double's safe — putting my points on your trick.")
+					reason_log.append("Good double — putting my points on your trick." if guaranteed_via_double else "Good play — putting my points on your trick.")
 					return chosen
 				var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
@@ -995,7 +998,12 @@ static func decide_play(
 
 		# Lead highest available domino.
 		var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-		reason_log.append("Leading my best domino.")
+		if hand.size() == 1:
+			reason_log.append("Last domino.")
+		elif best.is_double():
+			reason_log.append("Leading my double.")
+		else:
+			reason_log.append("Leading my best domino.")
 		return best
 
 	# ── FOLLOWING as Opponent ──────────────────────────────────────────────────
@@ -1003,8 +1011,12 @@ static func decide_play(
 
 	# Partner is winning — save strength, don't over-contribute.
 	if partner_winning:
+		var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-		reason_log.append("My partner has this one — saving my strength.")
+		if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
+			reason_log.append("I've got this one.")
+		else:
+			reason_log.append("Nice hand!" if hand.size() == 1 else "My partner has this one — laying low.")
 		return lowest
 
 	# Try to win the trick.
@@ -1045,7 +1057,10 @@ static func decide_play(
 		elif hand.size() == 1:
 			reason_log.append("No way to win this one.")
 		else:
-			reason_log.append("Can't win this one — discarding low.")
+			if can_win.size() > 0:
+				reason_log.append("Not worth chasing — protecting my count instead.")
+			else:
+				reason_log.append("Can't win this one — protecting my count.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 	if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
