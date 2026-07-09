@@ -807,14 +807,24 @@ static func decide_play(
 				# TODO: reason string below assumes "double" specifically —
 				# will read oddly for the new non-double guaranteed-win case;
 				# revisit once the dedicated reason-string pass runs.
-				# Dump counters into the trick to secure the points.
-				var counters_to_dump = legal.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
+				# Dump counters into the trick to secure the points — but only tiles
+				# that actually stay a dump. If we're void in the lead suit and
+				# holding trump, a trump counter doesn't yield to a non-trump winning
+				# tile, it captures it outright — trump beats non-trump regardless of
+				# rank. That's not a dump, it's an accidental, unplanned win with no
+				# lead prepared for it.
+				var counters_to_dump = legal.filter(func(d):
+					return (d.pip_sum() == 5 or d.pip_sum() == 10)
+						and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 				if counters_to_dump.size() > 0:
 					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("That double's safe — putting my points on your trick.")
 					return chosen
 				var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("You've got this one — staying out of your way.")
+				if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
+					reason_log.append("Nice hand!" if hand.size() == 1 else "I've got this one.")
+				else:
+					reason_log.append("You've got this one — staying out of your way.")
 				return lowest
 			# Not a guaranteed win — protect counters as normal.
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
