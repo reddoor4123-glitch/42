@@ -818,9 +818,7 @@ static func decide_play(
 				# tile, it captures it outright — trump beats non-trump regardless of
 				# rank. That's not a dump, it's an accidental, unplanned win with no
 				# lead prepared for it.
-				var counters_to_dump = legal.filter(func(d):
-					return (d.pip_sum() == 5 or d.pip_sum() == 10)
-						and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+				var counters_to_dump = legal.filter(func(d): return (d.pip_sum() == 5 or d.pip_sum() == 10) and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 				if counters_to_dump.size() > 0:
 					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("Good double — putting my points on your trick." if guaranteed_via_double else "Good play — putting my points on your trick.")
