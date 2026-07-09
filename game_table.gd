@@ -67,6 +67,8 @@ var replay_panel: Control = null
 var _replay_trick_index: int = 0
 var _replay_btn: Button = null
 var _continue_btn: Button = null
+var _replay_back_btn: Button = null
+var _new_game_btn: Button = null
 var _replay_trick_label: Label = null
 var _replay_inner_panel: PanelContainer = null
 var _replay_hand_containers: Array = []
@@ -774,7 +776,14 @@ func _build_ui():
 	# Bottom bar: navigation button
 	var r_bot_bar = HBoxContainer.new()
 	r_bot_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	r_bot_bar.add_theme_constant_override("separation", 16)
 	r_vbox.add_child(r_bot_bar)
+
+	_replay_back_btn = Button.new()
+	_replay_back_btn.text = "← Back"
+	_replay_back_btn.custom_minimum_size = Vector2(140, 44)
+	_replay_back_btn.pressed.connect(_replay_prev_trick)
+	r_bot_bar.add_child(_replay_back_btn)
 
 	var r_next_btn = Button.new()
 	r_next_btn.text = "Continue →"
@@ -880,6 +889,9 @@ func _start_hand():
 	if _continue_btn and is_instance_valid(_continue_btn):
 		_continue_btn.queue_free()
 		_continue_btn = null
+	if _new_game_btn and is_instance_valid(_new_game_btn):
+		_new_game_btn.queue_free()
+		_new_game_btn = null
 	if replay_panel:
 		replay_panel.visible = false
 	_show_game_board(true)
@@ -1533,6 +1545,12 @@ func _resolve_hand():
 		if _continue_btn and is_instance_valid(_continue_btn):
 			_continue_btn.queue_free()
 			_continue_btn = null
+		_new_game_btn = Button.new()
+		_new_game_btn.text = "New Game"
+		_new_game_btn.custom_minimum_size = Vector2(160, 48)
+		_new_game_btn.modulate = Color(0.95, 0.80, 0.15)
+		_new_game_btn.pressed.connect(_on_new_game_pressed)
+		btn_vbox.add_child(_new_game_btn)
 		return
 
 # ─── DISPLAY HELPERS ─────────────────────────────────────────────────────────
@@ -2491,6 +2509,9 @@ func _on_hand_continue():
 	game.advance_shaker()
 	_start_hand()
 
+func _on_new_game_pressed():
+	_restart_game_with_settings(game.settings)
+
 func _show_replay():
 	if game.hand_history.is_empty():
 		return
@@ -2511,6 +2532,7 @@ func _render_replay_trick():
 		_replay_trick_index + 1,
 		game.hand_history.size()
 	]
+	_replay_back_btn.disabled = (_replay_trick_index == 0)
 
 	# Render each player's hand at the start of this trick (face-up, small)
 	for pid in range(4):
@@ -2578,6 +2600,13 @@ func _replay_next_trick():
 		_exit_replay()
 	else:
 		_render_replay_trick()
+
+func _replay_prev_trick():
+	if _replay_trick_index <= 0:
+		return
+	_reset_flag_panel()
+	_replay_trick_index -= 1
+	_render_replay_trick()
 
 func _exit_replay():
 	_reset_flag_panel()
