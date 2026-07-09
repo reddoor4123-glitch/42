@@ -190,8 +190,10 @@ list.
 
 ## On the horizon
 
-- Resume the branch-by-branch trace at **#12** (next session or continuation
-  of this one).
+- ~~Resume the branch-by-branch trace at **#12** (next session or continuation
+  of this one).~~ **Done, same session** — see
+  `Texas_42_Session_Summary_July_6_2026_BranchTracePart2.md`, which covers
+  #12–#28 and completes the full trace.
 - Reason-string rewrite remains explicitly its own separate session, per
   Katy's call earlier this session — not folded into trace work.
 - Once BUG-006 lands, revisit BUG-002/002b to confirm whether the same
