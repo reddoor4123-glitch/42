@@ -957,7 +957,11 @@ static func decide_play(
 			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			var had_counter_to_avoid = non_counters_discard.size() < legal.size()
 			var double_avoided = non_counters_discard.any(func(d): return d.is_double()) and not discard.is_double()
-			if had_counter_to_avoid and double_avoided:
+			if legal.size() == 1:
+				reason_log.append("Had to follow suit.")
+			elif hand.size() == 1:
+				reason_log.append("No way to win this one.")
+			elif had_counter_to_avoid and double_avoided:
 				reason_log.append("Can't win this one — saving my count and my double for later.")
 			elif had_counter_to_avoid:
 				reason_log.append("Can't win this one — saving my count for later.")
@@ -967,7 +971,12 @@ static func decide_play(
 				reason_log.append("Can't win this one — discarding low.")
 			return discard
 		var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-		reason_log.append("Nowhere to hide — had to let a count go.")
+		if legal.size() == 1:
+			reason_log.append("Had to follow suit.")
+		elif hand.size() == 1:
+			reason_log.append("No way to win this one.")
+		else:
+			reason_log.append("Nowhere to hide — had to let a count go.")
 		return discard
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
