@@ -614,7 +614,9 @@ static func decide_play(
 	# This block exits completely; none of the standard evaluation runs.
 	if contract == BidScript.Type.SEVENS:
 		var chosen = _closest_to_seven(legal)
-		reason_log.append("Playing my closest domino to seven.")
+		var distance = abs(chosen.pip_sum() - 7)
+		var away_words = ["Seven.", "One away.", "Two away.", "Three away.", "Four away.", "Five away.", "Six away.", "Seven away."]
+		reason_log.append(away_words[distance])
 		return chosen
 
 	# ── NELLO ─────────────────────────────────────────────────────────────────────
@@ -974,11 +976,6 @@ static func decide_play(
 				return false)
 			if void_leads.size() > 0:
 				var best = _highest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				var targeted_suit = best.get_suit(trump, trick.nello_doubles, -1)
-				print("[Void Lead] P%d leading suit %d — void opponents: %s" % [
-					player_id, targeted_suit,
-					opponents.filter(func(p): return public_knowledge.void_suits(p).has(targeted_suit))
-				])
 				reason_log.append("Leading a suit I know you're out of.")
 				return best
 
@@ -986,7 +983,7 @@ static func decide_play(
 		var trumps = legal.filter(func(d): return d.is_trump(trump))
 		if trumps.size() >= 3:
 			var best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("I have trump control — drawing out the opponents.")
+			reason_log.append("Drawing out trumps.")
 			return best
 
 		# Lead a strong counter if we're confident it will win.
