@@ -276,9 +276,9 @@ than two separate parameters.
 
 ---
 
-## 10. Beginner "economy/protection" branches (#13, #17) — active, unnamed
+## 10. Beginner "economy/protection" branches (#13, #17) — #13 active/unnamed, #17 removed
 
-**Where:** `decide_play()`, two separate beginner-only branches:
+**Where:** `decide_play()`, originally two separate beginner-only branches:
 
 - Branch #13 (partner following, can_win, beginner): *"Beginner Partner: always secure the trick
   without second-guessing card economy"* — skips the non-trump-preference step that standard/
@@ -286,20 +286,28 @@ than two separate parameters.
 - Branch #17 (partner following, can't win, beginner): *"Beginner Partner: more aggressive
   counter protection — discard highest non-counter non-trump first."*
 
-**What they look at:** Pure geometry (can_win / can't_win), no numeric signal — these are bare
-`if difficulty == "beginner"` checks with no threshold at all, unlike `value_gate`.
+**Correction (July 6, 2026): these two do not belong in the same entry after all.** Grouping them
+here as parallel "economy/protection" branches turned out to hide that they're different kinds of
+thing — #13 is a legitimate Evaluation-tier simplification (skipping an optimization step is a
+believable reduced-thoroughness gap); #17 was a reasoning error with no valid strategic basis (its
+own justification didn't hold, since the pool it drew from already excluded counters same as the
+standard/expert pool). **#17 has been removed entirely from `ai_player.gd`**, not reclassified —
+beginner now follows the same discard path as standard/expert following can't-win. Only #13 remains
+active. See `AI_Play_Behavior_Bug_Log.md`, `Phase3_Objective_Audit.md` (branch #17 row), and
+`Difficulty_Feed_Points_Inventory.md` (item #8) for the removal record.
 
-**What decision it makes:** Branch #13 skips an optimization step. Branch #17 changes discard
-order (highest-first vs. lowest-first).
+**What #13 looks at:** Pure geometry (`can_win`), no numeric signal — a bare
+`if difficulty == "beginner"` check with no threshold at all, unlike `value_gate`.
 
-**Behavior change:** Beginner partner plays more simply/protectively in both cases.
+**What decision it makes:** Skips an optimization step (the non-trump-winner preference).
 
-**Layer:** Evaluation, per the audit — but currently implemented as bare difficulty branches
-with no parameter behind them at all (not even a string like `cooperation_bias`).
+**Behavior change:** Beginner partner plays more simply when it can win — no other change.
+
+**Layer:** Evaluation, per the audit — currently implemented as a bare difficulty branch
+with no parameter behind it at all (not even a string like `cooperation_bias`).
 
 **Status:** Active code. Flagged in the candidate-parameters table as *"execution-only, lower
-priority... likely folds into a single 'caution' style parameter rather than needing its own
-name"* — but this is speculative; no such parameter exists yet, named or unnamed.
+priority"* — speculative, no such parameter exists yet, named or unnamed.
 
 ---
 
@@ -461,8 +469,12 @@ stale comment predating `control_score`'s introduction in the bidding rewrite).
 the partner personality sketch elsewhere in the file).
 
 **Correspondence to actual code:**
-- "Beginner: conservative opens" → branch #19, `FEEL_OUT_THE_HAND` (classified Neither, a true
-  difficulty-branch exception, not Evaluation/Knowledge).
+- "Beginner: conservative opens" → **stale as of July 6, 2026.** This referred to branch #19,
+  `FEEL_OUT_THE_HAND` — previously classified Neither, a true difficulty-branch exception. On
+  closer inspection it had no legitimate strategic basis (categorical trump-lead suppression
+  regardless of hand strength) and was removed entirely, not reclassified. The code comment this
+  entry describes has been updated in `ai_player.gd` to drop the claim; this entry's own wording
+  above is kept as the historical record of what was originally being described.
 - "Beginner: only contests tricks with counters already in them" → `value_gate` (#7).
 - "Expert: compete harder (handled in bidding)" → this is `risk_bias` (#1), pointing outside
   `decide_play()` entirely.

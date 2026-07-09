@@ -19,8 +19,7 @@ all.*
 ```
 SYSTEM ROUTER
 ├── Mechanical override — no geometry interpreted, decide_play() is
-│   fully bypassed (SEVENS, NELLO) or a bare difficulty branch with
-│   no geometric input (FEEL_OUT_THE_HAND)
+│   fully bypassed (SEVENS, NELLO)
 │
 └── Geometry-driven objective system — everything else
       geometry → objective (selection) → commitment gate (optional) → execution
@@ -81,9 +80,31 @@ detail: **`COMMITMENT_GATE`** (see above). Not itself a new objective —
 it's the boundary that explains why #15 and #24 don't fit `SECURE_FOR_PARTNER`
 or `ESCAPE` cleanly on their own.
 
-Confirmed **not** part of the objective system: `FEEL_OUT_THE_HAND`. No
-geometric input, difficulty-gated only — correctly left as a direct branch
-per the project's own "Neither" category.
+**Removed entirely (July 6, 2026), not merely "not part of the objective
+system":** `FEEL_OUT_THE_HAND` (branch #19) was originally logged here as a
+correctly-left "Neither" exception — no geometric input, difficulty-gated
+only. On closer inspection there was no legitimate strategic basis for it:
+unconditionally suppressing trump control on trick one regardless of hand
+strength isn't a believable skill gap, it's a categorical strategy
+suppression — same violation class as the also-removed branch #17 (see
+below). Deleted from `ai_player.gd` rather than reclassified. See the
+Trick Objectives header in `ai_player.gd` itself for the corrected framing.
+
+**New (July 6, 2026, later same day) — two more additions, both geometric,
+both knowledge-gated, neither difficulty-gated:**
+- **`GIFT_A_VOID`** (branch 6a) — partner leading, target a suit the human
+  is known void in; lead the double or the currently-highest-remaining
+  tile in that suit to hand the human a good-confidence discard. Mirror
+  image of `FORCE_A_VOID` in intent (create an opportunity instead of
+  forcing a cost) but not the same objective — kept as a separate name
+  rather than folded into `FORCE_A_VOID`, since the target (partner's
+  void) and the purpose (help, not pressure) both differ.
+- **`FORCE_A_VOID`'s partner-leading instance** (branch 6b) — same
+  objective and predicate as the existing opponent-leading instance (#20),
+  mirrored for partner leads, with a self-assessment gamble (do we have a
+  strong follow-up lead) deciding highest-vs-lowest. **Deliberately not
+  difficulty-gated**, unlike #20 — see 6b's row in the branch table for
+  the asymmetry this creates and why it's by design.
 
 ---
 
@@ -97,19 +118,21 @@ per the project's own "Neither" category.
 | 4 | MARKS, partner-winning | `partner_winning` | `PROTECT_PARTNER_WIN` | constrained | NONE | **duplicate of #11** — reimplemented, not shared. **Open-Q tag resolved (July 5, 2026):** the MARKS cardinal-rule question this branch was flagged for has been split and closed — see `Phase1_Control_Layer_Audit.md`. Trick-protection half is ordinary Selection (this row, no special treatment needed); the harder half (declining a guaranteed win to hand lead control to a better-positioned teammate for a future trick) turned out not to be Marks-specific at all and is permanently parked there. |
 | 5 | MARKS, can-win | `can_win` | `SECURE_FOR_PARTNER` | constrained | NONE | economy/trust stripped — arguably correct for Marks |
 | 6 | MARKS, can't win | `!can_win` | `ESCAPE` | constrained | NONE | no pip filtering (correct — counters irrelevant under Marks) |
+| 6a | Partner leading, human known void in a suit | `is_leading`, `is_partner`, `void_suits(partner_id)` | `GIFT_A_VOID` (new) | geometric, knowledge-gated | NONE (deliberately not difficulty-gated) | **New (July 6, 2026).** Runs first in the partner-leading block, before 6b and #8. Targets a suit the human is known void in — lead the double, or the currently-highest-remaining tile in that suit, to hand the human a good-confidence (not guaranteed) discard. An opponent could still trump in; that risk is accepted, not resolved. Mirror-image intent of `FORCE_A_VOID`: opening an opportunity instead of forcing a cost. No difficulty gate — cooperative judgment is knowledge-limited, not difficulty-limited, per this file's own design philosophy. |
+| 6b | Partner leading, opposing team known void in a suit | `is_leading`, `is_partner`, `void_suits(opp)` for both opponents, self-assessed `we_are_strong` | `FORCE_A_VOID` (partner-leading mirror of #20) | geometric, knowledge-gated | NONE (deliberately not difficulty-gated, amended July 6, 2026 — originally specced expert-only) | **New (July 6, 2026).** Runs second, after 6a and before #8. Targets a suit the opposing team is known void in — same predicate as #20, mirrored for partner leads. High-vs-low is a self-assessment gamble (do we still have a strong follow-up lead — trump control or a safe off-suit tile), not an information asymmetry about the human's hand; worth flagging that this self-assessment half reads more like Decision Geometry than Knowledge, even though the void-targeting half is genuinely Knowledge-gated same as #20. **Difficulty asymmetry, by design, not drift:** this instance and 6a run at every difficulty; #20 (opponent-leading `FORCE_A_VOID`) stays expert-only. Beginner/standard partners now get void-awareness beginner/standard opponents still don't. |
 | 7 | Partner leading, `off_safe` | `is_leading`, `is_partner` | `OPEN_SAFE_SUIT` | geometric | NONE | — |
-| 8 | Partner leading, `trumps>=3` (with double) or `trumps>=4` | same | `CONTROL_TRUMP` | geometric (selection) / WEIGHT (execution) | NONE (selection) | **BUG-003/003b fixed (July 5, 2026)**: now evaluated before #7 (`OPEN_SAFE_SUIT`), double-aware threshold (3+ with the double, 4+ otherwise). No longer unreachable. **Execution differentiated by difficulty (July 6, 2026):** the `trump_control` predicate itself is still difficulty-invariant Selection, but *which trump gets led* now differs once control applies without the double — beginner and double-in-hand cases still lead highest ("drawing out the opponents"); standard/expert without the double lead lowest instead, to draw the double out of an opponent's hand before spending higher trump ("Leading low trump to draw out the double first"). A binary technique branch, not a scalar — same shape as the existing #13/#17 beginner execution branches, not a new `AI_MODES` parameter. |
+| 8 | Partner leading, `trumps>=3` (with double) or `trumps>=4` | same | `CONTROL_TRUMP` | geometric (selection) / WEIGHT (execution) | NONE (selection) | **BUG-003/003b fixed (July 5, 2026)**: now evaluated before #7 (`OPEN_SAFE_SUIT`), double-aware threshold (3+ with the double, 4+ otherwise). No longer unreachable. Also now runs after 6a/6b, in addition to before #7. **Execution differentiated by difficulty (July 6, 2026):** the `trump_control` predicate itself is still difficulty-invariant Selection, but *which trump gets led* now differs once control applies without the double — beginner and double-in-hand cases still lead highest ("drawing out the opponents"); standard/expert without the double lead lowest instead, to draw the double out of an opponent's hand before spending higher trump ("Leading low trump to draw out the double first"). A binary technique branch, not a scalar — same shape as the existing #13 beginner execution branch (**not #17 — removed July 6, 2026**, see that row below), not a new `AI_MODES` parameter. |
 | 9 | Partner leading, `non_counters_lead` | same | `PROTECT_COUNTERS_WHILE_LEADING` | geometric | NONE | fallback tier |
 | 10 | Partner leading, final fallback | same | `PROTECT_COUNTERS_WHILE_LEADING` (degraded) | geometric | NONE | last resort |
 | 11 | Partner following, `human_is_winning` + guaranteed win | `partner_winning`, winner is double **or** provably highest-remaining-in-suit with trump exhausted | `PROTECT_PARTNER_WIN` | geometric + knowledge-gated (when non-double) | NONE | dump-counters variant. **Generalized (July 6, 2026):** guaranteed-win detection is no longer double-only — `PublicKnowledge.best_remaining_card_for_suit()` plus a `count_remaining_trump()`-based trump-exhaustion check (same technique as BUG-006) now also recognize a non-double, non-trump winner as safe. Difficulty-invariant by design decision (flagged for confirmation, not assumed) — treated as core cardinal-rule recognition, same as the existing double case, not a strategic technique gap like branch #8. See `AI_Play_Behavior_Bug_Log.md`'s design-notes entry for follow-on generalization ideas (a shared `_is_guaranteed_win()` helper, composing with BUG-007's void knowledge). |
-| 12 | Partner following, `human_is_winning`, no double | same | `PROTECT_PARTNER_WIN` | geometric | NONE | duplicate pair with #4 |
+| 12 | Partner following, `human_is_winning`, `not guaranteed_win` | same | `PROTECT_PARTNER_WIN` | geometric | NONE | duplicate pair with #4. **Condition phrasing updated (July 6, 2026):** was "no double," but since #11's generalization the actual gate is `not guaranteed_win` — broader than "no double" alone, since it also excludes the new non-double-but-provably-safe case (highest remaining in suit, trump exhausted). Behavior unchanged; this branch is exactly "everything #11 doesn't catch." |
 | 13 | Partner following, `can_win`, beginner | `can_win`, `!partner_winning` | `SECURE_FOR_PARTNER` | geometric | WEIGHT | skips economy |
 | 14 | Partner following, `can_win`, non-trump avail | same | `SECURE_FOR_PARTNER` | geometric | NONE (all difficulties) | prefer non-trump winner |
 | 15 | Partner following, trump-only, expert | same | `SECURE_FOR_PARTNER` | geometric | WEIGHT | commits, no gate |
 | 16 | Partner following, trump-only can-win, standard difficulty | `can_win` (trump only), `bid_value`/`team_points` state | `SECURE_FOR_PARTNER` | commitment gate | STANDARD only | **Rewritten under BUG-005 (implemented, playtest-confirmed).** Gate input is now contract margin (symmetric zero-sum reachability check) → live counter status (`_live_counter_for_suit()`, deterministic — rules out a counter only when provably unreachable) → lead economy. No turn-order check remains. See Patch note below — this branch no longer has any trust content. |
-| 17 | Partner following, can't win, beginner | `!can_win` | `ESCAPE` | geometric | WEIGHT | protect-highest-first variant |
+| 17 | ~~Partner following, can't win, beginner~~ | ~~`!can_win`~~ | ~~`ESCAPE`~~ | ~~geometric~~ | ~~WEIGHT~~ | **Removed (July 6, 2026).** The "protect-highest-first" variant (discard the highest safe tile instead of the lowest) had no valid strategic basis — its own stated justification didn't hold, since the pool it drew from already excluded counters same as the standard/expert pool. A reasoning error, not a believable skill gap. Beginner now follows #18's path exactly; #17/#18 fully collapse into one. |
 | 18 | Partner following, can't win, standard | same | `ESCAPE` | geometric | NONE | — |
-| 19 | Opponent leading, beginner opening | `hand.size()==7`, beginner | `FEEL_OUT_THE_HAND` | **mechanical, difficulty-gated only** | hardcoded rule | confirmed: the one true selection-level exception |
+| 19 | ~~Opponent leading, beginner opening~~ | ~~`hand.size()==7`, beginner~~ | ~~`FEEL_OUT_THE_HAND`~~ | ~~mechanical, difficulty-gated only~~ | ~~hardcoded rule~~ | **Removed (July 6, 2026).** Previously logged as "the one true selection-level exception" — that claim didn't hold up. Unconditionally suppressing trump control on trick one regardless of hand strength wasn't a genuine mission difference, it was an unjustified strategy override (same violation class as the also-removed #17). Beginner opponents now evaluate trump control, void-targeting eligibility, and all subsequent leading logic exactly like standard opponents on trick one — the `is_leading` block now starts directly with the expert void-check. |
 | 20 | Opponent leading, expert void | `void_suits(opp)` | `FORCE_A_VOID` | geometric, knowledge-gated | KNOWLEDGE | expert-only because lower difficulties can't see the void, not a different mission |
 | 21 | Opponent leading, `trumps>=3` | trump count | `CONTROL_TRUMP` | geometric | NONE | duplicate pair with #8 |
 | 22 | Opponent leading, strong counter | none (always checked) | `LOCK_IN_COUNTER_LEAD` (new, lead-side) | geometric | NONE | related to `CASH_COUNTERS` (#25) but different geometry (lead vs. follow) |
@@ -132,7 +155,7 @@ per the project's own "Neither" category.
 |---|---|---|
 | `trust_threshold` | #16 | commitment gate input (trust in downstream player) |
 | `contest_threshold` | #25 | commitment gate input (trick_pts cutoff, currently hardcoded `>=5`) |
-| (execution-only, lower priority) | #13, #17 | beginner economy/protection simplification — likely folds into a single "caution" style parameter rather than needing its own name |
+| (execution-only, lower priority) | #13 | beginner economy simplification. **#17 removed (July 6, 2026)**, not merely reclassified — see the row above and the "Confirmed duplication pairs" section below. |
 
 Both gate parameters share the same shape (a scalar compared against a
 computed signal, gating fallback to `ESCAPE`) — worth designing as one
@@ -155,8 +178,9 @@ actually specs `AI_MODES`.
 
 - `PROTECT_PARTNER_WIN`: #4 (Marks) / #11 / #12 / #24
 - `SECURE_FOR_PARTNER`-family: #5 (Marks) / #13 / #14 / #15 / #16
-- `ESCAPE`: #6 (Marks) / #17 / #18 / #28
+- `ESCAPE`: #6 (Marks) / #18 / #28 (#17 removed July 6, 2026 — fully collapsed into #18, no longer a separate branch)
 - `CONTROL_TRUMP`: #8 / #21
+- `FORCE_A_VOID`: #20 (opponent leading, expert-only) / 6b (partner leading, all difficulties, added July 6, 2026) — same predicate shape, deliberately different difficulty-gating; see 6b's row for why that asymmetry is by design, not an inconsistency to fix.
 
 None of these are being collapsed by this document — that's Phase 3's job.
 This is the map that makes that collapse decision well-informed rather than

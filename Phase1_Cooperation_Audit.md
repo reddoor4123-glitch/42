@@ -83,6 +83,13 @@ if is_leading:
 | Counter-safe lead (#3) | ✓ Correct as a fallback | Only reachable when #1 and #2 both fail |
 | Forced counter lead (#4) | ✓ Correct | Genuinely forced, no better option |
 
+**Not added as a new row here (July 6, 2026):** two new checks now run before all four sub-cases
+above — `GIFT_A_VOID` and a partner-leading mirror of `FORCE_A_VOID`, both `PublicKnowledge`-gated,
+targeting the human's and the opposing team's known-void suits respectively. Deliberately left out
+of this table: per this section's own scope note, *which lead technique to use* is Phase 2/3
+territory, not a cardinal-rule/cooperation-intent question. See `Phase3_Objective_Audit.md` rows
+6a/6b for the full record.
+
 ### ✓ BUG-003 / BUG-003b belongs to Phase 1, not just "a play bug" (Fixed July 5, 2026)
 
 This is already tracked in `AI_Play_Behavior_Bug_Log.md` Pattern B, but it's

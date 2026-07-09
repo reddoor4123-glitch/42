@@ -92,7 +92,7 @@ ordinary Selection-stage objectives.
 | `FORCE_A_VOID` | PublicKnowledge-derived (`void_suits`) | Implemented, expert-only, playtest-pending |
 | `opportunism` | PublicKnowledge-derived (intended) | **Inert placeholder.** Declared in `AI_MODES`, read, never acted on. Once built, belongs here — same shape as `FORCE_A_VOID`, not a new layer, not Modulation. |
 | All other named objectives (`PROTECT_PARTNER_WIN`, `SECURE_FOR_PARTNER`, `CASH_COUNTERS`, `CONTROL_TRUMP`, `ESCAPE`, `OPEN_SAFE_SUIT`, `PROTECT_COUNTERS_WHILE_LEADING`) | Internal-state | Implemented — see `Phase3_Objective_Audit.md` for full branch table |
-| `FEEL_OUT_THE_HAND` | Internal-state (`hand.size()==7`), difficulty-gated only | Implemented. **Confirmed genuine exception** — the one case where difficulty changes which mission is even in play, not just a predicate or a scalar. Correctly left as a direct branch. |
+| `FEEL_OUT_THE_HAND` | Internal-state (`hand.size()==7`), difficulty-gated only | **Removed (July 6, 2026).** Previously logged here as "confirmed genuine exception — a case where difficulty changes which mission is even in play." That didn't hold up: no legitimate strategic basis for unconditionally suppressing trump control on trick one regardless of hand strength. Deleted from `ai_player.gd` rather than left as a direct branch — see `Phase3_Objective_Audit.md` branch #19. |
 
 ### Rejected alternative — "Knowledge" as a fourth pipeline stage above Selection
 

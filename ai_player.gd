@@ -507,21 +507,28 @@ static func _log_bid_decision(
 #                            counters, cheapest safe tile first.
 #                            Lines ~637, ~750.
 #   CONTROL_TRUMP          — leading, hold enough trump to draw
-#                            opponents out. Line ~695.
-#   FORCE_A_VOID           — leading, expert + PublicKnowledge only,
-#                            target a suit a known-void opponent can't
-#                            follow. Line ~675.
-#   FEEL_OUT_THE_HAND      — leading, beginner, opening trick only,
-#                            avoid committing trump early. Line ~662.
+#                            opponents out. Line ~733.
+#   FORCE_A_VOID           — leading, PublicKnowledge-gated, target a
+#                            suit a known-void opponent can't follow.
+#                            Two instances: opponent-leading (expert
+#                            only, Line ~937) and partner-leading (all
+#                            difficulties, Line ~694 — see the
+#                            difficulty-asymmetry note below).
+#   GIFT_A_VOID            — leading, partner only, PublicKnowledge-
+#                            gated, target a suit the HUMAN is known
+#                            void in — the mirror image of
+#                            FORCE_A_VOID: opening an opportunity for
+#                            the human instead of forcing a cost onto
+#                            an opponent. All difficulties. Line ~670.
 #
 # Note: these aren't all the same grain. PROTECT_PARTNER_WIN,
 # SECURE_FOR_PARTNER, and ESCAPE are true objectives — what you're
-# trying to accomplish. CONTROL_TRUMP and FORCE_A_VOID are closer to
-# strategies/tactics in service of an objective ("gain control,"
-# "extend the lead") that isn't separately named here. Left as-is
-# deliberately — naming that parent objective isn't needed for the
-# Phase 3 collapse, and forcing everything to one grain would be
-# taxonomy for its own sake.
+# trying to accomplish. CONTROL_TRUMP, FORCE_A_VOID, and GIFT_A_VOID
+# are closer to strategies/tactics in service of an objective ("gain
+# control," "extend the lead," "create an opening") that isn't
+# separately named here. Left as-is deliberately — naming that parent
+# objective isn't needed for the Phase 3 collapse, and forcing
+# everything to one grain would be taxonomy for its own sake.
 #
 # For each objective, the Phase 3 question is not "does difficulty
 # change this play" but "does difficulty change which objective gets
@@ -538,23 +545,38 @@ static func _log_bid_decision(
 #     CASH_COUNTERS, not a separate mission — the objective is the
 #     same ("win it if it's worth it"), difficulty only moves the bar
 #     for "worth it." Also Evaluation.
-#   - FORCE_A_VOID is Knowledge-gated by construction (requires
-#     PublicKnowledge) and is correctly expert-only for that reason,
-#     not because lower difficulties have a different mission when
-#     leading — they simply can't see the void.
-#   - FEEL_OUT_THE_HAND is the one true exception: a beginner-only
-#     opening-trick objective with no standard/expert equivalent.
-#     This is a genuine case where difficulty changes which mission
-#     is even in play, not just how well it's carried out.
+#   - FORCE_A_VOID's opponent-leading instance is Knowledge-gated by
+#     construction (requires PublicKnowledge) and is correctly
+#     expert-only for that reason, not because lower difficulties have
+#     a different mission when leading — they simply can't see the void.
+#   - FORCE_A_VOID's partner-leading instance and GIFT_A_VOID are
+#     deliberately NOT difficulty-gated (added July 6, 2026, gate
+#     removed the same day) — cooperative judgment is constant across
+#     difficulty per this file's own AI Design Philosophy header
+#     ("partner cooperation intent is difficulty-invariant"); only
+#     knowledge access limits it, not which difficulty was picked. This
+#     is an intentional asymmetry, not an oversight: beginner/standard
+#     partners now get void-awareness that beginner/standard opponents
+#     still don't, because FORCE_A_VOID's opponent-leading instance
+#     stays expert-gated above. Two instances of the same-shaped
+#     predicate, two different difficulty rules — by design, not drift.
 #
-# Net effect for the Phase 3 collapse: five of the six current bare
-# `difficulty ==` branches are Evaluation-tuning *within* a shared,
+# Net effect for the Phase 3 collapse: of the six originally-flagged bare
+# `difficulty ==` branches, five are Evaluation-tuning *within* a shared,
 # difficulty-invariant objective, and belong as AI_MODES parameters
 # (e.g. a "contest_threshold" or "trust_others" knob) rather than
-# inline branches. Only FEEL_OUT_THE_HAND is a real branch-level
-# difference in mission, and it's fine to leave it as a direct
-# difficulty check per the Neither category — it doesn't have a
-# clean Knowledge or Evaluation shape to collapse into.
+# inline branches. The sixth, FEEL_OUT_THE_HAND (beginner-only opening-
+# trick trump avoidance), was originally logged as "the one true
+# exception" — a genuine mission difference, not just an execution
+# difference. On closer inspection it wasn't: there was no legitimate
+# strategic basis for unconditionally suppressing trump control on
+# trick one regardless of hand strength, the same violation class as
+# the also-removed beginner "discard highest first" branch (ESCAPE,
+# following-as-partner). Both were removed entirely rather than
+# reclassified — "goals change, not IQ" ruled them out, it didn't
+# relocate them. No genuine Neither-category exception remains standing
+# among the six; if one shows up later, it should clear the same bar
+# these two failed before being treated as settled.
 #
 # This naming is documentation only. reason_log strings, branch
 # order, and helper functions are unchanged by this section — it's a
@@ -656,6 +678,71 @@ static func decide_play(
 	# trick the human is already winning.
 	if is_partner:
 		if is_leading:
+			# Give partner (human) a free discard when known void in a suit —
+			# not a guaranteed win, a reasonable-confidence lead. If it's the
+			# double or currently the highest remaining tile in that suit,
+			# that's good enough to try; an opponent could still trump in,
+			# and whether the human plays a counter into the resulting trick
+			# isn't something we can know or need to control — we're just
+			# creating the opening. No difficulty gate: cooperative judgment
+			# is constant across difficulty, only knowledge access limits it.
+			if public_knowledge != null:
+				var human_void_leads = legal.filter(func(d):
+					if d.is_trump(trump):
+						return false
+					var suit = d.get_suit(trump, trick.nello_doubles, -1)
+					if not public_knowledge.void_suits(partner_id).has(suit):
+						return false
+					if d.is_double():
+						return true
+					var best_in_suit = public_knowledge.best_remaining_card_for_suit(suit)
+					return best_in_suit != null and best_in_suit.debug_string() == d.debug_string())
+				if human_void_leads.size() > 0:
+					var chosen = _highest_in(human_void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Giving you a free discard.")
+					return chosen
+
+			# Expert: target a suit the opposing team is known void in — same
+			# concept as the opponent-leading version (FORCE_A_VOID), mirrored
+			# for partner leads. The opposing team can't follow suit here, so
+			# only we or the human can win this trick naturally (an opponent
+			# could still trump in — an acceptable risk, same as the
+			# opponent-leading version accepts).
+			#
+			# High vs. low is a self-assessment gamble, not knowledge of the
+			# human's hand: if we still have a strong lead available for next
+			# trick (trump control, or a safe off-suit tile), take this one and
+			# keep the initiative. If we don't, pass the lead low — either the
+			# human wins it with something better, or we win it anyway by
+			# accident, both fine outcomes.
+			if public_knowledge != null:
+				var opposing_team = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
+				var void_leads = legal.filter(func(d):
+					if d.is_trump(trump):
+						return false
+					var suit = d.get_suit(trump, trick.nello_doubles, -1)
+					for opp in opposing_team:
+						if public_knowledge.void_suits(opp).has(suit):
+							return true
+					return false)
+				if void_leads.size() > 0:
+					# Self-assessment: do we have a strong lead available next trick?
+					var trumps_check = legal.filter(func(d): return d.is_trump(trump))
+					var holds_double_check = trumps_check.any(func(d): return d.is_double())
+					var have_trump_control = (trumps_check.size() >= 3 and holds_double_check) or trumps_check.size() >= 4
+					var have_safe_off_suit = legal.any(func(d):
+						return not d.is_trump(trump) and d.pip_sum() != 5 and d.pip_sum() != 10)
+					var we_are_strong = have_trump_control or have_safe_off_suit
+
+					var chosen: Domino
+					if we_are_strong:
+						chosen = _highest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+						reason_log.append("Leading a suit our opponents can't follow.")
+					else:
+						chosen = _lowest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+						reason_log.append("Opponents are void - hoping you can take the lead.")
+					return chosen
+
 			# Lead high non-trump non-counter: gives human a safe suit to follow
 			# without burning trump or risking a vulnerable point card.
 			# Trump control checked FIRST — a partner who holds enough trump to draw
@@ -840,16 +927,6 @@ static func decide_play(
 			return candidate
 
 		# Can't win — discard to protect point cards.
-		if difficulty == "beginner":
-			# Beginner Partner: more aggressive counter protection — discard highest
-			# non-counter non-trump first to protect every pip we have.
-			var safe_high = legal.filter(func(d):
-				return d.pip_sum() != 5 and d.pip_sum() != 10 and not d.is_trump(trump))
-			if safe_high.size() > 0:
-				var discard = _highest_in(safe_high, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Can't win this one — protecting our counts.")
-				return discard
-
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
 			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
@@ -861,18 +938,13 @@ static func decide_play(
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
 	# Standard: solid casual play — not bloodthirsty, not passive.
-	# Beginner: conservative opens, only contests tricks with counters already in them.
+	# Beginner: only contests tricks with counters already in them when following.
+	# (The old "conservative opens" trump-avoidance rule for leading was removed
+	# July 6, 2026 — no legitimate strategic basis; see Phase3_Objective_Audit.md
+	# branch #19.)
 	# Expert: compete harder (handled in bidding); TODO Phase 3 opportunism.
 
 	if is_leading:
-		# Beginner: never lead trump on the opening trick of the hand.
-		if difficulty == "beginner" and hand.size() == 7:
-			var non_trumps_beginner = legal.filter(func(d): return not d.is_trump(trump))
-			if non_trumps_beginner.size() > 0:
-				var best = _highest_in(non_trumps_beginner, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Feeling out the hand before committing trump.")
-				return best
-
 		# Expert: target a suit an opponent is known void in — leading it forces
 		# them to trump in (spending trump) or discard (possibly a counter).
 		# Runs before the trump-control check below, so a known void takes
