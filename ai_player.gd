@@ -943,7 +943,16 @@ static func decide_play(
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
 			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("Can't win this one — saving my count for later.")
+			var had_counter_to_avoid = non_counters_discard.size() < legal.size()
+			var double_avoided = non_counters_discard.any(func(d): return d.is_double()) and not discard.is_double()
+			if had_counter_to_avoid and double_avoided:
+				reason_log.append("Can't win this one — saving my count and my double for later.")
+			elif had_counter_to_avoid:
+				reason_log.append("Can't win this one — saving my count for later.")
+			elif double_avoided:
+				reason_log.append("Can't win this one — saving my double for later.")
+			else:
+				reason_log.append("Can't win this one — discarding low.")
 			return discard
 		var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		reason_log.append("Nowhere to hide — had to let a count go.")
@@ -1045,6 +1054,8 @@ static func decide_play(
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
 		var discard = _lowest_in(non_counters, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		var had_counter_to_avoid = non_counters.size() < legal.size()
+		var double_avoided = non_counters.any(func(d): return d.is_double()) and not discard.is_double()
 		if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 			reason_log.append("Taking this one.")
 		elif legal.size() == 1:
@@ -1053,9 +1064,23 @@ static func decide_play(
 			reason_log.append("No way to win this one.")
 		else:
 			if can_win.size() > 0:
-				reason_log.append("Not worth chasing — protecting my count instead.")
+				if had_counter_to_avoid and double_avoided:
+					reason_log.append("Not worth chasing — protecting my count and my double instead.")
+				elif had_counter_to_avoid:
+					reason_log.append("Not worth chasing — protecting my count instead.")
+				elif double_avoided:
+					reason_log.append("Not worth chasing — protecting my double instead.")
+				else:
+					reason_log.append("Not worth chasing this one.")
 			else:
-				reason_log.append("Can't win this one — protecting my count.")
+				if had_counter_to_avoid and double_avoided:
+					reason_log.append("Can't win this one — protecting my count and my double.")
+				elif had_counter_to_avoid:
+					reason_log.append("Can't win this one — protecting my count.")
+				elif double_avoided:
+					reason_log.append("Can't win this one — protecting my double.")
+				else:
+					reason_log.append("Can't win this one — discarding low.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 	if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
