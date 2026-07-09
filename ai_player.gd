@@ -645,8 +645,20 @@ static func decide_play(
 	# when partner should override it under Marks are collected. See design notes.
 	if contract == BidScript.Type.MARKS or contract == BidScript.Type.PLUNGE or contract == BidScript.Type.SPLASH:
 		if is_leading:
-			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("Going for the trick.")
+			# Under Marks/Plunge/Splash every trick matters immediately — no
+			# minimum trump count to wait for the way standard CONTROL_TRUMP
+			# has. If any trump is held, lead the best of it to start drawing
+			# opponents' trump out right away. Checking trump status first
+			# avoids comparing get_rank() across suits, where a trump double
+			# and an off-suit double both rank 13 and would otherwise tie.
+			var trumps_held = legal.filter(func(d): return d.is_trump(trump))
+			var best: Domino
+			if trumps_held.size() > 0:
+				best = _highest_in(trumps_held, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Calling in trump — going for every trick.")
+			else:
+				best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Going for the trick.")
 			return best
 
 		var human_winning_marks = _partner_is_winning(plays, partner_id, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
