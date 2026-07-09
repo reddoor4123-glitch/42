@@ -782,12 +782,31 @@ static func decide_play(
 				return best
 
 			# Safe off-suit lead — now the fallback tier, only reached when trump
-			# control doesn't apply.
+			# control doesn't apply. "Safe" is checked against PublicKnowledge
+			# rather than just our own hand: a counter-double is included once
+			# trump is provably exhausted (BUG-006), and the reason string only
+			# claims certainty when best_remaining_card_for_suit() confirms it.
 			var off_safe = legal.filter(func(d):
-				return not d.is_trump(trump) and d.pip_sum() != 5 and d.pip_sum() != 10)
+				if d.is_trump(trump):
+					return false
+				if d.pip_sum() != 5 and d.pip_sum() != 10:
+					return true
+				if d.is_double() and public_knowledge != null:
+					var own_trump_count = hand.filter(func(t): return t.is_trump(trump)).size()
+					return trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
+				return false)
 			if off_safe.size() > 0:
 				var best = _highest_in(off_safe, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Opening a safe suit for you to follow.")
+				var best_suit = best.get_suit(trump, trick.nello_doubles, -1)
+				var top_remaining = public_knowledge.best_remaining_card_for_suit(best_suit) if public_knowledge != null else null
+				var provably_best = top_remaining != null and top_remaining.debug_string() == best.debug_string()
+
+				if best.pip_sum() == 5 or best.pip_sum() == 10:
+					reason_log.append("Leading my double to lock in the points.")
+				elif provably_best:
+					reason_log.append("Nothing can beat this.")
+				else:
+					reason_log.append("Opening this suit for you to build on.")
 				return best
 
 			# Counter protection: prefer non-counter leads even if that's all that's left.
