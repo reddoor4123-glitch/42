@@ -156,7 +156,9 @@ reason-string rewrite, not something to fix in isolation.
 - Phase 1 reason-string rewrite (~24 strings, fully specced, not applied).
 - Orphaned settings sweep beyond `nello_doubles_reversed`:
   `follow_me_doubles_mode`, `follow_me_allow_as_points_bid`,
-  `allow_small_end_opening_lead`, `sevens_tie_rule` (stub, "earliest" only).
+  `allow_small_end_opening_lead`. (~~`sevens_tie_rule`~~ — verified genuinely
+  orphaned, never consulted anywhere, no UI control existed for it either;
+  deleted entirely July 6, 2026 rather than wired up.)
 - Follow Me dead-code decision (amend convention vs. delete dead branches).
 - AI special contract bidding (Nello/Sevens/Plunge/Splash initiation).
 - Mobile portrait layout pass; hardcoded font sizes.

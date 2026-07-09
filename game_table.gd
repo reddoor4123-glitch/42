@@ -1957,7 +1957,6 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.sevens_require_minimum_bid = src.sevens_require_minimum_bid
 	dst.sevens_minimum_bid = src.sevens_minimum_bid
 	dst.sevens_require_seven_in_hand = src.sevens_require_seven_in_hand
-	dst.sevens_tie_rule = src.sevens_tie_rule
 	dst.doubles_are_trump = src.doubles_are_trump
 	dst.doubles_trump_reversed = src.doubles_trump_reversed
 	dst.default_trump_if_undeclared = src.default_trump_if_undeclared

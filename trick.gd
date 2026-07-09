@@ -104,8 +104,11 @@ func _determine_winner_standard() -> int:
 # Sevens winner is whoever's domino is CLOSEST to a pip-sum of 7. This uses
 # a strict "<" comparison, which already implements the family's confirmed
 # tie rule: the first domino to reach the best distance holds the trick —
-# a later domino merely TYING that distance does not overtake it.
-# (settings.sevens_tie_rule == "earliest" matches this behavior exactly.)
+# a later domino merely TYING that distance does not overtake it. This is
+# the only tie rule the engine implements; it isn't configurable (an
+# orphaned settings.sevens_tie_rule string used to describe this exact
+# behavior and nothing else — removed July 6, 2026, never actually
+# consulted anywhere).
 func _determine_winner_sevens() -> int:
 	var best_play = plays[0]
 	var best_distance = abs(7 - (best_play["domino"] as Domino).pip_sum())
