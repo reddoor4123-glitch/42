@@ -63,6 +63,7 @@ var allow_sevens: bool = true
 var sevens_require_minimum_bid: bool = false
 var sevens_minimum_bid: int = 42
 var sevens_require_seven_in_hand: bool = true    # Must hold a domino summing to 7 to call it
+var sevens_only_on_forced_bid: bool = false
 
 # ─────────────────────────────────────────────
 #  TRUMP & SUIT RULES
@@ -235,6 +236,7 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"sevens_require_minimum_bid": s.sevens_require_minimum_bid,
 		"sevens_minimum_bid": s.sevens_minimum_bid,
 		"sevens_require_seven_in_hand": s.sevens_require_seven_in_hand,
+		"sevens_only_on_forced_bid": s.sevens_only_on_forced_bid,
 		"doubles_are_trump": s.doubles_are_trump,
 		"doubles_trump_reversed": s.doubles_trump_reversed,
 		"default_trump_if_undeclared": s.default_trump_if_undeclared,
@@ -281,6 +283,7 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.sevens_require_minimum_bid = d.get("sevens_require_minimum_bid", false)
 	s.sevens_minimum_bid = d.get("sevens_minimum_bid", 42)
 	s.sevens_require_seven_in_hand = d.get("sevens_require_seven_in_hand", true)
+	s.sevens_only_on_forced_bid = d.get("sevens_only_on_forced_bid", false)
 	s.doubles_are_trump = d.get("doubles_are_trump", false)
 	s.doubles_trump_reversed = d.get("doubles_trump_reversed", false)
 	s.default_trump_if_undeclared = d.get("default_trump_if_undeclared", false)

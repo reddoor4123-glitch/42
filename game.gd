@@ -109,11 +109,13 @@ func bid_context(player_id: int, bid_position: int) -> Dictionary:
 
 # Returns which special contract types are currently eligible given settings
 # and the player's hand. Only checks NELLO, SEVENS, PLUNGE, and SPLASH.
-func eligible_contracts(hand: Array) -> Array:
+func eligible_contracts(hand: Array, context: Dictionary = {}) -> Array:
 	var result: Array = []
-	if settings.allow_nello:
+	var is_forced_moment = context.get("is_dealer", false) and context.get("all_others_passed", false)
+	if settings.allow_nello and (not settings.nello_only_on_forced_bid or is_forced_moment):
 		result.append(BidScript.Type.NELLO)
-	if settings.allow_sevens and (not settings.sevens_require_seven_in_hand or _has_seven_domino(hand)):
+	if settings.allow_sevens and (not settings.sevens_require_seven_in_hand or _has_seven_domino(hand)) \
+			and (not settings.sevens_only_on_forced_bid or is_forced_moment):
 		result.append(BidScript.Type.SEVENS)
 	if settings.allow_plunge and count_doubles(hand) >= settings.plunge_minimum_doubles:
 		result.append(BidScript.Type.PLUNGE)

@@ -59,10 +59,16 @@ static func is_valid(new_bid: Bid, current_high: Bid, settings: GameSettings, co
 
 	if new_bid.type == Type.NELLO and not settings.allow_nello:
 		return false
+	if new_bid.type == Type.NELLO and settings.nello_only_on_forced_bid:
+		if not context.get("is_dealer", false) or not context.get("all_others_passed", false):
+			return false
 	if new_bid.type == Type.FOLLOW_ME and not settings.allow_follow_me:
 		return false
 	if new_bid.type == Type.SEVENS and not settings.allow_sevens:
 		return false
+	if new_bid.type == Type.SEVENS and settings.sevens_only_on_forced_bid:
+		if not context.get("is_dealer", false) or not context.get("all_others_passed", false):
+			return false
 
 	if new_bid.type == Type.PLUNGE:
 		if not settings.allow_plunge:

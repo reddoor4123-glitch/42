@@ -85,6 +85,7 @@ var waiting_for_trump: bool = false
 var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
 var human_is_forced: bool = false
+var _human_bid_position: int = -1
 
 # Viewport-proportional tile sizes — computed once in _build_ui()
 var TILE_FULL: Vector2
@@ -940,6 +941,7 @@ func _start_bidding():
 	_set_info("Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 	game.current_bid = null
 	human_is_forced = false
+	_human_bid_position = -1
 	_bid_panel_expanded = false
 	_selected_contract_type = BidScript.Type.MARKS
 	_clear_bid_bubbles()
@@ -954,6 +956,7 @@ func _run_bidding_sequence():
 	for i in range(4):
 		var pid = bid_order[i]
 		if pid == human_seat:
+			_human_bid_position = i
 			if i == 3 and game.current_bid == null and game.settings.allow_forced_bid:
 				human_is_forced = true
 				_set_status("Everyone passed — you must bid at least %d!" % game.settings.forced_bid_minimum)
@@ -1003,7 +1006,8 @@ func _show_bid_panel():
 		auction_floor = current_high.value + 1
 
 	const CONTRACT_ORDER = [BidScript.Type.NELLO, BidScript.Type.SEVENS, BidScript.Type.PLUNGE, BidScript.Type.SPLASH]
-	var eligible: Array = game.eligible_contracts(game.players[human_seat].hand)
+	var bid_ctx = game.bid_context(human_seat, _human_bid_position)
+	var eligible: Array = game.eligible_contracts(game.players[human_seat].hand, bid_ctx)
 	var contracts: Array = []
 	for t in CONTRACT_ORDER:
 		if eligible.has(t):
@@ -1814,6 +1818,8 @@ func _build_settings_content(from_create: bool = false):
 	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
 	_add_checkbox_row(nello_sub, "Allow Own Suit (Reversed)", _pending_settings.nello_doubles_reversed,
 		func(v): _pending_settings.nello_doubles_reversed = v)
+	_add_checkbox_row(nello_sub, "Only on Forced Bid", _pending_settings.nello_only_on_forced_bid,
+		func(v): _pending_settings.nello_only_on_forced_bid = v)
 
 	var plunge_cb = _add_checkbox_row(sc_body, "Allow Plunge", _pending_settings.allow_plunge,
 		func(v): _pending_settings.allow_plunge = v)
@@ -1836,6 +1842,8 @@ func _build_settings_content(from_create: bool = false):
 	var sevens_sub = _add_sub_container(sc_body, sevens_cb)
 	_add_checkbox_row(sevens_sub, "Require 7-pip Domino in Hand", _pending_settings.sevens_require_seven_in_hand,
 		func(v): _pending_settings.sevens_require_seven_in_hand = v)
+	_add_checkbox_row(sevens_sub, "Only on Forced Bid", _pending_settings.sevens_only_on_forced_bid,
+		func(v): _pending_settings.sevens_only_on_forced_bid = v)
 
 	_add_checkbox_row(sc_body, "Allow Follow Me / No Trump", _pending_settings.allow_follow_me,
 		func(v): _pending_settings.allow_follow_me = v)
@@ -2014,6 +2022,7 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.sevens_require_minimum_bid = src.sevens_require_minimum_bid
 	dst.sevens_minimum_bid = src.sevens_minimum_bid
 	dst.sevens_require_seven_in_hand = src.sevens_require_seven_in_hand
+	dst.sevens_only_on_forced_bid = src.sevens_only_on_forced_bid
 	dst.doubles_are_trump = src.doubles_are_trump
 	dst.doubles_trump_reversed = src.doubles_trump_reversed
 	dst.default_trump_if_undeclared = src.default_trump_if_undeclared
