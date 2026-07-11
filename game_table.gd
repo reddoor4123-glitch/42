@@ -1751,8 +1751,6 @@ func _build_settings_content(from_create: bool = false):
 	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
 	_add_checkbox_row(nello_sub, "Allow Own Suit (Reversed)", _pending_settings.nello_doubles_reversed,
 		func(v): _pending_settings.nello_doubles_reversed = v)
-	_add_checkbox_row(nello_sub, "Allow Exchange", _pending_settings.allow_nello_exchange,
-		func(v): _pending_settings.allow_nello_exchange = v)
 
 	var plunge_cb = _add_checkbox_row(sc_body, "Allow Plunge", _pending_settings.allow_plunge,
 		func(v): _pending_settings.allow_plunge = v)
@@ -1787,25 +1785,6 @@ func _build_settings_content(from_create: bool = false):
 		func(v): _pending_settings.force_trump_opening_lead = v)
 	_add_checkbox_row(trump_body, "Allow Small-End Opening Lead", _pending_settings.allow_small_end_opening_lead,
 		func(v): _pending_settings.allow_small_end_opening_lead = v)
-
-	# ── SCORING ──
-	var score_body = _make_section(_settings_content_vbox, "SCORING")
-	_add_checkbox_row(score_body, "Score by Marks", _pending_settings.score_by_marks,
-		func(v): _pending_settings.score_by_marks = v)
-	_add_spinbox_row(score_body, "Marks to Win", 1, 21, _pending_settings.marks_to_win,
-		func(v): _pending_settings.marks_to_win = v)
-	_add_option_row(score_body, "Set Penalty", [
-		["Bid value", "bid"], ["All points (42)", "all_points"]
-	], _pending_settings.set_penalty, func(v): _pending_settings.set_penalty = v)
-	_add_checkbox_row(score_body, "Count Dominoes in Tricks", _pending_settings.count_dominos_in_tricks,
-		func(v): _pending_settings.count_dominos_in_tricks = v)
-
-	# ── DISPLAY ──
-	var disp_body = _make_section(_settings_content_vbox, "DISPLAY")
-	_add_checkbox_row(disp_body, "Allow Early Hand End", _pending_settings.allow_early_hand_end,
-		func(v): _pending_settings.allow_early_hand_end = v)
-	_add_checkbox_row(disp_body, "Stack Trick Display", _pending_settings.stack_tricks_display,
-		func(v): _pending_settings.stack_tricks_display = v)
 
 	# ── Save as preset ──
 	var save_sep = HSeparator.new()
@@ -1943,7 +1922,6 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.bid_direction = src.bid_direction
 	dst.allow_forced_bid = src.allow_forced_bid
 	dst.forced_bid_minimum = src.forced_bid_minimum
-	dst.reshake_if_all_pass = src.reshake_if_all_pass
 	dst.minimum_bid = src.minimum_bid
 	dst.max_open_bid_marks = src.max_open_bid_marks
 	dst.allow_jump_bids = src.allow_jump_bids
@@ -1955,7 +1933,6 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.splash_bid_marks = src.splash_bid_marks
 	dst.allow_low_no = src.allow_low_no
 	dst.allow_nello = src.allow_nello
-	dst.nello_all_four_play = src.nello_all_four_play
 	dst.nello_partner_sits_out = src.nello_partner_sits_out
 	dst.allow_nello_exchange = src.allow_nello_exchange
 	dst.nello_exchange_bidder_gives = src.nello_exchange_bidder_gives
@@ -1980,18 +1957,9 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.default_trump_if_undeclared = src.default_trump_if_undeclared
 	dst.allow_small_end_opening_lead = src.allow_small_end_opening_lead
 	dst.force_trump_opening_lead = src.force_trump_opening_lead
-	dst.score_by_marks = src.score_by_marks
 	dst.marks_to_win = src.marks_to_win
-	dst.points_to_win = src.points_to_win
-	dst.set_penalty = src.set_penalty
-	dst.count_dominos_in_tricks = src.count_dominos_in_tricks
-	dst.winning_trick_bonus = src.winning_trick_bonus
-	dst.allow_renege_challenge = src.allow_renege_challenge
-	dst.renege_penalty = src.renege_penalty
 	dst.shuffle_style = src.shuffle_style
 	dst.allow_table_talk = src.allow_table_talk
-	dst.allow_early_hand_end = src.allow_early_hand_end
-	dst.stack_tricks_display = src.stack_tricks_display
 	dst.ai_difficulty = src.ai_difficulty
 	return dst
 

@@ -9,7 +9,6 @@ var bid_direction: String = "shaker_left_first"
 # "shaker_right_first": shaker+1, shaker+2, shaker+3, shaker
 var allow_forced_bid: bool = true           # If all pass, shaker must bid minimum
 var forced_bid_minimum: int = 30            # Common values: 30, 42
-var reshake_if_all_pass: bool = false        # Alternative to forced bid: just reshake, no penalty
 var minimum_bid: int = 30                   # Floor for all bids
 var max_open_bid_marks: int = 2             # Cap on opening/non-special bids (marks); Plunge overrides this
 var allow_jump_bids: bool = false           # Allow bidding more than 1 above current outside Plunge
@@ -29,7 +28,6 @@ var allow_low_no: bool = false              # Dealer-only "points" version of Ne
 # ─────────────────────────────────────────────
 var allow_nello: bool = true
 
-var nello_all_four_play: bool = false       # true = all 4 play; false = bidder + 2 opponents only
 var nello_partner_sits_out: bool = true
 
 var allow_nello_exchange: bool = true
@@ -80,23 +78,14 @@ var force_trump_opening_lead: bool = false     # If true, the very first lead mu
 # ─────────────────────────────────────────────
 #  SCORING
 # ─────────────────────────────────────────────
-var score_by_marks: bool = true
 var marks_to_win: int = 7
-var points_to_win: int = 250
-var set_penalty: String = "bid"             # "bid" or "all_points"
-var count_dominos_in_tricks: bool = true
-var winning_trick_bonus: int = 0
 var win_by_two: bool = false
 
 # ─────────────────────────────────────────────
 #  GAME FLOW / DISPLAY
 # ─────────────────────────────────────────────
-var allow_renege_challenge: bool = true
-var renege_penalty: String = "set"          # "set" or "points"
 var shuffle_style: String = "random"
 var allow_table_talk: bool = false
-var allow_early_hand_end: bool = true       # Lay-down / early stop once outcome is locked in
-var stack_tricks_display: bool = false      # Hide all but most recent 1-2 tricks per side instead of showing all flat
 var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
 
 # ─────────────────────────────────────────────
@@ -124,7 +113,6 @@ static func standard_42() -> GameSettings:
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
 	s.allow_low_no = false
-	s.score_by_marks = true
 	s.marks_to_win = 7
 	s.ai_difficulty = "standard"
 	return s
@@ -148,7 +136,6 @@ static func tournament_rules() -> GameSettings:
 	s.allow_follow_me = true
 	s.allow_sevens = false
 	s.allow_low_no = false
-	s.score_by_marks = true
 	s.marks_to_win = 7
 	s.ai_difficulty = "standard"
 	return s
@@ -178,7 +165,6 @@ static func lechner_hall() -> GameSettings:
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
 	s.allow_low_no = false
-	s.score_by_marks = true
 	s.marks_to_win = 7
 	s.win_by_two = true
 	s.ai_difficulty = "standard"
@@ -190,7 +176,6 @@ static func teel_rules() -> GameSettings:
 	s.bid_direction = "shaker_left_first"   # left of shaker bids first, shaker bids last, going right
 	s.allow_forced_bid = true
 	s.forced_bid_minimum = 30
-	s.reshake_if_all_pass = false
 	s.minimum_bid = 30
 	s.allow_jump_bids = true                # "any amount up to one mark higher" per family rule
 
@@ -215,13 +200,7 @@ static func teel_rules() -> GameSettings:
 
 	s.allow_low_no = false                  # not part of family rules
 
-	s.score_by_marks = true
 	s.marks_to_win = 7
-	s.count_dominos_in_tricks = true
-	s.set_penalty = "bid"
-
-	s.allow_early_hand_end = true
-	s.stack_tricks_display = false
 	s.ai_difficulty = "standard"
 	return s
 
@@ -233,7 +212,6 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"bid_direction": s.bid_direction,
 		"allow_forced_bid": s.allow_forced_bid,
 		"forced_bid_minimum": s.forced_bid_minimum,
-		"reshake_if_all_pass": s.reshake_if_all_pass,
 		"minimum_bid": s.minimum_bid,
 		"max_open_bid_marks": s.max_open_bid_marks,
 		"allow_jump_bids": s.allow_jump_bids,
@@ -245,7 +223,6 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"splash_bid_marks": s.splash_bid_marks,
 		"allow_low_no": s.allow_low_no,
 		"allow_nello": s.allow_nello,
-		"nello_all_four_play": s.nello_all_four_play,
 		"nello_partner_sits_out": s.nello_partner_sits_out,
 		"allow_nello_exchange": s.allow_nello_exchange,
 		"nello_exchange_bidder_gives": s.nello_exchange_bidder_gives,
@@ -270,19 +247,10 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"default_trump_if_undeclared": s.default_trump_if_undeclared,
 		"allow_small_end_opening_lead": s.allow_small_end_opening_lead,
 		"force_trump_opening_lead": s.force_trump_opening_lead,
-		"score_by_marks": s.score_by_marks,
 		"marks_to_win": s.marks_to_win,
-		"points_to_win": s.points_to_win,
-		"set_penalty": s.set_penalty,
-		"count_dominos_in_tricks": s.count_dominos_in_tricks,
-		"winning_trick_bonus": s.winning_trick_bonus,
 		"win_by_two": s.win_by_two,
-		"allow_renege_challenge": s.allow_renege_challenge,
-		"renege_penalty": s.renege_penalty,
 		"shuffle_style": s.shuffle_style,
 		"allow_table_talk": s.allow_table_talk,
-		"allow_early_hand_end": s.allow_early_hand_end,
-		"stack_tricks_display": s.stack_tricks_display,
 		"ai_difficulty": s.ai_difficulty,
 	}
 
@@ -291,7 +259,6 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.bid_direction = d.get("bid_direction", "shaker_left_first")
 	s.allow_forced_bid = d.get("allow_forced_bid", true)
 	s.forced_bid_minimum = d.get("forced_bid_minimum", 30)
-	s.reshake_if_all_pass = d.get("reshake_if_all_pass", false)
 	s.minimum_bid = d.get("minimum_bid", 30)
 	s.max_open_bid_marks = d.get("max_open_bid_marks", 2)
 	s.allow_jump_bids = d.get("allow_jump_bids", false)
@@ -303,7 +270,6 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.splash_bid_marks = d.get("splash_bid_marks", 2)
 	s.allow_low_no = d.get("allow_low_no", false)
 	s.allow_nello = d.get("allow_nello", true)
-	s.nello_all_four_play = d.get("nello_all_four_play", false)
 	s.nello_partner_sits_out = d.get("nello_partner_sits_out", true)
 	s.allow_nello_exchange = d.get("allow_nello_exchange", true)
 	s.nello_exchange_bidder_gives = d.get("nello_exchange_bidder_gives", "any")
@@ -328,18 +294,9 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.default_trump_if_undeclared = d.get("default_trump_if_undeclared", false)
 	s.allow_small_end_opening_lead = d.get("allow_small_end_opening_lead", false)
 	s.force_trump_opening_lead = d.get("force_trump_opening_lead", false)
-	s.score_by_marks = d.get("score_by_marks", true)
 	s.marks_to_win = d.get("marks_to_win", 7)
-	s.points_to_win = d.get("points_to_win", 250)
-	s.set_penalty = d.get("set_penalty", "bid")
-	s.count_dominos_in_tricks = d.get("count_dominos_in_tricks", true)
-	s.winning_trick_bonus = d.get("winning_trick_bonus", 0)
 	s.win_by_two = d.get("win_by_two", false)
-	s.allow_renege_challenge = d.get("allow_renege_challenge", true)
-	s.renege_penalty = d.get("renege_penalty", "set")
 	s.shuffle_style = d.get("shuffle_style", "random")
 	s.allow_table_talk = d.get("allow_table_talk", false)
-	s.allow_early_hand_end = d.get("allow_early_hand_end", true)
-	s.stack_tricks_display = d.get("stack_tricks_display", false)
 	s.ai_difficulty = d.get("ai_difficulty", "standard")
 	return s

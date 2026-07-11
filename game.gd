@@ -142,9 +142,8 @@ func resolve_bidding(all_bids: Array) -> RefCounted:
 		for b in all_bids:
 			if b.type != BidScript.Type.PASS:
 				current_bid = b
-	# Forced bid: if still no winner, shaker must bid minimum (unless the
-	# table prefers to just reshake with no penalty)
-	if current_bid == null and settings.allow_forced_bid and not settings.reshake_if_all_pass:
+	# Forced bid: if still no winner, shaker must bid minimum.
+	if current_bid == null and settings.allow_forced_bid:
 		current_bid = BidScript.new(BidScript.Type.POINTS, settings.forced_bid_minimum, shaker)
 	return current_bid
 
