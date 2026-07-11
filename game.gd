@@ -183,9 +183,9 @@ func start_trick(leading_player: int):
 func get_legal_moves(player: Player) -> Array[Domino]:
 	return current_trick.get_legal_moves(player.hand)
 
-func play_domino(player: Player, domino: Domino):
+func play_domino(player: Player, domino: Domino, declared_suit: int = -1):
 	player.hand.erase(domino)
-	current_trick.add_play(player.id, domino)
+	current_trick.add_play(player.id, domino, declared_suit)
 
 func resolve_trick() -> int:
 	var winner_id = current_trick.determine_winner()

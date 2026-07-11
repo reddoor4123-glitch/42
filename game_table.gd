@@ -37,6 +37,8 @@ var _doubles_trump_reversed_btn: Button = null
 var _follow_me_btn: Button = null
 var nello_panel: PanelContainer
 var _nello_reversed_btn: Button = null
+var _small_end_active: bool = false
+var _small_end_toggle_btn: Button = null
 var preset_panel: PanelContainer
 var status_label: Label
 var settings_panel: Control = null
@@ -562,6 +564,22 @@ func _build_ui():
 	player_hand_container = HBoxContainer.new()
 	player_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	player_hand_container.custom_minimum_size = Vector2(0, 100)
+
+	# --- Small-end opening lead toggle — sits directly above the player's own
+	# hand (not in the shared trick-display area) so it reads as the human's
+	# control, not something ambiguous near the AI seats.
+	var se_row = HBoxContainer.new()
+	se_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(se_row)
+
+	_small_end_toggle_btn = Button.new()
+	_small_end_toggle_btn.text = "Open with Small End"
+	_small_end_toggle_btn.toggle_mode = true
+	_small_end_toggle_btn.custom_minimum_size = Vector2(160, 40)
+	_small_end_toggle_btn.visible = false
+	_small_end_toggle_btn.toggled.connect(_on_small_end_toggle_pressed)
+	se_row.add_child(_small_end_toggle_btn)
+
 	vbox.add_child(player_hand_container)
 
 	# Overlay for bid bubbles — sits on top of everything, ignores mouse
@@ -894,6 +912,10 @@ func _on_preset_chosen(key: String):
 
 func _start_hand():
 	_armed_domino = null
+	_small_end_active = false
+	if _small_end_toggle_btn:
+		_small_end_toggle_btn.visible = false
+		_small_end_toggle_btn.button_pressed = false
 	main_menu_panel.visible = false
 	preset_panel.visible = false
 	if _replay_btn and is_instance_valid(_replay_btn):
@@ -1303,6 +1325,22 @@ func _on_nello_mode_selected(mode: String):
 	_refresh_all_hands()
 	_begin_play()
 
+func _on_small_end_toggle_pressed(pressed: bool):
+	_small_end_active = pressed
+	_update_small_end_button_style()
+
+func _update_small_end_button_style():
+	_small_end_toggle_btn.modulate = Color(0.95, 0.80, 0.15) if _small_end_active else Color(1, 1, 1)
+
+func _update_small_end_button_visibility():
+	var is_opening_lead = game.tricks_played == 0 and game.current_trick.plays.size() == 0
+	var eligible = game.settings.allow_small_end_opening_lead and is_opening_lead
+	_small_end_toggle_btn.visible = eligible
+	if not eligible:
+		_small_end_active = false
+		_small_end_toggle_btn.button_pressed = false
+		_update_small_end_button_style()
+
 func _begin_play(leader_override: int = -1):
 	_clear_bid_bubbles()
 	var leader: int
@@ -1314,6 +1352,10 @@ func _begin_play(leader_override: int = -1):
 
 func _play_trick(leader: int):
 	_armed_domino = null
+	_small_end_active = false
+	_small_end_toggle_btn.visible = false
+	_small_end_toggle_btn.button_pressed = false
+	_update_small_end_button_style()
 	game.start_trick(leader)
 	_current_trick_reasons.clear()
 	_clear_play_area()
@@ -1348,6 +1390,7 @@ func _play_next_in_trick():
 			# to the normal wait-for-tap path below instead of dropping the turn.
 		_highlight_legal_moves()
 		waiting_for_human = true
+		_update_small_end_button_visibility()
 		_set_status("Your turn — tap a domino to play")
 	else:
 		status_label.text = "%s is thinking..." % _seat_label(player.id)
@@ -1397,10 +1440,19 @@ func _on_human_domino_pressed(tile: DominoTile):
 		var legal = game.get_legal_moves(game.players[human_seat])
 		if not legal.has(tile.domino):
 			return
+		var d = tile.domino
+		var is_opening_lead = game.tricks_played == 0 and game.current_trick.plays.size() == 0
+		var declared_suit = -1
+		if _small_end_active and is_opening_lead and not d.is_double() and not d.is_trump(game.trump):
+			declared_suit = min(d.left, d.right)
 		waiting_for_human = false
 		_armed_domino = null
+		_small_end_active = false
+		_small_end_toggle_btn.visible = false
+		_small_end_toggle_btn.button_pressed = false
+		_update_small_end_button_style()
 		_clear_highlights()
-		_execute_play(game.players[human_seat], tile.domino)
+		_execute_play(game.players[human_seat], d, declared_suit)
 		return
 
 	# Pre-arming: only once the trick has been led, and only before your turn.
@@ -1447,8 +1499,8 @@ func _ai_choose_domino(player: Player) -> Domino:
 		_last_play_reason = ""
 	return chosen
 
-func _execute_play(player: Player, domino: Domino):
-	game.play_domino(player, domino)
+func _execute_play(player: Player, domino: Domino, declared_suit: int = -1):
+	game.play_domino(player, domino, declared_suit)
 	var reason = _last_play_reason if _last_play_reason != "" else ("You played this" if player.is_human else "")
 	_current_trick_reasons.append({"player": player.id, "domino": domino, "reason": reason})
 	print("  [Trick %d] [%s] %s" % [game.tricks_played + 1, _player_label(player.id), reason])
