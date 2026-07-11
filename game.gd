@@ -175,7 +175,8 @@ func start_trick(leading_player: int):
 	current_trick = Trick.new()
 	var doubles_mode = active_nello_doubles_mode if variant == BidScript.Type.NELLO and active_nello_doubles_mode != "" else "high"
 	var doubles_rev = active_nello_doubles_reversed if variant == BidScript.Type.NELLO else false
-	current_trick.setup(trump, variant, doubles_mode, settings.doubles_trump_reversed, doubles_rev)
+	var force_lead = settings.force_trump_opening_lead and tricks_played == 0 and trump >= 0
+	current_trick.setup(trump, variant, doubles_mode, settings.doubles_trump_reversed, doubles_rev, force_lead)
 
 func get_legal_moves(player: Player) -> Array[Domino]:
 	return current_trick.get_legal_moves(player.hand)

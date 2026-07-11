@@ -28,8 +28,6 @@ var allow_low_no: bool = false              # Dealer-only "points" version of Ne
 # ─────────────────────────────────────────────
 var allow_nello: bool = true
 
-var nello_partner_sits_out: bool = true
-
 var allow_nello_exchange: bool = true
 var nello_exchange_bidder_gives: String = "any"   # "any", "high", "off_suit"
 var nello_exchange_partner_gives: String = "low"  # "any", "low", "bidder_calls"
@@ -101,7 +99,6 @@ static func standard_42() -> GameSettings:
 	s.max_open_bid_marks = 2
 	s.allow_jump_bids = false
 	s.allow_nello = true
-	s.nello_partner_sits_out = true
 	s.nello_doubles_mode = "own_suit"
 	s.allow_plunge = true
 	s.plunge_minimum_doubles = 4
@@ -129,7 +126,6 @@ static func tournament_rules() -> GameSettings:
 	s.allow_jump_bids = false
 	s.allow_nello = true
 	s.nello_only_on_forced_bid = true
-	s.nello_partner_sits_out = true
 	s.nello_doubles_mode = "high"
 	s.allow_plunge = false
 	s.allow_splash = false
@@ -152,7 +148,6 @@ static func lechner_hall() -> GameSettings:
 	s.max_open_bid_marks = 2
 	s.allow_jump_bids = false
 	s.allow_nello = true
-	s.nello_partner_sits_out = true
 	s.nello_doubles_mode = "own_suit"
 	s.nello_doubles_reversed = false
 	s.allow_plunge = true
@@ -185,7 +180,6 @@ static func teel_rules() -> GameSettings:
 	s.allow_splash = false                  # not mentioned by family; default off until confirmed
 
 	s.allow_nello = true
-	s.nello_partner_sits_out = true
 	s.allow_nello_exchange = true
 	s.nello_exchange_bidder_gives = "high"
 	s.nello_exchange_partner_gives = "low"
@@ -223,7 +217,6 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"splash_bid_marks": s.splash_bid_marks,
 		"allow_low_no": s.allow_low_no,
 		"allow_nello": s.allow_nello,
-		"nello_partner_sits_out": s.nello_partner_sits_out,
 		"allow_nello_exchange": s.allow_nello_exchange,
 		"nello_exchange_bidder_gives": s.nello_exchange_bidder_gives,
 		"nello_exchange_partner_gives": s.nello_exchange_partner_gives,
@@ -270,7 +263,6 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.splash_bid_marks = d.get("splash_bid_marks", 2)
 	s.allow_low_no = d.get("allow_low_no", false)
 	s.allow_nello = d.get("allow_nello", true)
-	s.nello_partner_sits_out = d.get("nello_partner_sits_out", true)
 	s.allow_nello_exchange = d.get("allow_nello_exchange", true)
 	s.nello_exchange_bidder_gives = d.get("nello_exchange_bidder_gives", "any")
 	s.nello_exchange_partner_gives = d.get("nello_exchange_partner_gives", "low")

@@ -10,13 +10,15 @@ var variant: int = 0
 var nello_doubles: String = "high"
 var doubles_trump_reversed: bool = false
 var own_suit_reversed: bool = false
+var force_trump_lead: bool = false
 
-func setup(trump_suit: int, bid_type: int, doubles_mode: String = "high", doubles_trump_rev: bool = false, own_suit_rev: bool = false):
+func setup(trump_suit: int, bid_type: int, doubles_mode: String = "high", doubles_trump_rev: bool = false, own_suit_rev: bool = false, force_trump_lead_in: bool = false):
 	trump = trump_suit
 	variant = bid_type
 	nello_doubles = doubles_mode
 	doubles_trump_reversed = doubles_trump_rev
 	own_suit_reversed = own_suit_rev
+	force_trump_lead = force_trump_lead_in
 
 # `declared_suit` is only used for the very first play of the trick, and
 # only matters when it's a deliberate override (the "small-end opening
@@ -57,6 +59,13 @@ func get_legal_moves(hand: Array[Domino]) -> Array[Domino]:
 				closest.append(d)
 		return closest
 	if plays.size() == 0:
+		if force_trump_lead:
+			var trump_only: Array[Domino] = []
+			for d in hand:
+				if d.is_trump(trump):
+					trump_only.append(d)
+			if trump_only.size() > 0:
+				return trump_only
 		return hand
 	var must_follow: Array[Domino] = []
 	for d in hand:

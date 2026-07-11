@@ -1744,8 +1744,6 @@ func _build_settings_content(from_create: bool = false):
 	var nello_cb = _add_checkbox_row(sc_body, "Allow Nello", _pending_settings.allow_nello,
 		func(v): _pending_settings.allow_nello = v)
 	var nello_sub = _add_sub_container(sc_body, nello_cb)
-	_add_checkbox_row(nello_sub, "Partner Sits Out", _pending_settings.nello_partner_sits_out,
-		func(v): _pending_settings.nello_partner_sits_out = v)
 	_add_option_row(nello_sub, "Doubles Mode", [
 		["High (standard)", "high"], ["Low", "low"], ["Own Suit", "own_suit"]
 	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
@@ -1933,7 +1931,6 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.splash_bid_marks = src.splash_bid_marks
 	dst.allow_low_no = src.allow_low_no
 	dst.allow_nello = src.allow_nello
-	dst.nello_partner_sits_out = src.nello_partner_sits_out
 	dst.allow_nello_exchange = src.allow_nello_exchange
 	dst.nello_exchange_bidder_gives = src.nello_exchange_bidder_gives
 	dst.nello_exchange_partner_gives = src.nello_exchange_partner_gives
