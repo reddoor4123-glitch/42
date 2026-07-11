@@ -16,6 +16,7 @@ var variant: int = 0                 # BidScript.Type value
 var nello_solo_player: int = -1
 var active_nello_doubles_mode: String = ""  # set per-hand; "" means use settings default
 var active_nello_doubles_reversed: bool = false
+var active_doubles_trump_reversed: bool = false
 var tricks_played: int = 0
 var current_trick: Trick = null
 var hand_history: Array = []         # Trick records for the current hand
@@ -58,6 +59,7 @@ func deal_hands():
 	nello_solo_player = -1
 	active_nello_doubles_mode = ""
 	active_nello_doubles_reversed = false
+	active_doubles_trump_reversed = false
 	hand_history.clear()
 	deal_snapshot.clear()
 	bid_decisions.clear()
@@ -176,7 +178,7 @@ func start_trick(leading_player: int):
 	var doubles_mode = active_nello_doubles_mode if variant == BidScript.Type.NELLO and active_nello_doubles_mode != "" else "high"
 	var doubles_rev = active_nello_doubles_reversed if variant == BidScript.Type.NELLO else false
 	var force_lead = settings.force_trump_opening_lead and tricks_played == 0 and trump >= 0
-	current_trick.setup(trump, variant, doubles_mode, settings.doubles_trump_reversed, doubles_rev, force_lead)
+	current_trick.setup(trump, variant, doubles_mode, active_doubles_trump_reversed, doubles_rev, force_lead)
 
 func get_legal_moves(player: Player) -> Array[Domino]:
 	return current_trick.get_legal_moves(player.hand)

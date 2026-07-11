@@ -31,10 +31,10 @@ var _us_tricks: TrickPile = null
 var _them_tricks: TrickPile = null
 var trump_panel: PanelContainer
 var trump_buttons: HBoxContainer
-var _follow_me_sep: HSeparator = null
-var _follow_me_btn: Button = null
-var _doubles_trump_sep: HSeparator = null
+var _special_trump_sep: HSeparator = null
 var _doubles_trump_btn: Button = null
+var _doubles_trump_reversed_btn: Button = null
+var _follow_me_btn: Button = null
 var nello_panel: PanelContainer
 var _nello_reversed_btn: Button = null
 var preset_panel: PanelContainer
@@ -486,29 +486,42 @@ func _build_ui():
 		else:
 			row2.add_child(btn)
 
-	# Doubles as Trump — built once, visibility toggled in _show_trump_panel()
-	_doubles_trump_sep = HSeparator.new()
-	_doubles_trump_sep.visible = false
-	trump_vbox.add_child(_doubles_trump_sep)
+	# Special trump options (Doubles, Doubles Reversed, Follow Me) — share one row
+	_special_trump_sep = HSeparator.new()
+	_special_trump_sep.visible = false
+	trump_vbox.add_child(_special_trump_sep)
+
+	var special_row = HBoxContainer.new()
+	special_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	special_row.add_theme_constant_override("separation", 8)
+	trump_vbox.add_child(special_row)
 
 	_doubles_trump_btn = Button.new()
 	_doubles_trump_btn.text = "Doubles  (Trump Suit)"
-	_doubles_trump_btn.custom_minimum_size = Vector2(180, 40)
+	_doubles_trump_btn.custom_minimum_size = Vector2(150, 40)
 	_doubles_trump_btn.visible = false
-	_doubles_trump_btn.pressed.connect(_on_trump_selected.bind(Domino.DOUBLES_TRUMP))
-	trump_vbox.add_child(_doubles_trump_btn)
+	_doubles_trump_btn.pressed.connect(func():
+		game.active_doubles_trump_reversed = false
+		_on_trump_selected(Domino.DOUBLES_TRUMP)
+	)
+	special_row.add_child(_doubles_trump_btn)
 
-	# Follow Me / No Trump — built once, visibility toggled in _show_trump_panel()
-	_follow_me_sep = HSeparator.new()
-	_follow_me_sep.visible = false
-	trump_vbox.add_child(_follow_me_sep)
+	_doubles_trump_reversed_btn = Button.new()
+	_doubles_trump_reversed_btn.text = "Doubles  (Reversed)"
+	_doubles_trump_reversed_btn.custom_minimum_size = Vector2(150, 40)
+	_doubles_trump_reversed_btn.visible = false
+	_doubles_trump_reversed_btn.pressed.connect(func():
+		game.active_doubles_trump_reversed = true
+		_on_trump_selected(Domino.DOUBLES_TRUMP)
+	)
+	special_row.add_child(_doubles_trump_reversed_btn)
 
 	_follow_me_btn = Button.new()
 	_follow_me_btn.text = "No Trump  (Follow Me)"
-	_follow_me_btn.custom_minimum_size = Vector2(180, 40)
+	_follow_me_btn.custom_minimum_size = Vector2(150, 40)
 	_follow_me_btn.visible = false
 	_follow_me_btn.pressed.connect(_on_trump_selected.bind(-1))
-	trump_vbox.add_child(_follow_me_btn)
+	special_row.add_child(_follow_me_btn)
 
 	# --- Nello doubles-mode panel ---
 	nello_panel = PanelContainer.new()
@@ -1250,11 +1263,11 @@ func _finish_bidding(_unused: Array):
 func _show_trump_panel(message: String = "You won the bid — call your trump suit"):
 	waiting_for_trump = true
 	var allow_follow = game.settings.allow_follow_me
-	_follow_me_sep.visible = allow_follow
-	_follow_me_btn.visible = allow_follow
 	var allow_doubles = game.settings.doubles_are_trump
-	_doubles_trump_sep.visible = allow_doubles
+	_follow_me_btn.visible = allow_follow
 	_doubles_trump_btn.visible = allow_doubles
+	_doubles_trump_reversed_btn.visible = allow_doubles and game.settings.doubles_trump_reversed
+	_special_trump_sep.visible = allow_follow or allow_doubles
 	trump_panel.visible = true
 	_set_status(message)
 
