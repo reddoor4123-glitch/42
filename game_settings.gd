@@ -31,7 +31,6 @@ var nello_exchange_bidder_gives: String = "any"   # "any", "high", "off_suit"
 var nello_exchange_partner_gives: String = "low"  # "any", "low", "bidder_calls"
 
 var nello_only_on_forced_bid: bool = false
-var nello_minimum_bid: int = 42
 
 var nello_doubles_mode: String = "high"
 # "high"     — doubles are highest of their suit (standard)
@@ -41,11 +40,6 @@ var nello_doubles_reversed: bool = false    # Within own_suit mode, double-blank
 # Ruleset toggle: whether "Own Suit (Reversed)" is offered as a doubles-mode
 # choice at all. Does not represent live game state — see
 # game.active_nello_doubles_reversed for that.
-
-var nello_bid_value: int = 42
-var nello_count_as_marks: bool = true
-var nello_failure_penalty: String = "bid"   # "bid" = opponents score bid; "double" = 2x; "set" = fixed
-var nello_failure_fixed_points: int = 42
 
 # ─────────────────────────────────────────────
 #  FOLLOW ME / NO TRUMP
@@ -206,13 +200,8 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"nello_exchange_bidder_gives": s.nello_exchange_bidder_gives,
 		"nello_exchange_partner_gives": s.nello_exchange_partner_gives,
 		"nello_only_on_forced_bid": s.nello_only_on_forced_bid,
-		"nello_minimum_bid": s.nello_minimum_bid,
 		"nello_doubles_mode": s.nello_doubles_mode,
 		"nello_doubles_reversed": s.nello_doubles_reversed,
-		"nello_bid_value": s.nello_bid_value,
-		"nello_count_as_marks": s.nello_count_as_marks,
-		"nello_failure_penalty": s.nello_failure_penalty,
-		"nello_failure_fixed_points": s.nello_failure_fixed_points,
 		"allow_follow_me": s.allow_follow_me,
 		"allow_sevens": s.allow_sevens,
 		"sevens_require_seven_in_hand": s.sevens_require_seven_in_hand,
@@ -245,13 +234,8 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.nello_exchange_bidder_gives = d.get("nello_exchange_bidder_gives", "any")
 	s.nello_exchange_partner_gives = d.get("nello_exchange_partner_gives", "low")
 	s.nello_only_on_forced_bid = d.get("nello_only_on_forced_bid", false)
-	s.nello_minimum_bid = d.get("nello_minimum_bid", 42)
 	s.nello_doubles_mode = d.get("nello_doubles_mode", "high")
 	s.nello_doubles_reversed = d.get("nello_doubles_reversed", false)
-	s.nello_bid_value = d.get("nello_bid_value", 42)
-	s.nello_count_as_marks = d.get("nello_count_as_marks", true)
-	s.nello_failure_penalty = d.get("nello_failure_penalty", "bid")
-	s.nello_failure_fixed_points = d.get("nello_failure_fixed_points", 42)
 	s.allow_follow_me = d.get("allow_follow_me", true)
 	s.allow_sevens = d.get("allow_sevens", true)
 	s.sevens_require_seven_in_hand = d.get("sevens_require_seven_in_hand", true)

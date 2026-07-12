@@ -2007,13 +2007,8 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.nello_exchange_bidder_gives = src.nello_exchange_bidder_gives
 	dst.nello_exchange_partner_gives = src.nello_exchange_partner_gives
 	dst.nello_only_on_forced_bid = src.nello_only_on_forced_bid
-	dst.nello_minimum_bid = src.nello_minimum_bid
 	dst.nello_doubles_mode = src.nello_doubles_mode
 	dst.nello_doubles_reversed = src.nello_doubles_reversed
-	dst.nello_bid_value = src.nello_bid_value
-	dst.nello_count_as_marks = src.nello_count_as_marks
-	dst.nello_failure_penalty = src.nello_failure_penalty
-	dst.nello_failure_fixed_points = src.nello_failure_fixed_points
 	dst.allow_follow_me = src.allow_follow_me
 	dst.allow_sevens = src.allow_sevens
 	dst.sevens_require_seven_in_hand = src.sevens_require_seven_in_hand
