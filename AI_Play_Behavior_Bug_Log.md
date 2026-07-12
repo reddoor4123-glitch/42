@@ -150,6 +150,24 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 ---
 
+## Pattern G — Trump-lead technique doesn't exclude counters from consideration
+
+### → BUG-010 — Low-lead-to-draw-out-the-double technique can trade away a counter unnecessarily
+
+**Where:** `decide_play()`, partner-leading branch, `CONTROL_TRUMP` (trump-control lead, branch #8), the low-lead-to-draw-out-the-double sub-case — `_lowest_in(trumps, ...)` when partner has trump control but doesn't hold the double.
+
+**What happens:** The low-lead technique picks the lowest-ranked trump via `_lowest_in()`, with no exclusion for a trump tile that's also a counter (pip sum 5 or 10). Example: holding 3:2 (counter), 3:4, 3:6 without the double — leading 3:2 as "low" trades away a counter to a near-certain double capture, when 3:4 achieves the same draw-out purpose without that cost.
+
+**Root cause:** `_lowest_in()` ranks purely by suit/trump rank; it has no concept of "this candidate is also worth 5 or 10 points, prefer a same-rank-tier non-counter instead." The technique's intent (draw out the double cheaply) and its execution (rank alone) aren't aligned — a counter and a non-counter of similar low rank are treated as interchangeable when they aren't.
+
+**Found during:** Review of the Vigilance/Opportunism two-axis migration (`Spec_Difficulty_Modes_TwoAxis_July12_2026.md` and its line-823 follow-up), July 12, 2026 — surfaced once partner's trump-lead technique was confirmed to run identically at every difficulty (no difficulty branching left to obscure it). Present at every difficulty; not new behavior from that migration, just newly visible.
+
+**Fix shape:** Not yet specced. Likely shape: prefer the lowest-ranked non-counter trump if one exists among the candidates that still achieves the draw-out; only fall back to a counter trump if every trump candidate is a counter. Needs its own worked examples before speccing, per project convention.
+
+**Status:** Open, not specced. Logged per explicit instruction not to fold a fix into the line-823 follow-up spec.
+
+---
+
 ## Design notes — guaranteed-win detection generalization (July 6, 2026, not blocking)
 
 Logged alongside the branch #11 guaranteed-win generalization (see

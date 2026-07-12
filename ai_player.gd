@@ -75,8 +75,8 @@ extends RefCounted
 #   EVALUATION — Everyone can use the same information; difficulties differ
 #                only in whether they act on it, or how they weigh it. This
 #                belongs in the shared decision logic, parameterized by an
-#                AI_MODES axis (risk_bias, cooperation_bias, opportunism,
-#                ...) — not a bare difficulty check.
+#                AI_MODES axis (risk_bias, vigilance, opportunism, ...) —
+#                not a bare difficulty check.
 #
 #   NEITHER    — No information- or evaluation-based model fits. Only then
 #                is a direct difficulty branch acceptable, and it should be
@@ -95,20 +95,20 @@ const AI_MODES := {
 	"beginner": {
 		"risk_bias":        -0.25,
 		"max_overbid":      2,
-		"opportunism":      "low",
-		"cooperation_bias": "high",
+		"vigilance":        "none",
+		"opportunism":      0.0,
 	},
 	"standard": {
 		"risk_bias":        0.0,
 		"max_overbid":      4,
-		"opportunism":      "medium",
-		"cooperation_bias": "medium",
+		"vigilance":        "none",
+		"opportunism":      0.6,
 	},
 	"expert": {
 		"risk_bias":        0.25,
 		"max_overbid":      6,
-		"opportunism":      "high",
-		"cooperation_bias": "medium",
+		"vigilance":        "full",
+		"opportunism":      1.0,
 	},
 }
 
@@ -735,10 +735,6 @@ static func decide_play(
 		return lowest
 
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
-	@warning_ignore("unused_variable")
-	var opportunism: String      = mode["opportunism"]       # Phase 3
-	@warning_ignore("unused_variable")
-	var cooperation_bias: String = mode["cooperation_bias"]  # Phase 3
 
 	# ── PARTNER BEHAVIOR ──────────────────────────────────────────────────────
 	# When is_partner == true, partner_id == human_seat.
@@ -824,7 +820,7 @@ static func decide_play(
 			var trump_control = (trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4
 			if trump_control:
 				var best: Domino
-				if difficulty == "beginner" or holds_double_trump:
+				if holds_double_trump:
 					best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("I have trump control — drawing out the opponents.")
 				else:
@@ -936,27 +932,20 @@ static func decide_play(
 		var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 
 		if can_win.size() > 0:
-			if difficulty == "beginner":
-				# Beginner Partner: always secure the trick without second-guessing card economy.
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Stepping in to win this for us.")
-				return chosen
-
-			# Standard and Expert: prefer non-trump winners to save trump.
+			# Partner always prefers non-trump winners to save trump — no
+			# difficulty branching. A good partner plays its best game at
+			# every difficulty; the old beginner-only reflexive-win shortcut
+			# here had no real design intent behind it (see design doc) and
+			# has been relocated to the opponent side — see Step 5.
 			var non_trump_wins = can_win.filter(func(d): return not d.is_trump(trump))
 			if non_trump_wins.size() > 0:
 				var chosen = _lowest_in(non_trump_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("You couldn't hold it — I've got this trick.")
 				return chosen
 
-			# Only trump can win.
-			if difficulty == "expert":
-				# Expert Partner: no trust rule — play optimally for the contract.
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Trumping in — the contract needs this trick.")
-				return chosen
-
-			# Standard: evaluate whether this trick is worth spending trump on.
+			# Only trump can win. Partner always evaluates whether this
+			# trick is worth spending trump on — no difficulty branching;
+			# partner never skips this check.
 			# Replaces the old turn-order-based check — see AI_Play_Behavior_Bug_Log.md,
 			# BUG-005, for why that version was gated on the wrong fact.
 
@@ -967,8 +956,10 @@ static func decide_play(
 			# Deterministic worst-case addition: the one specific counter (if any)
 			# that could still land on THIS trick, capped at its own pip value —
 			# not a probability, a bound on a single already-identified domino.
-			var live_counter = _live_counter_for_suit(lead_suit, hand, public_knowledge, trump, lead_suit, remaining_ids)
-			var worst_case_addition = live_counter.pip_sum() if live_counter != null else 0
+			var live_counter = null
+			if is_partner or mode["vigilance"] == "full":
+				live_counter = _live_counter_for_suit(lead_suit, hand, public_knowledge, trump, lead_suit, remaining_ids)
+			var worst_case_addition = live_counter.pip_sum() if live_counter != null else _worst_case_counter_pip_estimate(lead_suit, hand, trump)
 			var trick_value_worst_case = _estimate_trick_value(plays, trump) + worst_case_addition
 
 			# Contract margin: can the side that needs bid_value still reach it, even
@@ -1050,19 +1041,23 @@ static func decide_play(
 		return discard
 
 	# ── OPPONENT BEHAVIOR ─────────────────────────────────────────────────────
-	# Standard: solid casual play — not bloodthirsty, not passive.
-	# Beginner: only contests tricks with counters already in them when following.
+	# Solid, honest 42 at every difficulty — no bare difficulty branching left
+	# in this section. Two AI_MODES axes do the differentiating instead:
+	# `vigilance` ("none"/"full") gates whether PublicKnowledge is consulted
+	# at all; `opportunism` (0.0-1.0) is rolled fresh per eligible decision to
+	# decide whether this opponent runs the real tactical evaluation or
+	# commits reflexively. See Texas_42_Session_Summary_July_12_2026_
+	# DifficultyModesDesign.md for the full design reasoning.
 	# (The old "conservative opens" trump-avoidance rule for leading was removed
 	# July 6, 2026 — no legitimate strategic basis; see Phase3_Objective_Audit.md
 	# branch #19.)
-	# Expert: compete harder (handled in bidding); TODO Phase 3 opportunism.
 
 	if is_leading:
 		# Expert: target a suit an opponent is known void in — leading it forces
 		# them to trump in (spending trump) or discard (possibly a counter).
 		# Runs before the trump-control check below, so a known void takes
 		# priority over a generic trump-control lead when both are available.
-		if difficulty == "expert" and public_knowledge != null:
+		if mode["vigilance"] == "full" and public_knowledge != null:
 			var opponents = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
 			var void_leads = legal.filter(func(d):
 				if d.is_trump(trump):
@@ -1118,28 +1113,29 @@ static func decide_play(
 	var current_winner_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 	var can_win = legal.filter(func(d): return _beats(d, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 
-	if difficulty == "beginner":
-		# Beginner: only contest the trick if counters are already on the table.
-		# Low-value tricks aren't worth risking good cards over.
-		if can_win.size() > 0:
-			var trick_pts = _estimate_trick_value(plays, trump)
-			if trick_pts >= 5:
-				var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("These points are worth contesting.")
-				return chosen
-			# Trick not worth contesting — fall through to discard
-	else:
-		# Standard / Expert: try to win the trick.
-		if can_win.size() > 0:
-			# Win with a counter if possible — pick up the points.
-			var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
-			if counter_wins.size() > 0:
-				var chosen = _lowest_in(counter_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Winning the trick and picking up the points.")
-				return chosen
+	if can_win.size() > 0:
+		if not _should_evaluate_tactically(mode):
+			# Reflexive: take the trick with whatever's lowest, no
+			# accounting for resource cost or follow-up plan. This is the
+			# old beginner-only "secure without second-guessing" shape,
+			# relocated from partner (see Step 3a) — it belongs here, not
+			# there. Also retires the old value_gate (#25) threshold
+			# entirely; that branch had the direction backwards (passing
+			# on a cheap trick is the disciplined move, not the distracted
+			# one) — see design doc.
 			var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			reason_log.append("Winning the trick.")
+			reason_log.append("Taking this one.")
 			return chosen
+
+		# Evaluates: win with a counter if possible — pick up the points.
+		var counter_wins = can_win.filter(func(d): return d.pip_sum() == 5 or d.pip_sum() == 10)
+		if counter_wins.size() > 0:
+			var chosen = _lowest_in(counter_wins, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+			reason_log.append("Winning the trick and picking up the points.")
+			return chosen
+		var chosen = _lowest_in(can_win, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		reason_log.append("Winning the trick.")
+		return chosen
 
 	# Can't win — discard lowest non-counter to protect point cards.
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
@@ -1227,6 +1223,13 @@ static func _live_counter_for_suit(
 			best = d
 	return best
 
+# Worst-case counter bound used when vigilance can't confirm a specific
+# live counter via PublicKnowledge — assumes the standard counter value
+# (10) could still land on this trick's suit rather than treating the
+# threat as resolved. Deliberately conservative, not a probability.
+static func _worst_case_counter_pip_estimate(_lead_suit: int, _hand: Array[Domino], _trump: int) -> int:
+	return 10
+
 static func _highest_in(dominos: Array, trump: int, lead_suit: int,
 		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
 	var best: Domino = dominos[0]
@@ -1255,6 +1258,16 @@ static func _lowest_in(dominos: Array, trump: int, lead_suit: int,
 		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed) < lowest.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed):
 			lowest = d
 	return lowest
+
+# Whether an opponent bothers running the real tactical evaluation (margin/
+# counter/lead-economy) before committing to a trick, versus committing
+# reflexively with no accounting. Rolled fresh per eligible decision point —
+# not per hand, not per game — so a single opponent can play sharp on one
+# trick and reflexive on the next. Named as a question rather than tied to
+# "opportunism" specifically, so a future second evaluation context doesn't
+# require renaming call sites — see design doc's Deferred Items.
+static func _should_evaluate_tactically(mode: Dictionary) -> bool:
+	return randf() < mode.get("opportunism", 1.0)
 
 static func _partner_is_winning(plays: Array, partner_id: int, trump: int, lead_suit: int,
 		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> bool:
