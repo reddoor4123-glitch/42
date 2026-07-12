@@ -1784,11 +1784,19 @@ func _build_settings_content(from_create: bool = false):
 	title.add_theme_color_override("font_color", Color.WHITE)
 	_settings_content_vbox.add_child(title)
 
+	# AI Difficulty applies immediately, unlike every other row in this panel —
+	# it's a pure AI-behavior parameter, not a ruleset/legality setting, so it
+	# doesn't need to wait for "Confirm & Restart". Still keeps _pending_settings
+	# in sync so a later Confirm & Restart (triggered by changing something
+	# else) doesn't silently revert this back to its pre-panel-open value.
 	_add_option_row(_settings_content_vbox, "AI Difficulty", [
 		["Beginner", "beginner"],
 		["Standard", "standard"],
 		["Expert",   "expert"],
-	], _pending_settings.ai_difficulty, func(v): _pending_settings.ai_difficulty = v)
+	], _pending_settings.ai_difficulty, func(v):
+		_pending_settings.ai_difficulty = v
+		_on_difficulty_chosen(v)
+	)
 	_settings_content_vbox.add_child(HSeparator.new())
 
 	# ── BIDDING ──
