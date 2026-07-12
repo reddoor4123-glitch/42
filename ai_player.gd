@@ -156,28 +156,74 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 		var suit = d.get_suit(trump)
 		suit_counts[suit] = suit_counts.get(suit, 0) + 1
 
+	# Off-suit doubles are collected separately and scored as a group below —
+	# individual rank-scaling plus a compounding multi-double bonus, rather
+	# than each double being scored independently inline. The trump double
+	# (if any) is never in off_dominos, so it is naturally excluded from all
+	# of this — it's already credited via the trump scoring block above.
+	var off_suit_doubles: Array[Domino] = []
+
 	for d in off_dominos:
 		var suit = d.get_suit(trump)
 		var rank = d.get_rank(trump)
 		var count_in_suit = suit_counts.get(suit, 0)
-		# Double off-suit: wins if no one else leads that suit with trump
 		if d.is_double():
-			estimated_tricks += 0.5
+			off_suit_doubles.append(d)
+			continue
 		# High rank in a suit we hold multiple of = likely winner
 		elif rank >= 4 and count_in_suit >= 2:
 			estimated_tricks += 0.4
 		elif rank >= 5:
 			estimated_tricks += 0.3
+		elif rank >= 4:
+			estimated_tricks += 0.2
+
+	# ── OFF-SUIT DOUBLES SCORING ────────────────────────────────────────────
+	# Doubles are always strong leads; higher doubles are additionally able
+	# to recapture the lead if lost, which lower doubles cannot. Multiple
+	# held doubles compound in value beyond a flat per-double sum, since
+	# each additional double increases how often the hand can dictate play.
+	#
+	# NOTE: a domino's pip value (d.left, since left == right for doubles)
+	# is used directly for rank-scaling here, NOT Domino.get_rank() — that
+	# function returns a flat 13 for any non-trump double by convention,
+	# which is correct for play-order ranking but not usable as a strength
+	# scale here.
+	for i in range(off_suit_doubles.size()):
+		var d = off_suit_doubles[i]
+		var pip_value = d.left
+		var win_prob = 0.55 + (pip_value / 6.0) * 0.25
+		estimated_tricks += win_prob
+
+		# Compounding bonus for each double beyond the first.
+		match i:
+			1: estimated_tricks += 0.3
+			2: estimated_tricks += 0.5
+			3: estimated_tricks += 0.7
+
+	# Specific bracket bonus: holding both 4:4 and 6:6 means the 6:4 (a
+	# 10-count) cannot hide from this hand in either direction. This is the
+	# only double-pairing that brackets a counter worth calling out — other
+	# double pairs either bracket a non-counter or bracket the same 5-count
+	# in a way that's already true of nearly every double-heavy hand, so it
+	# isn't a distinguishing signal. Deliberately narrow by design.
+	var has_44 = off_suit_doubles.any(func(d): return d.left == 4 and d.right == 4)
+	var has_66 = off_suit_doubles.any(func(d): return d.left == 6 and d.right == 6)
+	if has_44 and has_66:
+		estimated_tricks += 0.2
 
 	# ── CAPTURE MODEL ─────────────────────────────────────────────────────────
 	# Primary axis: expected tricks → expected points captured from the table.
 	# This is the ONLY value signal used for bidding strength.
 	var expected_capture := estimated_tricks * 6.0
 
-	# ── REALIZATION SIGNAL (diagnostic only) ──────────────────────────────────
-	# Measures how well known counter positions align with expected trick wins.
-	# Does NOT increase expected value — counters in hand do not add EV,
-	# they only indicate realization confidence for future use (Phase 2 risk).
+	# ── REALIZATION SIGNAL ─────────────────────────────────────────────────────
+	# Measures how well known counter positions align with expected trick wins:
+	# positive when counters are protected (likely to land in tricks this hand
+	# wins), negative when they're exposed (likely to leak to opponents). Folded
+	# into estimated_points below — full inclusion, no scaling factor,
+	# benchmark-verified July 11-12, 2026 (see AI_Bid_Behavior_Bug_Log.md,
+	# finding #2).
 	var baseline_share := estimated_tricks / 7.0
 	var realization_bias := 0.0
 	var counter_points := 0.0  # logging only
@@ -195,8 +241,10 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 			counter_points += pip * win_prob
 			realization_bias += (win_prob - baseline_share) * pip
 
-	var estimated_points := expected_capture
-	# Do NOT add realization_bias to estimated_points.
+	# Counters the hand can realize (or is likely to leak) shift real
+	# contract points away from the flat 6-per-trick average. Full
+	# inclusion benchmark-verified July 11-12, 2026.
+	var estimated_points := expected_capture + realization_bias
 
 	return {
 		"trump":            trump,
@@ -205,7 +253,7 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 		"estimated_tricks": estimated_tricks,
 		"expected_capture": expected_capture,   # primary bidding signal
 		"counter_points":   counter_points,     # diagnostic only
-		"realization_bias": realization_bias,   # diagnostic only
+		"realization_bias": realization_bias,   # folded into estimated_points below
 		"estimated_points": estimated_points,   # used by best_trump / logging / bidding
 	}
 
@@ -268,7 +316,9 @@ static func decide_bid(
 	if eval.get("trump_count", 0) >= 4:
 		control_score += 1.5
 	if eval.get("trump_count", 0) >= 5:
-		control_score += 1.0
+		control_score += 3.0
+	if eval.get("trump_count", 0) >= 6:
+		control_score += 2.0
 
 	# (C) Auction stance — classifies bid intent before finalizing target
 	# This is a shape modifier on decision pressure, not a replacement of EV.
@@ -415,7 +465,8 @@ static func _log_bid_decision(
 	var control_score_log := est_tricks_log * 6.0 * 0.12
 	if eval.get("has_double_trump", false): control_score_log += 2.5
 	if eval.get("trump_count", 0) >= 4:    control_score_log += 1.5
-	if eval.get("trump_count", 0) >= 5:    control_score_log += 1.0
+	if eval.get("trump_count", 0) >= 5:    control_score_log += 3.0
+	if eval.get("trump_count", 0) >= 6:    control_score_log += 2.0
 	var stance_bias_log: float = eval.get("stance_bias", 0.0)
 	var final_score_log := ev_score_log + control_score_log + stance_bias_log
 	print("  Layer 2:       ev=%.1f  control=%.1f  stance=%.1f  final=%.1f  threshold=28.0  should_bid=%s  target=%d" % [
