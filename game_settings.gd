@@ -21,8 +21,6 @@ var allow_splash: bool = false
 var splash_minimum_doubles: int = 3
 var splash_bid_marks: int = 2
 
-var allow_low_no: bool = false              # Dealer-only "points" version of Nello; only legal if all 3 others passed
-
 # ─────────────────────────────────────────────
 #  NELLO / NILLO
 # ─────────────────────────────────────────────
@@ -53,15 +51,11 @@ var nello_failure_fixed_points: int = 42
 #  FOLLOW ME / NO TRUMP
 # ─────────────────────────────────────────────
 var allow_follow_me: bool = true
-var follow_me_doubles_mode: String = "high" # "high", "low", "own_suit"
-var follow_me_allow_as_points_bid: bool = false  # If false, Follow Me requires a marks-level bid (42+)
 
 # ─────────────────────────────────────────────
 #  SEVENS
 # ─────────────────────────────────────────────
 var allow_sevens: bool = true
-var sevens_require_minimum_bid: bool = false
-var sevens_minimum_bid: int = 42
 var sevens_require_seven_in_hand: bool = true    # Must hold a domino summing to 7 to call it
 var sevens_only_on_forced_bid: bool = false
 
@@ -70,7 +64,6 @@ var sevens_only_on_forced_bid: bool = false
 # ─────────────────────────────────────────────
 var doubles_are_trump: bool = false         # "Doubles" as the declared trump choice (own suit, ranked as a suit)
 var doubles_trump_reversed: bool = false    # 0-0 high -> 6-6 low, instead of the standard 6-6 high -> 0-0 low
-var default_trump_if_undeclared: bool = false  # If true, first lead's suit becomes trump when none was named
 var allow_small_end_opening_lead: bool = false # First trick only: lead a non-trump domino as its smaller-pip suit
 var force_trump_opening_lead: bool = false     # If true, the very first lead must be a trump domino
 
@@ -83,8 +76,6 @@ var win_by_two: bool = false
 # ─────────────────────────────────────────────
 #  GAME FLOW / DISPLAY
 # ─────────────────────────────────────────────
-var shuffle_style: String = "random"
-var allow_table_talk: bool = false
 var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
 
 # ─────────────────────────────────────────────
@@ -110,7 +101,6 @@ static func standard_42() -> GameSettings:
 	s.allow_follow_me = true
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
-	s.allow_low_no = false
 	s.marks_to_win = 7
 	s.ai_difficulty = "standard"
 	return s
@@ -132,7 +122,6 @@ static func tournament_rules() -> GameSettings:
 	s.allow_splash = false
 	s.allow_follow_me = true
 	s.allow_sevens = false
-	s.allow_low_no = false
 	s.marks_to_win = 7
 	s.ai_difficulty = "standard"
 	return s
@@ -160,7 +149,6 @@ static func lechner_hall() -> GameSettings:
 	s.allow_follow_me = true
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
-	s.allow_low_no = false
 	s.marks_to_win = 7
 	s.win_by_two = true
 	s.ai_difficulty = "standard"
@@ -188,12 +176,9 @@ static func teel_rules() -> GameSettings:
 	s.nello_doubles_reversed = false
 
 	s.allow_follow_me = true
-	s.follow_me_allow_as_points_bid = false # treated as marks-only so far per family notes
 
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
-
-	s.allow_low_no = false                  # not part of family rules
 
 	s.marks_to_win = 7
 	s.ai_difficulty = "standard"
@@ -216,7 +201,6 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"allow_splash": s.allow_splash,
 		"splash_minimum_doubles": s.splash_minimum_doubles,
 		"splash_bid_marks": s.splash_bid_marks,
-		"allow_low_no": s.allow_low_no,
 		"allow_nello": s.allow_nello,
 		"allow_nello_exchange": s.allow_nello_exchange,
 		"nello_exchange_bidder_gives": s.nello_exchange_bidder_gives,
@@ -230,22 +214,15 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"nello_failure_penalty": s.nello_failure_penalty,
 		"nello_failure_fixed_points": s.nello_failure_fixed_points,
 		"allow_follow_me": s.allow_follow_me,
-		"follow_me_doubles_mode": s.follow_me_doubles_mode,
-		"follow_me_allow_as_points_bid": s.follow_me_allow_as_points_bid,
 		"allow_sevens": s.allow_sevens,
-		"sevens_require_minimum_bid": s.sevens_require_minimum_bid,
-		"sevens_minimum_bid": s.sevens_minimum_bid,
 		"sevens_require_seven_in_hand": s.sevens_require_seven_in_hand,
 		"sevens_only_on_forced_bid": s.sevens_only_on_forced_bid,
 		"doubles_are_trump": s.doubles_are_trump,
 		"doubles_trump_reversed": s.doubles_trump_reversed,
-		"default_trump_if_undeclared": s.default_trump_if_undeclared,
 		"allow_small_end_opening_lead": s.allow_small_end_opening_lead,
 		"force_trump_opening_lead": s.force_trump_opening_lead,
 		"marks_to_win": s.marks_to_win,
 		"win_by_two": s.win_by_two,
-		"shuffle_style": s.shuffle_style,
-		"allow_table_talk": s.allow_table_talk,
 		"ai_difficulty": s.ai_difficulty,
 	}
 
@@ -263,7 +240,6 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.allow_splash = d.get("allow_splash", false)
 	s.splash_minimum_doubles = d.get("splash_minimum_doubles", 3)
 	s.splash_bid_marks = d.get("splash_bid_marks", 2)
-	s.allow_low_no = d.get("allow_low_no", false)
 	s.allow_nello = d.get("allow_nello", true)
 	s.allow_nello_exchange = d.get("allow_nello_exchange", true)
 	s.nello_exchange_bidder_gives = d.get("nello_exchange_bidder_gives", "any")
@@ -277,21 +253,14 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.nello_failure_penalty = d.get("nello_failure_penalty", "bid")
 	s.nello_failure_fixed_points = d.get("nello_failure_fixed_points", 42)
 	s.allow_follow_me = d.get("allow_follow_me", true)
-	s.follow_me_doubles_mode = d.get("follow_me_doubles_mode", "high")
-	s.follow_me_allow_as_points_bid = d.get("follow_me_allow_as_points_bid", false)
 	s.allow_sevens = d.get("allow_sevens", true)
-	s.sevens_require_minimum_bid = d.get("sevens_require_minimum_bid", false)
-	s.sevens_minimum_bid = d.get("sevens_minimum_bid", 42)
 	s.sevens_require_seven_in_hand = d.get("sevens_require_seven_in_hand", true)
 	s.sevens_only_on_forced_bid = d.get("sevens_only_on_forced_bid", false)
 	s.doubles_are_trump = d.get("doubles_are_trump", false)
 	s.doubles_trump_reversed = d.get("doubles_trump_reversed", false)
-	s.default_trump_if_undeclared = d.get("default_trump_if_undeclared", false)
 	s.allow_small_end_opening_lead = d.get("allow_small_end_opening_lead", false)
 	s.force_trump_opening_lead = d.get("force_trump_opening_lead", false)
 	s.marks_to_win = d.get("marks_to_win", 7)
 	s.win_by_two = d.get("win_by_two", false)
-	s.shuffle_style = d.get("shuffle_style", "random")
-	s.allow_table_talk = d.get("allow_table_talk", false)
 	s.ai_difficulty = d.get("ai_difficulty", "standard")
 	return s

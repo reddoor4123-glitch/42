@@ -169,8 +169,6 @@ func apply_bid_result(trump_suit: int = -1):
 			trump = -1
 		BidScript.Type.SEVENS:
 			trump = -1
-		BidScript.Type.LOW_NO:
-			trump = -1
 
 # --- TRICK PLAY ---
 
@@ -275,17 +273,6 @@ func resolve_hand() -> Dictionary:
 				else:
 					team_marks[other_team] += current_bid.value
 					result = {"winner": other_team, "reason": "Bidding team lost the hand"}
-
-		BidScript.Type.LOW_NO:
-			# Points-game equivalent of Nello: bidder's side scores 42 if they
-			# avoid taking any trick; opponents score 42 if bidder is forced
-			# to take even one trick.
-			if players[current_bid.player_id].tricks_won == 0:
-				team_marks[bid_team] += 1
-				result = {"winner": bid_team, "reason": "Low-No succeeded"}
-			else:
-				team_marks[other_team] += 1
-				result = {"winner": other_team, "reason": "Low-No failed — bidder caught a trick"}
 
 	result["team_marks"] = team_marks.duplicate()
 	result["team_points"] = team_points.duplicate()

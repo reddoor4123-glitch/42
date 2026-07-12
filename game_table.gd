@@ -1271,9 +1271,9 @@ func _finish_bidding(_unused: Array):
 
 	else:
 		# Covers POINTS and MARKS (bid winner picks trump and leads).
-		# FOLLOW_ME and LOW_NO also fall here for now — intentional pending their own panels.
+		# FOLLOW_ME also falls here for now — intentional pending its own panel.
 		if not (winning.type == BidScript.Type.POINTS or winning.type == BidScript.Type.MARKS
-				or winning.type == BidScript.Type.FOLLOW_ME or winning.type == BidScript.Type.LOW_NO):
+				or winning.type == BidScript.Type.FOLLOW_ME):
 			push_warning("_finish_bidding: unhandled bid type %d fell through to trump panel" % winning.type)
 		if winning.player_id == human_seat:
 			_show_trump_panel()
@@ -2002,7 +2002,6 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.allow_splash = src.allow_splash
 	dst.splash_minimum_doubles = src.splash_minimum_doubles
 	dst.splash_bid_marks = src.splash_bid_marks
-	dst.allow_low_no = src.allow_low_no
 	dst.allow_nello = src.allow_nello
 	dst.allow_nello_exchange = src.allow_nello_exchange
 	dst.nello_exchange_bidder_gives = src.nello_exchange_bidder_gives
@@ -2016,21 +2015,14 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.nello_failure_penalty = src.nello_failure_penalty
 	dst.nello_failure_fixed_points = src.nello_failure_fixed_points
 	dst.allow_follow_me = src.allow_follow_me
-	dst.follow_me_doubles_mode = src.follow_me_doubles_mode
-	dst.follow_me_allow_as_points_bid = src.follow_me_allow_as_points_bid
 	dst.allow_sevens = src.allow_sevens
-	dst.sevens_require_minimum_bid = src.sevens_require_minimum_bid
-	dst.sevens_minimum_bid = src.sevens_minimum_bid
 	dst.sevens_require_seven_in_hand = src.sevens_require_seven_in_hand
 	dst.sevens_only_on_forced_bid = src.sevens_only_on_forced_bid
 	dst.doubles_are_trump = src.doubles_are_trump
 	dst.doubles_trump_reversed = src.doubles_trump_reversed
-	dst.default_trump_if_undeclared = src.default_trump_if_undeclared
 	dst.allow_small_end_opening_lead = src.allow_small_end_opening_lead
 	dst.force_trump_opening_lead = src.force_trump_opening_lead
 	dst.marks_to_win = src.marks_to_win
-	dst.shuffle_style = src.shuffle_style
-	dst.allow_table_talk = src.allow_table_talk
 	dst.ai_difficulty = src.ai_difficulty
 	return dst
 
