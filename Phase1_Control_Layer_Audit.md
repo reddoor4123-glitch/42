@@ -44,6 +44,15 @@ cardinal rule behaves like an invariant or like an ordinary objective with room 
    decision space, not a partial description of something larger. This closes both cardinal-rule
    sub-cases (`Phase1_Raw_Concept_Audit.md` #1/#2) as fully resolved, ordinary Selection.
 
+   **Amendment (July 11, 2026, BUG-008):** the paragraph above silently assumed at least one
+   legal play stays under the partner's card. `AI_Play_Behavior_Bug_Log.md`'s BUG-008 found the
+   case where that assumption fails — every legal play beats the partner's winning card, so
+   staying out of the way is structurally impossible. That's a third option this finding didn't
+   account for: a forced overtake, which needs its own policy (escalate to a guaranteed winner
+   if one is held) rather than falling through to "protect if not" and playing lowest-legal
+   regardless. "Dump if guaranteed, protect if not" is the entire decision space only when a
+   protect option actually exists — see BUG-008 for the fix direction.
+
 2. **Marks contract, partner already winning, following, trump-only endgame.** This is where it
    got interesting. Under Marks — no counters, no partial value, only "did we lose this trick or
    not" — a real, live decision surfaced: sometimes take the trick from your own already-winning

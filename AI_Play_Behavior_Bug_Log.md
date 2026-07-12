@@ -69,7 +69,7 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 *Named Pattern E rather than D since `AI_Play_Behavior_Bug_Log_Addendum_PatternD.md`
 (BUG-005) already reserves that letter for whenever it's merged into this file.*
 
-### → BUG-006 — Partner doesn't lead a safe counter-double once trump is exhausted
+### ✓ BUG-006 — Partner doesn't lead a safe counter-double once trump is exhausted
 
 **Where:** `decide_play()`, partner-leading branch, `off_safe` check (branch #7, `OPEN_SAFE_SUIT`). File: `ai_player.gd`.
 
@@ -81,9 +81,9 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Relationship to existing bugs:** BUG-002/002b (partner not dumping counters onto guaranteed winners for high non-double trumps) was previously described as blocked on "Phase 4 trump exhaustion tracking." Given this simpler count-based approach, that block may not be needed either — worth revisiting BUG-002/002b with the same `count_remaining_trump() - own_trump_count` check before assuming it needs new infrastructure.
 
-**Status:** Open, not specced. Found during the Phase 3 branch-by-branch trace (branch #7), no code changed.
+**Status:** Fixed July 9, 2026. `off_safe`'s filter now includes a counter-double once `count_remaining_trump() - own_trump_count_in_hand == 0` confirms trump is provably exhausted — exactly the wiring described above, no new query or helper needed. Folded in as part of the same pass that made `off_safe` PublicKnowledge-aware more generally: the reason string no longer unconditionally claims "opening a safe suit" — it now distinguishes locking in a double, a lead confirmed unbeatable via `best_remaining_card_for_suit()`, and an ordinary suit-opening lead. See `ai_player.gd`, partner-leading block, `off_safe` check.
 
-**Cross-reference (BUG-007, added July 6, 2026):** same "safe counter lead" family, found during the same branch-by-branch trace one branch later (#10 vs. #7). Not the same bug — BUG-007 is about void-awareness, not trump exhaustion — but worth resolving both with a shared mental model of what "safe counter lead" means, once this one lands.
+**Cross-reference (BUG-007, added July 6, 2026):** same "safe counter lead" family, found during the same branch-by-branch trace one branch later (#10 vs. #7). Not the same bug — BUG-007 is about void-awareness, not trump exhaustion — but now that BUG-006 has landed, BUG-007 can be revisited with a concrete worked example of the shared mental model (PublicKnowledge-aware safety, honest reason strings) rather than a hypothetical one.
 
 ### → BUG-007 — Branch #10 (forced counter lead) doesn't consult known-void suits
 
@@ -101,6 +101,53 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Status:** Open, not specced, deliberately deferred pending a design decision on the trump-interaction question. Found during the Phase 3 branch-by-branch trace (branch #10), no code changed.
 
+### → BUG-009 — OPEN_SAFE_SUIT unconditionally excludes counters from lead candidates; 5-5 dies as a forced discard instead of cashing itself as a lead
+
+**Where:** `decide_play()`, partner-leading branch, `off_safe` candidate filter (branch #7, `OPEN_SAFE_SUIT`). File: `ai_player.gd`.
+
+**What happens:** The `off_safe` filter (not trump, `pip_sum() != 5 and != 10`) removes all counters from lead consideration unconditionally. A partner holding the 5-5 late in the hand never considers leading it — it's "protected" until the AI runs out of safe tiles and is forced to discard it into a trick it doesn't control.
+
+**Example (flagged hand, July 11, 2026):** Trump 2, human bid 30. Partner wins trick 5 holding 5-5 / 1-5, leads the 1-5 ("Opening this suit for you to build on"), human is forced to trump it, and on trick 7 the partner discards the 5-5 onto a trick P1 wins with 4-4 — 10 points to the opponents, bid fails 26–30. Leading the 5-5 on trick 6 wins the trick (in this hand, provably: both opponents had shown void in trump by trick 2, so the one outstanding trump could not be with either opponent) and makes the bid comfortably.
+
+**Root cause:** Counter exclusion at `OPEN_SAFE_SUIT` is a blanket rule with no exception for a counter that is the double of its own suit. The 5-5 as a lead loses only to a trump-in; as a held counter in a shrinking hand, it loses by default — it will eventually be discarded into an uncontrolled trick. The current policy optimizes for not exposing the counter, with no concept of the counter capturing itself.
+
+**Design decision (Katy, July 11, 2026 — this is the ruling, not an open question):** The 5-5 is almost always worth the chance as a lead when the opportunity exists. It might get trumped; opponents might have to follow suit — but taking that chance is better than holding it and handing it away on someone else's suit at the end. Provable safety (trump exhausted, or all opponents known trump-void via per-opponent `void_suits()` — the BUG-006/BUG-007 composition this log's design notes anticipated) is **not** required as a trigger. Where that knowledge is available it can inform *when* in the hand to cash it, but the base behavior is: leading the counter-double is preferred over hiding it.
+
+**Scope notes for the spec discussion:**
+- Applies to a counter that is the double of its led suit and not trump — in the standard deck this is the 5-5 only (4-6 and the 5-counts aren't doubles and aren't likely winners as leads; a trump 5-5 is `CONTROL_TRUMP` territory, branch #8).
+- Open question: does this run as a new check before `OPEN_SAFE_SUIT`, or as a relaxation of the `OPEN_SAFE_SUIT` filter? Placement relative to `GIFT_A_VOID` (6a) and the `FORCE_A_VOID` mirror (6b) needs a decision.
+- Open question: any timing gate at all (e.g., always vs. only once the hand is down to N tiles or once safe leads are exhausted)? Katy's ruling leans "almost always" — default to no gate unless table testing says otherwise.
+
+**Reveals:** AVAILABLE — `void_suits()` and `count_remaining_trump()` exist for the optional knowledge-informed refinement; the base fix needs nothing new.
+
+**Relationship to existing bugs:** Same "counter safety at a leading branch" family as BUG-006/BUG-007, and it resolves the direction of the open design question BUG-007 flagged — per Katy's ruling, reasonable-confidence counter leads are acceptable; provable safety is a refinement, not a gate. Cross-reference all three when specced.
+
+**Status:** Open. Design decided (July 11, 2026); not specced.
+
+---
+
+## Pattern F — Forced overtake doesn't escalate to a secure winner
+
+### → BUG-008 — Forced overtake in PROTECT_PARTNER_WIN plays a fragile minimal overtake instead of a secure winner
+
+**Where:** `decide_play()`, partner-following branch, `partner_winning` path under standard contracts (`PROTECT_PARTNER_WIN`). File: `ai_player.gd`.
+
+**What happens:** When the human partner is currently winning a trick but every legal play the AI holds beats the human's card, the AI plays the lowest legal domino anyway. This is a minimal overtake — it steals the trick from the partner without securing it, and a later opponent can (and did) take it.
+
+**Example (flagged hand, July 11, 2026):** Follow Me (no trump), human bid 31, team at 29 points after four tricks. Human leads 1-4 on trick 5. Partner holds 1-1 / 4-4 / 2-4; legal plays are 4-4 and 2-4, both of which beat the 1-4 — staying under partner is structurally impossible. Code plays 2-4 ("I've got this one"), P1 takes the trick with 4-5 plus the human's 5-count. Playing the 4-4 — the double of the led suit, unbeatable in no-trump — wins the trick and its 6 points, putting the team at 35 and making the bid on the spot.
+
+**Root cause:** The `PROTECT_PARTNER_WIN` branch (standard-contract `partner_winning` path) has a single unconditional policy: play `_lowest_in(legal)`. It never detects the forced-overtake sub-case — when no legal play stays under the partner's card, the branch's premise ("stay out of the way") is void, and lowest-legal becomes the worst available choice: it takes the trick from the partner and can't hold it.
+
+**Fix shape (design direction, not yet specced):** Within `PROTECT_PARTNER_WIN`, detect forced overtake (no legal play fails to beat the current winning domino). When forced, escalate: prefer a guaranteed winner if one is held (double of the led suit in no-trump; general predicate is the parked `_is_guaranteed_win` helper — see the guaranteed-win generalization design notes below). If no guaranteed winner is held, the right forced-overtake choice (highest vs. lowest overtake) is an open sub-question for the spec discussion.
+
+**String note (deferred to strings pass, per convention):** "I've got this one." fired on a card that then lost the trick. The string check (`_beats(lowest, winning_domino)`) confirms overtaking the partner, not holding the trick — it makes a claim the play can't back. Log for the next strings session; do not fold into the behavior fix.
+
+**Reveals:** AVAILABLE — everything needed (current winning domino, `_beats()`, double-of-lead-suit detection) already exists at this branch. The general `_is_guaranteed_win` predicate remains UNBUILT (already tracked in the design notes below).
+
+**Documentation amendment made:** `Phase1_Control_Layer_Audit.md` finding #1 stated the partner-winning decision space is fully closed: "there is no third option... 'Dump if guaranteed, protect if not' is the entire decision space." That conclusion silently assumed at least one legal play stays under the partner. The forced-overtake sub-case is the third option. Amended in place (July 11, 2026) rather than left to contradict this bug.
+
+**Status:** Open. Design direction agreed (July 11, 2026); not specced.
+
 ---
 
 ## Design notes — guaranteed-win detection generalization (July 6, 2026, not blocking)
@@ -109,14 +156,16 @@ Logged alongside the branch #11 guaranteed-win generalization (see
 `Phase3_Objective_Audit.md` branch #11 and `public_knowledge.gd`'s
 `highest_remaining_trump()`/`best_remaining_card_for_suit()`). Not a bug —
 design notes for future, deeper work in the same "guaranteed-safety
-detection" family as BUG-006/BUG-007.
+detection" family as BUG-006/BUG-007/BUG-009 (leading side) and now
+BUG-008 (following side — the parked `_is_guaranteed_win` helper below is
+directly what BUG-008's forced-overtake escalation needs).
 
 - **Generalize beyond branch #11.** The same "provably highest remaining
   in suit + trump exhausted" predicate is a good candidate for a proper
   reusable `AIPlayer` helper (e.g. `_is_guaranteed_win(winning_domino, ...)`),
-  reused at #11, the opponent-mirror branch (#24), and possibly future
-  leading-side safety checks (BUG-006, BUG-007) instead of staying
-  branch-local.
+  reused at #11, the opponent-mirror branch (#24), BUG-008's forced-overtake
+  escalation, and possibly future leading-side safety checks (BUG-006,
+  BUG-007, BUG-009) instead of staying branch-local.
 - **Compose with void-suit knowledge (BUG-007).** Currently the trump
   threat check is all-or-nothing (`count_remaining_trump() -
   own_trump_count == 0`). A partial-safety version — "opponents are void
@@ -139,7 +188,9 @@ detection" family as BUG-006/BUG-007.
 2. **BUG-002 / BUG-002b** — correctly parked behind Phase 4; nothing to do until the knowledge/inference layer can answer "has the double for this suit been played."
 3. **BUG-004** — paused pending a full Phase 3 (Opportunism) design pass. Not abandoned; it's the case that surfaced the need for that design work in the first place, and should be one of its first test cases once that pass happens.
 4. **BUG-001** — standalone, low priority, whenever there's room for a new heuristic rather than a fix to an existing one.
-5. **BUG-006** — cheap and self-contained (AVAILABLE, no new infrastructure), and worth doing alongside a revisit of BUG-002/002b since the same `count_remaining_trump()`-based check may resolve both.
-6. **BUG-007** — deliberately deferred pending a design decision (does void-awareness alone suffice, or does it need pairing with BUG-006's trump-exhaustion check to be a real safety guarantee) — not blocked on missing infrastructure, blocked on a judgment call. Revisit once BUG-006 is implemented.
+5. ~~**BUG-006** — cheap and self-contained (AVAILABLE, no new infrastructure), and worth doing alongside a revisit of BUG-002/002b since the same `count_remaining_trump()`-based check may resolve both.~~ **✓ Fixed July 9, 2026** — see entry above. BUG-002/002b revisit with the same count-based check is still open, not yet done.
+6. **BUG-007** — deliberately deferred pending a design decision (does void-awareness alone suffice, or does it need pairing with BUG-006's trump-exhaustion check to be a real safety guarantee) — not blocked on missing infrastructure, blocked on a judgment call. Now that BUG-006 is implemented, this is unblocked and next in line for its design decision.
+7. **BUG-009** — design decided (July 11, 2026): lead the counter-double on a reasonable-confidence basis, not gated on provable safety. AVAILABLE, no new infrastructure — ready to spec. Also resolves BUG-007's open question in the "reasonable confidence is enough" direction; worth speccing together.
+8. **BUG-008** — design direction agreed (July 11, 2026): detect forced overtake in `PROTECT_PARTNER_WIN`, escalate to a guaranteed winner when one is held. AVAILABLE for the detection itself; the general `_is_guaranteed_win` helper (shared with the design notes below) is the one piece that needs building rather than just wiring. Ready to spec.
 
 **Naming note carried forward:** "locked-in trick" is a reusable concept (double led / last to play / known-safe high trump), and it's worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be knowledge-agnostic (most of its cases need no inference at all); only the high-trump case would reach into the knowledge/inference layer. Whether and how each difficulty *checks* that predicate is then a separate, Phase 3 Opportunism question — which is exactly the Knowledge/Evaluation split the new philosophy header in `ai_player.gd` describes. Worth wiring up once both Phase 3 and Phase 4 have landed.
