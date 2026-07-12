@@ -159,15 +159,18 @@ from the code side, even without the original session narrative.
 **`AI_Play_Behavior_Bug_Log.md`** — gameplay decision bugs, organized by
 pattern. Pattern A ("guaranteed trick" detection too narrow — BUG-002/002b/004):
 **BUG-004 unblocked July 12, 2026** (the Phase 3 Opportunism design pass it
-was waiting on has landed — see Pattern F/G below), BUG-002/002b still
+was waiting on has landed — see Pattern F below), BUG-002/002b still
 waiting on Phase 4. **Pattern B (BUG-003/003b, lead-priority ordering) is
-fixed as of July 5, 2026.** **Pattern E (BUG-006/BUG-007, counter safety at
-leading branches): BUG-006 fixed July 9, 2026; BUG-007 has a design ruling
-now (via BUG-009) but isn't specced yet; BUG-009 itself (5:5-style
-counter-doubles should be led on reasonable confidence, not gated on
-provable safety) is also open, not specced.** **Pattern F (BUG-008, forced
-overtake) and Pattern G (BUG-010, low-lead technique doesn't exclude
-counters)** are both new July 11-12, 2026, open, not specced. Status-keyed
+fixed as of July 5, 2026.** **Pattern E (BUG-006/BUG-007/BUG-009, counter
+safety at leading branches): BUG-006 and BUG-009 both fixed** (July 9 and
+July 12, 2026 respectively — BUG-009 leads a counter-double on reasonable
+confidence instead of gating on provable safety); **BUG-007 has its
+blocking design question resolved (via BUG-009's ruling) but branch #10
+itself is still uncoded** — don't mark it fixed, it's a distinct status.
+**Pattern F (BUG-008, forced overtake, and BUG-011, a latent guaranteed-win
+bug BUG-008's own refactor surfaced) are both fixed as of July 12/13,
+2026.** **Pattern G (BUG-010, low-lead technique doesn't exclude counters)**
+is open, not specced, found during the same July 12 review. Status-keyed
 (✓ fixed / → ready / ⏳ waiting on Phase 4 / ⚑ needs examples). **Check here
 before assuming a play-decision oddity is new — it may already be a known,
 categorized bug with a fix shape written.**
@@ -185,16 +188,20 @@ happened yet as far as this doc set shows.
 **`AI_Explanation_Bug_Log.md`** — reason-string mismatches (wrong tone,
 wrong actor, inaccurate belief state), example-numbered rather than
 pattern-numbered. Added to this repo July 6, 2026 — a first-pass log (one
-game context, Issues 1–7) written to find where structure was needed before
-pausing to build that structure; the next testing pass will likely start a
-fresh log rather than append here. Two entries (Issues 3/6) were marked ✓
-at the time but the described fix had never actually been applied to the
-code — caught during reconciliation and implemented for real the same day
-(see `ai_player.gd`'s `human_is_winning` partner-following block). This is
-the intake log the Phase 1 reason-string rewrite spec draws from, and where
-the audit's `value_gate` reason-string gap (inaccurate "can't win this one"
-on a branch that actually can win) should eventually land — still not
-logged here as of this file's creation.
+game context, originally Issues 1–7, now through Issue 9) written to find
+where structure was needed before pausing to build that structure; the next
+testing pass will likely start a fresh log rather than append here. Two
+entries (Issues 3/6) were marked ✓ at the time but the described fix had
+never actually been applied to the code — caught during reconciliation and
+implemented for real the same day (see `ai_player.gd`'s `human_is_winning`
+partner-following block). This is the intake log the Phase 1 reason-string
+rewrite spec draws from. **Issue 8 (added July 13, 2026)** covers the new
+forced-overtake strings from BUG-008's fix. **Issue 9 (added July 13,
+2026)** finally logs the `value_gate` reason-string gap flagged in three
+other docs — resolved by retirement, not a string patch, since the code
+path that produced the inaccurate string no longer exists. Also caught, and
+**cleaned up the same day**, three unreachable dead-code fragments in the
+opponent-following discard block left over from that retirement.
 
 **`AI_Play_Behavior_Bug_Log_Addendum_PatternD.md`** — the original BUG-005
 write-up (Pattern D: `trust_gate` gated on the wrong fact). Append-only

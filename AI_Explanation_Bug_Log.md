@@ -174,6 +174,44 @@ they still apply correctly whenever a real protect option exists.
 
 ---
 
+### ✓ Issue 9 — `value_gate`'s inaccurate "can't win this one" on a winnable-but-declined trick (retired, not patched)
+**Situation:** The original `value_gate` (branch #25, beginner-only) could
+decide a cheap trick wasn't worth contesting even when `can_win.size() > 0`,
+and its decline fell through into the shared "can't win" discard block —
+picking up the generic `"Can't win this one — discarding low."` string
+(and its counter/double-protection variants), which is inaccurate for this
+specific case: the AI *could* win, it chose not to. Flagged as a candidate
+entry in `Phase3_Objective_Audit.md`, `Phase2_Raw_Concept_Audit.md`, and
+`Texas_42_Next_Session_Prep_July_5_2026.md` but never actually logged here
+until now.
+**Resolution:** not a string patch — `value_gate` itself was retired
+entirely (July 12, 2026, the Vigilance/Opportunism migration,
+`AI_Play_Behavior_Bug_Log.md` Pattern E). The opponent-following
+`can_win.size() > 0` branch now always returns (reflexively via
+`_should_evaluate_tactically()`, or via the counter/plain-win paths) —
+there is no code path left where a winnable trick falls through to the
+discard block. The inaccuracy is structurally impossible now, not
+patched around.
+**Verified (July 13, 2026):** confirmed against current `ai_player.gd` —
+every branch under the opponent-following `if can_win.size() > 0:` returns
+before reaching the "can't win" discard block below it.
+**Dead-code cleanup (July 13, 2026):** the discard block turned out to have
+three unreachable fragments, not one — a wider scan (prompted by this entry)
+found that the check above (`if can_win.size() > 0:`, "Not worth chasing —
+protecting my count/double instead." strings) was joined by two more: a
+`_beats(discard, current_winner_domino, ...)` check at the top of *each* of
+the two discard fallback blocks ("Taking this one." on a tile that, by
+construction, can never actually win once `can_win.size() > 0` always
+returns above). All three were leftovers from before `value_gate` was
+retired, when a beginner could decline a winnable cheap trick and fall
+through to this block with `can_win` genuinely non-empty. Removed; the
+remaining `elif` chain (`legal.size() == 1` / `hand.size() == 1` / the
+counter-and-double-flavored "Can't win this one" strings) is exactly what
+was still reachable, verified via smoke tests covering forced-follow,
+protect-a-counter, single-counter-forced, and all-counters-can't-win.
+
+---
+
 ## Cross-cutting pattern — the discard path
 
 The opponent-following discard fallback (`"Can't win this one — discarding

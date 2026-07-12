@@ -1170,41 +1170,34 @@ static func decide_play(
 		return chosen
 
 	# Can't win — discard lowest non-counter to protect point cards.
+	# NOTE: this whole block is only reached with can_win.size() == 0 — the
+	# can_win.size() > 0 branch above always returns. A _beats(discard,
+	# current_winner_domino, ...) check and a can_win.size() > 0 split both
+	# used to live here (from when a beginner-only value_gate threshold could
+	# decline a winnable trick and fall through to this block); both were
+	# provably dead code once value_gate was retired (July 12, 2026) and are
+	# removed here rather than left as unreachable branches. See
+	# AI_Explanation_Bug_Log.md, Issue 9.
 	var non_counters = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 	if non_counters.size() > 0:
 		var discard = _lowest_in(non_counters, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		var had_counter_to_avoid = non_counters.size() < legal.size()
 		var double_avoided = non_counters.any(func(d): return d.is_double()) and not discard.is_double()
-		if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
-			reason_log.append("Taking this one.")
-		elif legal.size() == 1:
+		if legal.size() == 1:
 			reason_log.append("Had to follow suit.")
 		elif hand.size() == 1:
 			reason_log.append("No way to win this one.")
+		elif had_counter_to_avoid and double_avoided:
+			reason_log.append("Can't win this one — protecting my count and my double.")
+		elif had_counter_to_avoid:
+			reason_log.append("Can't win this one — protecting my count.")
+		elif double_avoided:
+			reason_log.append("Can't win this one — protecting my double.")
 		else:
-			if can_win.size() > 0:
-				if had_counter_to_avoid and double_avoided:
-					reason_log.append("Not worth chasing — protecting my count and my double instead.")
-				elif had_counter_to_avoid:
-					reason_log.append("Not worth chasing — protecting my count instead.")
-				elif double_avoided:
-					reason_log.append("Not worth chasing — protecting my double instead.")
-				else:
-					reason_log.append("Not worth chasing this one.")
-			else:
-				if had_counter_to_avoid and double_avoided:
-					reason_log.append("Can't win this one — protecting my count and my double.")
-				elif had_counter_to_avoid:
-					reason_log.append("Can't win this one — protecting my count.")
-				elif double_avoided:
-					reason_log.append("Can't win this one — protecting my double.")
-				else:
-					reason_log.append("Can't win this one — discarding low.")
+			reason_log.append("Can't win this one — discarding low.")
 		return discard
 	var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-	if _beats(discard, current_winner_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
-		reason_log.append("Taking this one.")
-	elif legal.size() == 1:
+	if legal.size() == 1:
 		reason_log.append("Had to follow suit.")
 	elif hand.size() == 1:
 		reason_log.append("No way to win this one.")
