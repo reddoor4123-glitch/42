@@ -172,6 +172,48 @@ actually specs `AI_MODES`.
 > Do not resume `trust_threshold` design work by default; resolve the
 > question first.
 
+> **Post-Difficulty-Modes-migration correction (July 12, 2026):** the
+> question this whole section poses — what should `trust_threshold`/
+> `contest_threshold` become as real `AI_MODES` parameters — is now
+> answered, differently than either candidate here anticipated. See
+> `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`: `AI_MODES` gained
+> `vigilance` (`"none"`/`"full"`) and `opportunism` (`0.0`-`1.0`, rolled
+> fresh per decision), and every branch below that fed this table is
+> affected:
+> - **#8** — the difficulty-differentiated high-vs-low trump lead
+>   technique described in this row's own correction note is gone.
+>   `holds_double_trump` alone is now the complete gate, confirmed
+>   identical at every difficulty. (A real, separate correctness gap in
+>   this same technique — the low-lead choice doesn't exclude counters —
+>   was found during that removal and logged as BUG-010 in
+>   `AI_Play_Behavior_Bug_Log.md`; not fixed by the migration.)
+> - **#13, #15, #16** — no longer three separate branches. Partner has
+>   zero difficulty branching anywhere in `decide_play()` now: the
+>   beginner reflexive-win shortcut (#13's shape) and the expert bypass
+>   of #16's gate are both removed, leaving one unconditional path that
+>   always prefers non-trump winners then always runs #16's margin/
+>   counter/lead-economy evaluation. `trust_threshold` (already noted
+>   above as having no confirmed source) is even further moot — the
+>   branch it might have gated no longer forks by difficulty at all.
+> - **#20** — no longer expert-only. Gated on `mode["vigilance"] ==
+>   "full"` instead of `difficulty == "expert"`. Behaviorally identical
+>   today (only expert sets `vigilance: "full"`), but the form this
+>   audit flagged as "correct behavior, imprecise form" (see
+>   `Difficulty_Feed_Points_Inventory.md` item #2) is now the precise
+>   form.
+> - **#25 (`value_gate`)** — retired entirely, not reclassified. Per the
+>   fix that replaced it: passing on a cheap trick is the disciplined
+>   move, not the distracted one — `contest_threshold`'s hardcoded
+>   `trick_pts >= 5` cutoff had the direction backwards. Replaced by
+>   `_should_evaluate_tactically()`'s `opportunism` roll, decided fresh
+>   per trick rather than by a fixed value cutoff. `contest_threshold`
+>   has no successor parameter and none is planned.
+>
+> The reason_log gap flagged below (#25 lacking its own honest string)
+> is moot along with #25 itself — the reflexive path's placeholder
+> string ("Taking this one.") is a new, separate entry for the
+> strings-pass session, not a fix to the old gap.
+
 ---
 
 ## Confirmed duplication pairs (candidates for shared logic, not shared file structure)
@@ -200,6 +242,11 @@ evaluation or commitment" but "does a trust concept belong at this
 decision point at all."
 
 ## New finding from this pass — reason_log gap (candidate for `AI_Explanation_Bug_Log.md`)
+
+**Superseded (July 12, 2026).** #25 (`value_gate`), the branch this
+finding is about, no longer exists — see the Post-Difficulty-Modes-migration
+correction note above. Kept as the historical record of the original
+observation.
 
 Checking the reason strings to confirm the ESCAPE-reuse distinction above
 surfaced a real inconsistency: #16 (`trust_gate`) has its own honest string

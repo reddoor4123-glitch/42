@@ -16,12 +16,22 @@ specific doc below if more detail is needed.
 The standing reference. Design philosophy, function-containment principles,
 full file inventory with roles, deep dives on `ai_player.gd` and
 `game_table.gd`, and "current focus systems." Closest thing to a living
-architecture doc. Refreshed July 5, 2026 — the previous "void-lead wiring
-specced, not yet pasted in" staleness is fixed; it now reflects PublicKnowledge
-as live with two real consumers, BUG-003/003b and BUG-005 as fixed, Own Suit
-(Reversed), Sevens legal-move enforcement, and the four `ai_player.gd`
-doctrine headers. Has its own "last verified" line — check that date before
+architecture doc. Refreshed July 12, 2026 — reflects the Vigilance/Opportunism
+migration (decide_play() has zero bare `difficulty ==` checks left), the
+July 9-12 bidding evaluator fixes, the closed settings/toggle audit (Low-No
+removed, ~23 dead settings gone, four real features built), and BUG-006/
+BUG-008/009/010. Has its own "last verified" line — check that date before
 trusting it blindly on a much later visit.
+
+**`Texas_42_AI_Bidding_Structure_Overview.md`**
+A from-scratch technical description of `decide_bid()`'s three-layer
+architecture, written for outside review. Corrected in place July 12, 2026
+(see the update note at its top) to reflect the four evaluator fixes — the
+original text below that note is kept for the parts that didn't change
+(Layer 1's trump scoring, Layer 3's execution rules, the open questions
+about partner-trust and the fixed threshold). **Open this for the most
+detailed walkthrough of the bidding math itself** — more implementation
+detail than Onboarding §4 has room for.
 
 **`Phase3_Objective_Audit.md`**
 The working document for the Phase 3 difficulty-branch collapse. Full
@@ -36,9 +46,13 @@ carry July 5 correction notes — read those before trusting the original row
 text for either. `trust_threshold`, one of the two candidate `AI_MODES`
 parameters this doc surfaced, **no longer has a confirmed source branch**
 post-BUG-005 — see the correction note after the candidate-parameters table.
-For what to actually do next about the six bare-difficulty branches, see
-`Difficulty_Feed_Points_Inventory.md` instead — it's the newer, more current
-per-branch recommendation doc.
+**Post-Difficulty-Modes-migration correction (July 12, 2026), separate from
+the above:** #8, #13, #15, #16, #20, and #25 (`value_gate`, retired
+entirely) are all affected by the Vigilance/Opportunism migration — see the
+dedicated correction note right after the `trust_threshold` one for the
+per-branch disposition. The six-branch inventory this section points to is
+now closed — see `Difficulty_Feed_Points_Inventory.md`'s own closing note,
+kept only as historical reasoning at this point, not a live recommendation.
 
 **`Phase2_Control_Layer_Audit.md`**
 The locked structural model for Phase 2: exactly three control categories —
@@ -53,7 +67,11 @@ above the pipeline" claim is retracted (see `Phase1_Control_Layer_Audit.md`),
 and the `cooperation_bias`/`trust_threshold` Unresolved entry now reflects
 that `trust_gate` (its intended source) has no trust content left post-BUG-005.
 The "MARKS cardinal-rule override" Unresolved entry is also resolved — see
-`Phase1_Control_Layer_Audit.md`.
+`Phase1_Control_Layer_Audit.md`. **Further resolved July 12, 2026:** the
+`cooperation_bias`/`trust_threshold` Unresolved entry is now fully closed,
+not just reframed — `cooperation_bias` is deleted from `AI_MODES` and the
+branch it might have gated (#16's expert bypass) no longer exists. See the
+entry's own July 12 correction note.
 
 **`Phase1_Control_Layer_Audit.md`**
 The locked resolution for Phase 1: the cardinal rule is ordinary Selection
@@ -94,16 +112,16 @@ is kept as the historical record of what the code looked like before the
 fix. Don't mistake an uncorrected code snippet in either raw audit for
 current code — check the Control-Layer audit or `ai_player.gd` itself first.
 
-**`Difficulty_Feed_Points_Inventory.md`**
-The current, evidence-based per-branch recommendation for the six historically-bare
-`if difficulty == ...` branches — newer than and supersedes the "suggested
-order" list in `Texas_42_Next_Session_Prep_July_5_2026.md` §3 for this
-specific topic. Classifies each of the six individually (confirmed exception,
-already-fixed, ready-to-test, needs-its-own-audit, or confirmed-deliberate-design)
-rather than treating them as one pile. **Open this before touching any of
-the six branches, or before resuming `trust_threshold`/`cooperation_bias`
-design work** — it's the doc that reopened the Expert "no trust rule" bypass
-as a concrete testable question post-BUG-005.
+**`Difficulty_Feed_Points_Inventory.md`** — **CLOSED, July 12, 2026.**
+Was the current, evidence-based per-branch recommendation for the six historically-bare
+`if difficulty == ...` branches. Every remaining open item it tracked (the Expert
+"no trust rule" bypass, `value_gate`, the beginner reflexive-win shortcut, the
+`CONTROL_TRUMP` high-vs-low technique, the `FORCE_A_VOID` expert gate) has now
+been resolved by `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`'s Vigilance/
+Opportunism migration — see the doc's own closing note at the top for the
+per-item disposition. `decide_play()` now has zero bare `if difficulty ==
+...` checks anywhere. Kept as the historical record of the reasoning; no
+longer a live recommendation doc.
 
 ---
 
@@ -115,8 +133,12 @@ as a concrete testable question post-BUG-005.
 | Jul 4 (RankingUnification) | `Texas_42_Session_Summary_July_4_2026_RankingUnification.md` | The ranking split-brain bug (fixed), MARKS/Plunge/Splash objective fix, the six `PublicKnowledge` queries confirmed implemented, the Nello-low playtest trace, and Finding 3 (orphaned settings, including the first flag on `nello_doubles_reversed`). **Good doc for ranking/comparison bugs and the orphaned-settings list.** |
 | Jul 5 (Phase2Architecture) | `Texas_42_Session_Summary_July_5_2026_Phase2Architecture.md` | The session that produced `Phase2_Control_Layer_Audit.md` and found the original `trust_gate` bug (its reason string couldn't mean what its own condition tested) — this is where BUG-005 was first identified, before the fix spec existed. Good doc for the origin story of BUG-005 and the Selection/Commitment/Modulation model. |
 | Jul 5 (prep, superseded in places) | `Texas_42_Next_Session_Prep_July_5_2026.md` | Written the night before as a prep doc, not a summary. Its Nello "Reversed" toggle bug write-up (§1) is retracted — that feature works correctly now. Its `trust_gate`/`trust_threshold` design-conversation framing (§3) is superseded by the same day's later BUG-005 fix and by `Difficulty_Feed_Points_Inventory.md` — both are marked with inline correction notes rather than removed, so read the corrections, not just the original prose. |
-| Jul 6 (BranchTracePart1) | `Texas_42_Session_Summary_July_6_2026_BranchTracePart1.md` | First half (#1–#11 of 28) of the full branch-by-branch trace against `Phase3_Objective_Audit.md`. Covers BUG-006/BUG-007 (logged, not implemented), the branch #8 low-trump-lead fix, and branch #11's generalized guaranteed-win detection — all implemented and pushed. |
+| Jul 6 (BranchTracePart1) | `Texas_42_Session_Summary_July_6_2026_BranchTracePart1.md` | First half (#1–#11 of 28) of the full branch-by-branch trace against `Phase3_Objective_Audit.md`. Covers BUG-006/BUG-007 (logged at the time, not yet implemented — **BUG-006 has since been fixed July 9, 2026**, see `AI_Play_Behavior_Bug_Log.md`; BUG-007 is still open), the branch #8 low-trump-lead fix, and branch #11's generalized guaranteed-win detection — all implemented and pushed. |
 | Jul 6 (BranchTracePart2) | `Texas_42_Session_Summary_July_6_2026_BranchTracePart2.md` | Second half (#12–#28), completing the trace. Covers the removal of branches #17 and #19 (no legitimate strategic basis, same violation class), the new `GIFT_A_VOID`/partner-side `FORCE_A_VOID` capability (branches 6a/6b), and the Partner/Opponent difficulty-coupling architectural finding — all implemented and pushed. **Good doc for "why was branch X removed" or "why does the partner now know about void suits."** |
+| Jul 9 (BiddingAudit) | `Texas_42_Session_Summary_July_9_2026_BiddingAudit.md` | The bidding audit that measured `evaluate_hand()`/`decide_bid()` against 20 real in-game hands with Katy's verdicts and found it bid 0 of 20. Origin of the four evaluator findings (#1–#4) fixed July 12 — see `AI_Bid_Behavior_Bug_Log.md` Pattern C and `Texas_42_AI_Bidding_Structure_Overview.md`. Good doc for the "why did we retune the evaluator" origin story. |
+| Jul 12 (BiddingFixPackage) | `Texas_42_Session_Summary_July_12_2026_BiddingFixPackage.md` | The spec and verification table for the four-fix bidding evaluator package (off-suit rank floor, off-suit-doubles compounding, trump-majority control, counter-realization inclusion), implemented the same day. Good doc for the exact before/after numbers on the spot-check hands. |
+| Jul 12 (DifficultyModesDesign) | `Texas_42_Session_Summary_July_12_2026_DifficultyModesDesign.md` | The design reasoning behind the Vigilance/Opportunism two-axis model that replaced every remaining bare `if difficulty == ...` branch in `decide_play()`, implemented the same day. Good doc for "why vigilance and opportunism specifically, not some other axis shape." |
+| Jul 12 (SettingsToggleAudit, CLOSED) | `Texas_42_Settings_Toggle_Audit_CLOSED_July_12_2026.md` | Closing summary of a settings/toggle audit that grew from one question ("does Partner Sits Out actually work?") into a full pass over all ~53 `GameSettings` variables. Three real features built (Force Trump on Opening Lead, Doubles Trump Reversed, Small-End Opening Lead, Nello/Sevens Only on Forced Bid), ~23 dead settings deleted, and the entire Low-No contract removed. Good doc for "does setting X actually do anything" — audit is closed, every setting is accounted for. |
 
 **Referenced but not present in this repo:** the original doc set (per earlier
 drafts of this map and cross-references in other docs) also included
@@ -135,17 +157,28 @@ from the code side, even without the original session narrative.
 ## Tier 3 — Bug logs (living documents, not session-dated)
 
 **`AI_Play_Behavior_Bug_Log.md`** — gameplay decision bugs, organized by
-pattern. Pattern A ("guaranteed trick" detection too narrow — BUG-002/002b/004)
-is unchanged: BUG-004 paused pending Phase 3 Opportunism design, BUG-002/002b
+pattern. Pattern A ("guaranteed trick" detection too narrow — BUG-002/002b/004):
+**BUG-004 unblocked July 12, 2026** (the Phase 3 Opportunism design pass it
+was waiting on has landed — see Pattern F/G below), BUG-002/002b still
 waiting on Phase 4. **Pattern B (BUG-003/003b, lead-priority ordering) is
-fixed as of July 5, 2026** — marked ✓ in the doc. Status-keyed (✓ fixed / →
-ready / ⏳ waiting on Phase 4 / ⚑ needs examples). **Check here before
-assuming a play-decision oddity is new — it may already be a known,
+fixed as of July 5, 2026.** **Pattern E (BUG-006/BUG-007, counter safety at
+leading branches): BUG-006 fixed July 9, 2026; BUG-007 has a design ruling
+now (via BUG-009) but isn't specced yet; BUG-009 itself (5:5-style
+counter-doubles should be led on reasonable confidence, not gated on
+provable safety) is also open, not specced.** **Pattern F (BUG-008, forced
+overtake) and Pattern G (BUG-010, low-lead technique doesn't exclude
+counters)** are both new July 11-12, 2026, open, not specced. Status-keyed
+(✓ fixed / → ready / ⏳ waiting on Phase 4 / ⚑ needs examples). **Check here
+before assuming a play-decision oddity is new — it may already be a known,
 categorized bug with a fix shape written.**
 
 **`AI_Bid_Behavior_Bug_Log.md`** — same idea, bidding side. **Pattern A
-(the Marks-bid-gate double defect) is fixed as of July 5, 2026.** Pattern B
-(trump rank blindness) is marked "likely resolved already" pending an
+(the Marks-bid-gate double defect) is fixed as of July 5, 2026.** **Pattern
+C (four evaluator findings from the July 9, 2026 bidding audit — off-suit
+rank floor, off-suit-doubles compounding, trump-majority control, counter-
+realization inclusion) is fixed as of July 12, 2026**, with three logged
+known limitations flagged for a future capabilities-layer pass, not a
+re-tune. Pattern B (trump rank blindness) is marked "likely resolved already" pending an
 actual verification pass against real hands — that verification hasn't
 happened yet as far as this doc set shows.
 
@@ -233,11 +266,11 @@ existing entries.
   marked "likely resolved already" via hand-recomputation, not an actual
   playtest verification. Worth an explicit verification pass to close it
   out for real rather than leaving it as a confident guess.
-- **The `value_gate` (#25) reason-string gap** (generic "can't win this one"
-  on a branch that can actually win) is flagged as a candidate entry in at
-  least three docs (`Phase3_Objective_Audit.md`, `Phase2_Raw_Concept_Audit.md`,
-  `Texas_42_Next_Session_Prep_July_5_2026.md`) but doesn't appear to have
-  actually been logged into `AI_Explanation_Bug_Log.md` yet.
+- ~~**The `value_gate` (#25) reason-string gap**~~ **Moot, July 12, 2026** —
+  `value_gate`/branch #25 no longer exists; retired entirely by the
+  Vigilance/Opportunism migration rather than fixed. The reflexive path
+  that replaced it has its own new placeholder string ("Taking this one."),
+  itself flagged for the strings-pass session — a new entry, not the old gap.
 - This map itself was significantly out of date until July 5-6, 2026 — nine
   of the eighteen `.md` files in the repo (as of July 5) weren't listed here
   at all, and several entries described pre-BUG-005/pre-BUG-003 states.

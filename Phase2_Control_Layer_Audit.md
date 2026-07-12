@@ -200,6 +200,23 @@ documented as a **semantically underspecified axis with no confirmed source bran
 constructable in the way originally planned. See
 `Texas_42_Session_Summary_July_4_2026_RankingUnification.md`, Finding 5, for the original framing.
 
+**Resolved (July 12, 2026) — the testable question above was tested.**
+`Difficulty_Feed_Points_Inventory.md`'s reframed question ("does Expert
+still need a separate bypass, now that the logic underneath is
+difficulty-agnostic in principle?") was answered by
+`Spec_Difficulty_Modes_TwoAxis_July12_2026.md`: no. The expert bypass of
+branch #16 is removed outright; partner runs the identical margin/
+counter/lead-economy evaluation at every difficulty, with no scalar of
+any kind gating it. `cooperation_bias` itself is deleted from `AI_MODES`
+(it was a dead read — `mode["cooperation_bias"]` — that would have
+crashed once the key was gone, cleaned up as part of the same migration).
+`AI_MODES` gained `vigilance` and `opportunism` instead, neither of which
+is `trust_threshold` under a new name — `vigilance` gates knowledge
+access (Category-1-shaped, not Commitment), and `opportunism` is rolled
+per-decision on the opponent side, not a partner-trust concept at all.
+`trust_threshold` remains unbuilt and is not expected to be resumed —
+treat this entry as closed, not paused.
+
 **Win Safety / Trust-as-probability** — Defined only in prose (July 1/2
 session summaries): a probability estimate of whether a partner's winning
 position holds, gated by a Trust threshold. No corresponding data model

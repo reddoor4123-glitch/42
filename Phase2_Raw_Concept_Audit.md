@@ -85,6 +85,19 @@ the code comment says Phase 3, the design docs consistently call it the Phase 2 
 in three separate session docs but is explicitly blocked pending Katy's ruling on the "expert
 partner no trust rule" question (see #6 below). No rename has happened yet.
 
+**Superseded (July 12, 2026).** Not renamed — deleted. `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`
+removed `cooperation_bias` from `AI_MODES` entirely rather than resolving
+the rename question, since the "expert no trust rule" branch this key was
+meant to eventually parameterize (#6 below / branch #16) was itself
+removed in the same migration — partner runs identical logic at every
+difficulty now, with nothing left for a trust-scalar to gate. The dead
+read shown above (`mode["cooperation_bias"]`) was cleaned up in the same
+pass — it would otherwise have crashed on a missing dict key.
+`AI_MODES` gained `vigilance`/`opportunism` instead; see entry #4 below
+for `opportunism`'s current (no longer inert) status. See
+`Phase2_Control_Layer_Audit.md`'s Unresolved section for the full
+resolution note.
+
 ---
 
 ## 4. `opportunism` — AI_MODES key, inert placeholder
@@ -103,10 +116,20 @@ var opportunism: String = mode["opportunism"]  # Phase 3
 **Status:** Placeholder, explicitly and consistently labeled Phase 3 everywhere (code comment
 and docs agree here, unlike `cooperation_bias`).
 
-**Related but distinct:** The opponent-behavior header comment in `decide_play()` says:
+**Related but distinct:** The opponent-behavior header comment in `decide_play()` said (before
+the July 12 rewrite below):
 ```
 # Expert: compete harder (handled in bidding); TODO Phase 3 opportunism.
 ```
+
+**Superseded (July 12, 2026) — no longer inert.** `opportunism` is now a real `0.0`-`1.0` float,
+rolled fresh per eligible decision via a new `_should_evaluate_tactically(mode)` helper: `randf()
+< mode.get("opportunism", 1.0)` decides whether an opponent runs the real tactical evaluation
+(margin/counter/lead-economy) or commits reflexively. Wired into the opponent-following `can_win`
+path, retiring the old `value_gate` (#25 in `Phase3_Objective_Audit.md`) in the process. The
+`TODO Phase 3 opportunism` comment above is gone — replaced with a header describing the
+vigilance/opportunism model directly. See `Spec_Difficulty_Modes_TwoAxis_July12_2026.md` and
+`ai_player.gd`'s `_should_evaluate_tactically()`.
 This TODO originally sat next to a lead-side branch. Per the Jul 4 PublicKnowledge session, that
 specific TODO location was later filled in — but with a **Knowledge-classified** mechanism
 (`FORCE_A_VOID`, gated on `PublicKnowledge.void_suits()`), not an `opportunism`-parameterized one.
@@ -197,6 +220,12 @@ now that the underlying logic it skips is difficulty-agnostic in principle? Reco
 next thing to try, not yet tested. The original "better judgment vs. reduced trust" framing is
 effectively moot either way, since there's no trust concept left to have an opinion about.
 
+**Resolved (July 12, 2026) — tested, answer is no.** The recommended test was run:
+`Spec_Difficulty_Modes_TwoAxis_July12_2026.md` removed this bypass outright. Partner now always
+runs the margin/counter/lead-economy evaluation this bypass used to skip, at every difficulty,
+with no fork here at all. Nothing broke; nothing needed the bypass. This code block no longer
+exists in `ai_player.gd`.
+
 ---
 
 ## 7. `value_gate` — branch #25, active, commitment gate
@@ -239,6 +268,16 @@ Neither name exists as an actual identifier in the code — the branch itself is
 picks up the generic reason string *"Can't win this one — discarding low"* — inaccurate, since
 the AI can win but is choosing not to. Logged as a candidate for `AI_Explanation_Bug_Log.md`,
 not yet fixed.
+
+**Superseded (July 12, 2026) — retired, not reclassified.** This branch and its hardcoded
+`trick_pts >= 5` threshold no longer exist. `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`
+concluded the threshold had the direction backwards — passing on a cheap trick is the
+disciplined move, not the distracted one — and replaced it with `_should_evaluate_tactically()`'s
+`opportunism` roll, decided fresh per trick rather than by a fixed cutoff. The reflexive fallback
+(now on the opponent side, at every difficulty, gated by the opportunism roll rather than
+`difficulty == "beginner"`) carries a new placeholder string, `"Taking this one."`, itself flagged
+for the strings-pass session — the naming collision and reason-string bug noted above are both
+moot along with the branch itself.
 
 ---
 

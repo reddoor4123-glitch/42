@@ -154,10 +154,18 @@ reason-string rewrite, not something to fix in isolation.
   question at all. It's the long-horizon lead-control concept, now permanently parked in
   `Phase1_Control_Layer_Audit.md`: not blocked on more examples, deliberately not being built.
 - Phase 1 reason-string rewrite (~24 strings, fully specced, not applied).
-- Orphaned settings sweep beyond `nello_doubles_reversed`:
+- ~~Orphaned settings sweep beyond `nello_doubles_reversed`:
   `follow_me_doubles_mode`, `follow_me_allow_as_points_bid`,
-  `allow_small_end_opening_lead`. (~~`sevens_tie_rule`~~ — verified genuinely
-  orphaned, never consulted anywhere, no UI control existed for it either;
+  `allow_small_end_opening_lead`.~~ **Resolved, split three ways (July 6-12, 2026):**
+  `sevens_tie_rule` deleted July 6 (as originally noted below); `follow_me_doubles_mode`
+  and `follow_me_allow_as_points_bid` turned out to be genuinely orphaned too and were
+  deleted July 12 in a settings-cleanup pass; `allow_small_end_opening_lead` was the
+  opposite case — not orphaned, just unwired — and was wired up July 12 as the Small-End
+  Opening Lead pre-play toggle instead of being deleted. A much larger orphaned-settings
+  sweep beyond this original short list also happened July 12 (see
+  `Texas_42_Settings_Toggle_Audit_CLOSED_July_12_2026.md`): the Low-No contract and roughly
+  two dozen other dead settings were removed across several passes. (`sevens_tie_rule` —
+  verified genuinely orphaned, never consulted anywhere, no UI control existed for it either;
   deleted entirely July 6, 2026 rather than wired up.)
 - Follow Me dead-code decision (amend convention vs. delete dead branches).
 - AI special contract bidding (Nello/Sevens/Plunge/Splash initiation).

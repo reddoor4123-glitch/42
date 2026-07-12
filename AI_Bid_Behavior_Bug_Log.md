@@ -56,18 +56,60 @@ I recomputed the hands from these entries against the current formula by hand (n
 
 ---
 
+## Pattern C — ✓ Four evaluator findings from the July 9, 2026 audit (Fixed July 12, 2026)
+
+The July 9, 2026 bidding audit (`Texas_42_Session_Summary_July_9_2026_BiddingAudit.md`)
+measured the live evaluator against 20 real in-game hands with Katy's verdicts
+and found it bid 0 of 20 — including all three hands Katy marked as clear
+bids. Four findings came out of that audit, tuned together as one package
+against a 26-hand synthetic benchmark and re-validated against the same 20
+real hands (candidate agrees with Katy on 10/11 decided hands; all 8
+pass-verdict hands stay passes). All four are implemented in `ai_player.gd`.
+
+- **Finding #1 — lone high off-suit tiles scored zero.** A non-double
+  off-suit tile of rank 4 with no suit-mate (e.g. a lone 4:6) fell through
+  every branch and contributed 0.0. Fixed: a `rank >= 4` tier now adds 0.2.
+- **Finding #2 — counter points computed, then discarded.** Same root
+  cause as Entry 3 above, independently reconfirmed by this audit.
+  `realization_bias` is now folded into `estimated_points`.
+- **Finding #3 — trump-suit majority undervalued.** Holding 5+ trump
+  (majority control, at most two outstanding across three other players)
+  only added a flat +1.0 to the Layer 2 control signal — the same bonus
+  as the 4+ tier just below it, despite being qualitatively different.
+  Confirmed by a played-out 36-6 hand. Fixed: +3.0 at 5+, another +2.0 at 6+.
+- **Finding #4 — off-suit doubles scored as a flat +0.5 regardless of
+  which double or how many.** Fixed: rank-scaled (0.55 base + pip/6 * 0.25)
+  with a compounding bonus per additional double held, plus a narrow +0.2
+  bracket bonus for holding both 4:4 and 6:6.
+
+**Status:** ✓ Fixed July 12, 2026. See `ai_player.gd`'s `evaluate_hand()`/
+`decide_bid()`, `Texas_42_Session_Summary_July_12_2026_BiddingFixPackage.md`
+for the full spec and verification table, and `Texas_42_AI_Bidding_Structure_Overview.md`
+§2.3-2.5/§3.1(B) for the updated technical description.
+
+**Known limitations, logged not blockers (per the fix package):** fragile
+no-trump doubles hands can still over-bid (per-tile summation can't see
+set-risk — first target for a planned capabilities-layer); one real bid
+hand still misses by 0.7 (opening-control value not yet modeled — second
+capabilities-layer target); extreme double counts can run hot enough to
+risk overbidding via the target-bid formula (watch during playtesting, a
+compounding cap is the likely remedy if it misbehaves).
+
+---
+
 ## Notes logged but not bugs (○)
 
 **Entry 3 — "floor bid, not a confident bid."**
 When `should_bid` is true but the computed `target_bid` lands below the legal minimum (e.g. 29 when 30 is required), the code mechanically bumps it to the floor. This is correct bidding logic — you can't legally bid below the minimum — the entry is really about *tone*: a hand that deserves confidence ends up looking identical to a marginal hand that just barely qualified. That's an explanation/presentation concern (same family as the string-flatness issues in `AI_Explanation_Bug_Log.md`), not a decision-logic bug. Worth a note for whenever bid explanation strings get their own pass, not a fix to `decide_bid()` itself.
 
-**Entry 3 — "counter value is visible but ignored."**
-`realization_bias` / `counter_points` are explicitly computed as diagnostic-only signals and deliberately excluded from `estimated_points` — the code comments say so directly, and your session notes tie this to the still-unbuilt Phase 2 risk axis. This is a scoped future feature, not an oversight. No action needed until Phase 2 risk is speced.
+**Entry 3 — "counter value is visible but ignored." — ✓ Fixed July 12, 2026, reclassified from ○.**
+This was correctly scoped as "not a bug, future feature" at the time it was written — `realization_bias` really was diagnostic-only and deliberately excluded. That changed: the July 9, 2026 bidding audit re-surfaced this as finding #2, and the July 12, 2026 evaluator fix package (`ai_player.gd`, `evaluate_hand()`) folds `realization_bias` into `estimated_points` directly (full inclusion, no scaling factor), benchmark-verified against 20 real in-game hands. `counter_points` remains diagnostic-only. See Pattern C below and `Texas_42_Session_Summary_July_12_2026_BiddingFixPackage.md`.
 
 ---
 
 ## Summary — suggested order of attack
 
-1. **Verify Pattern B is actually closed** — rerun Entries 2, 4, 5, 6 against current code. If confirmed, that's four entries closed with zero new work.
+1. **Verify Pattern B is actually closed** — rerun Entries 2, 4, 5, 6 against current code. Still not done as of July 12, 2026; the hand-recompute confidence hasn't been upgraded to an actual playtest verification. Lowest-priority remaining item on this list.
 2. ~~**Spec Pattern A as one combined fix**, not two sequential ones — tighten the marks gate's off-suit condition and reorder it ahead of the points return in the same pass, so you don't temporarily widen exposure to Entry-7-style bad marks bids in between.~~ **✓ Fixed July 5, 2026** — see Pattern A above.
-3. Leave the two ○ items logged for later — one belongs with bid-explanation string work, the other is already correctly scoped to Phase 2.
+3. ~~Leave the two ○ items logged for later — one belongs with bid-explanation string work, the other is already correctly scoped to Phase 2.~~ **One of the two ○ items is no longer ○** — see Entry 3 "counter value is visible but ignored," now ✓ Fixed July 12, 2026 (Pattern C). The other (Entry 3 "floor bid, not a confident bid") is still correctly parked for the bid-explanation strings pass.
+4. **Pattern C (four evaluator findings) — ✓ Fixed July 12, 2026.** See above. Its own logged limitations (fragile no-trump doubles hands, unmodeled opening-control value, extreme-double-count overbid risk) are candidates for a future capabilities-layer design pass, not a re-tune of this package's constants — do not adjust its constants without rerunning the 26-hand benchmark.

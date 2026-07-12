@@ -120,7 +120,7 @@ section should be treated as a running list, not a closed one.
 | Partner leading — `CONTROL_TRUMP` (BUG-003/003b) | ✓ Fixed (July 5, 2026). Trump-control check now runs before the safe-off-suit check, with a double-aware threshold (3+ with the double, 4+ otherwise). Unrelated to anything resolved here otherwise. |
 | Opponent-mirror of the cardinal rule | ✓ Confirmed symmetric, same objective. Closed. |
 | "Sits above the pipeline" claim | ✓ Corrected — see above. `Phase2_Control_Layer_Audit.md` should have that line removed on next edit. |
-| `cooperation_bias` naming collision | ⚑ Unchanged, cross-referenced only — still blocked on the same standing question from Phase 2 (does Expert's "no trust rule" mean better judgment or reduced trust). Not a Phase 1 question; noted here only because the variable's name collides with Phase 1's own vocabulary. |
+| `cooperation_bias` naming collision | ✓ Moot, July 12, 2026 — `cooperation_bias` is deleted from `AI_MODES`, and the Expert "no trust rule" branch it collided with is removed entirely (partner runs identical logic at every difficulty now). No naming collision left to track. See `Phase2_Control_Layer_Audit.md`'s Unresolved section (now resolved) and `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`. |
 | Reason-string debt (Explanation Bug Log Issues 1, 7) | Unchanged — presentation debt on already-resolved branches, no new complexity introduced by this document. |
 
 **Net effect: Phase 1 is closed as an active work item.** BUG-003/003b is now fixed (July 5, 2026);

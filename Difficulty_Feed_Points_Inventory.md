@@ -1,5 +1,38 @@
 # Where Difficulty Feeds In (v1) — Inventory and Classification
 
+> **CLOSED, July 12, 2026.** Every remaining open item below (#2, #3, #5, #6,
+> #7 — #1/#8/#4 were already resolved before this) has now been resolved by
+> `Spec_Difficulty_Modes_TwoAxis_July12_2026.md`'s Vigilance/Opportunism
+> two-axis migration and its same-day line-823 follow-up:
+> - **#2** (`FORCE_A_VOID` expert-only gate) — now gated on
+>   `mode["vigilance"] == "full"` instead of `difficulty == "expert"`.
+> - **#3** (`trust_gate` expert bypass) — this doc's own "ready to test
+>   now" recommendation was acted on: the bypass is removed entirely.
+>   Partner runs the identical margin/counter/lead-economy check at every
+>   difficulty. Nothing changed behaviorally by removing it.
+> - **#5** (`value_gate` #25) — retired entirely, not merely audited. Its
+>   direction was backwards (see `AI_Play_Behavior_Bug_Log.md` Step 4c
+>   notes): passing on a cheap trick is the disciplined move, not the
+>   distracted one. Replaced by `_should_evaluate_tactically()`'s
+>   opportunism roll on the opponent side.
+> - **#6** (beginner's reflexive win-securing) — removed from partner
+>   entirely and relocated to the opponent side, where it's now the
+>   reflexive path taken when `_should_evaluate_tactically()` rolls false.
+> - **#7** (`CONTROL_TRUMP` high-vs-low trump lead technique) — the
+>   `difficulty == "beginner"` half of its `or` condition is gone;
+>   `holds_double_trump` alone is now the complete gate, confirmed
+>   identical across all three difficulties by a smoke test. (A separate,
+>   real correctness gap in this same technique — it doesn't exclude
+>   counters when picking "lowest" — was found during that review and
+>   logged as BUG-010; not fixed by this migration, deliberately.)
+>
+> `decide_play()` now has zero bare `if difficulty == ...` checks. See
+> `AI_Play_Behavior_Bug_Log.md` for the BUG-010 follow-on and
+> `ai_player.gd`'s `AI_MODES`/`_should_evaluate_tactically()` for the
+> current shape. The inventory below is kept as the historical record of
+> the reasoning that led here — it is no longer a live recommendation
+> document.
+
 *Written to answer a specific question: are we ready to strip or neutralize
 hardcoded difficulty checks across the board? Short answer: not uniformly —
 the six branches the project's own doctrine already flagged aren't all the
