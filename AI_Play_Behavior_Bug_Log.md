@@ -101,9 +101,9 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Relationship to existing bugs:** Same family as BUG-006 (found during the same branch-by-branch trace, same "counter safety at a leading branch" shape) — not the same bug, but worth resolving both with a shared mental model of what "safe counter lead" means, once BUG-006 lands.
 
-**Status:** Open, not specced, deliberately deferred pending a design decision on the trump-interaction question. Found during the Phase 3 branch-by-branch trace (branch #10), no code changed.
+**Status:** → Design-resolved, not code-fixed (July 12, 2026). The blocking design question — does "opponents void in this suit" alone suffice, or does it need pairing with a trump-exhaustion check — is answered by BUG-009's ruling: reasonable-confidence counter leads are acceptable, provable safety is a refinement, not a gate. That resolves this branch's shape the same way. **But branch #10 itself (`_highest_in(legal, ...)` in the final forced-counter-lead fallback) has not been touched** — BUG-009's fix landed at a different branch (#7, `off_safe`). Ready to spec/implement now that the design question is closed; not open-ended anymore, but not to be conflated with "fixed."
 
-### → BUG-009 — OPEN_SAFE_SUIT unconditionally excludes counters from lead candidates; 5-5 dies as a forced discard instead of cashing itself as a lead
+### ✓ BUG-009 — OPEN_SAFE_SUIT unconditionally excludes counters from lead candidates; 5-5 dies as a forced discard instead of cashing itself as a lead
 
 **Where:** `decide_play()`, partner-leading branch, `off_safe` candidate filter (branch #7, `OPEN_SAFE_SUIT`). File: `ai_player.gd`.
 
@@ -124,13 +124,13 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Relationship to existing bugs:** Same "counter safety at a leading branch" family as BUG-006/BUG-007, and it resolves the direction of the open design question BUG-007 flagged — per Katy's ruling, reasonable-confidence counter leads are acceptable; provable safety is a refinement, not a gate. Cross-reference all three when specced.
 
-**Status:** Open. Design decided (July 11, 2026); not specced.
+**Status:** ✓ Fixed, July 12, 2026. `off_safe` no longer requires provable trump exhaustion before including a counter-double — it's included on reasonable confidence per Katy's ruling above. The reason string now distinguishes three cases: a provably-unbeatable double ("nothing left to beat it"), a double led without proof ("cash it while I can"), and an ordinary suit-opening lead. No timing gate added, per the ruling. See `ai_player.gd`, partner-leading block, `off_safe` filter.
 
 ---
 
 ## Pattern F — Forced overtake doesn't escalate to a secure winner
 
-### → BUG-008 — Forced overtake in PROTECT_PARTNER_WIN plays a fragile minimal overtake instead of a secure winner
+### ✓ BUG-008 — Forced overtake in PROTECT_PARTNER_WIN plays a fragile minimal overtake instead of a secure winner
 
 **Where:** `decide_play()`, partner-following branch, `partner_winning` path under standard contracts (`PROTECT_PARTNER_WIN`). File: `ai_player.gd`.
 
@@ -140,15 +140,35 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Root cause:** The `PROTECT_PARTNER_WIN` branch (standard-contract `partner_winning` path) has a single unconditional policy: play `_lowest_in(legal)`. It never detects the forced-overtake sub-case — when no legal play stays under the partner's card, the branch's premise ("stay out of the way") is void, and lowest-legal becomes the worst available choice: it takes the trick from the partner and can't hold it.
 
-**Fix shape (design direction, not yet specced):** Within `PROTECT_PARTNER_WIN`, detect forced overtake (no legal play fails to beat the current winning domino). When forced, escalate: prefer a guaranteed winner if one is held (double of the led suit in no-trump; general predicate is the parked `_is_guaranteed_win` helper — see the guaranteed-win generalization design notes below). If no guaranteed winner is held, the right forced-overtake choice (highest vs. lowest overtake) is an open sub-question for the spec discussion.
+**Fix shape, implemented:** Within `PROTECT_PARTNER_WIN`, detects forced overtake (every candidate beats the current winning domino). When forced: escalate to a guaranteed winner if one is held (via the new shared `_is_guaranteed_win()` helper — see BUG-011 and the guaranteed-win generalization design notes below); otherwise, if last to act, fall back to lowest for economy (any winner wins outright, nothing left to answer it); otherwise play the *strongest* available overtake, on the design call that a stronger overtake is harder for a remaining opponent to beat back. Mirrored at the opponent-side `partner_winning` path (same structural gap, not in the original bug report — included in the same pass).
 
-**String note (deferred to strings pass, per convention):** "I've got this one." fired on a card that then lost the trick. The string check (`_beats(lowest, winning_domino)`) confirms overtaking the partner, not holding the trick — it makes a claim the play can't back. Log for the next strings session; do not fold into the behavior fix.
+**String note (deferred to strings pass, per convention):** the old "I've got this one." fired on a card that then lost the trick, since the check (`_beats(lowest, winning_domino)`) only confirmed overtaking the partner, not holding the trick. The forced-overtake path now has its own honest strings ("Taking it with my double — nothing beats this.", "Had to take it — nobody left to answer.", "Had to take it — playing my strongest to make it stick.") that supersede the old overclaim for this case; the non-forced yield path's strings are untouched and still flagged for the strings-pass session.
 
-**Reveals:** AVAILABLE — everything needed (current winning domino, `_beats()`, double-of-lead-suit detection) already exists at this branch. The general `_is_guaranteed_win` predicate remains UNBUILT (already tracked in the design notes below).
+**Reveals:** AVAILABLE — everything needed (current winning domino, `_beats()`, double-of-lead-suit detection) already existed at this branch. The general `_is_guaranteed_win()` predicate is now built — see BUG-011, found as a byproduct of generalizing this exact check.
 
-**Documentation amendment made:** `Phase1_Control_Layer_Audit.md` finding #1 stated the partner-winning decision space is fully closed: "there is no third option... 'Dump if guaranteed, protect if not' is the entire decision space." That conclusion silently assumed at least one legal play stays under the partner. The forced-overtake sub-case is the third option. Amended in place (July 11, 2026) rather than left to contradict this bug.
+**Documentation amendment made:** `Phase1_Control_Layer_Audit.md` finding #1 stated the partner-winning decision space is fully closed: "there is no third option... 'Dump if guaranteed, protect if not' is the entire decision space." That conclusion silently assumed at least one legal play stays under the partner. The forced-overtake sub-case is the third option. Amended in place (July 11, 2026) rather than left to contradict this bug; the "not yet specced" qualifier is now dropped from that amendment since this bug is fixed.
 
-**Status:** Open. Design direction agreed (July 11, 2026); not specced.
+**Status:** ✓ Fixed, July 12/13, 2026. Verified via smoke tests: forced overtake with a guaranteed winner held, without one while last to act, and without one while not last to act, all produce the expected domino and reason string, both partner-side and opponent-side. The non-forced case is confirmed unchanged.
+
+### ✓ BUG-011 — Partner treated any off-suit double as a guaranteed win, even under a real trump contract
+
+**Where:** `decide_play()`, partner-following branch, `human_is_winning` block. File: `ai_player.gd`.
+
+**What happens (found via, not fixed via, a separate spec):** the guaranteed-win check that decides whether to dump counters onto the human's currently-winning trick was `guaranteed_win = winning_domino.is_double()` — no trump-context check at all. Partner treated *any* double as an automatic guaranteed win, including an off-suit double under a real (non-Follow-Me) trump contract, even though a remaining opponent could still trump in and capture it.
+
+**Symptom:** partner dumps a counter onto a trick led by an off-suit double, believing it unbeatable, when trump is still live and an opponent hasn't acted yet.
+
+**Root cause:** `winning_domino.is_double()` was correct by accident in Follow Me (where nothing beats a double, ever) and silently wrong whenever a real trump suit was in play — the check never distinguished the two.
+
+**Found via:** BUG-008's `_is_guaranteed_win()` refactor (see above), which needed to generalize this exact inline check for its own forced-overtake logic and, in doing so, added the missing trump/no-trump distinction as a natural consequence of generalizing — not a deliberate hunt for this bug. Confirmed via a constructed smoke test (partner facing a non-trump double as the current winner, holding both a counter and a safe non-counter, real trump active): the old logic would have dumped the counter; the new logic protects it instead.
+
+**Fix:** Already live — no separate patch needed, it's the same code as BUG-008's Fix 1 (`_is_guaranteed_win()` requires `trump < 0 or c_suit == trump` before treating any double as automatically guaranteed; otherwise falls through to the existing trump-exhaustion check).
+
+**Reveals:** AVAILABLE — the trump-context distinction the fix needed already existed elsewhere in the file (the same no-trump/trump-suit-double check other branches already use); this call site just hadn't been consulting it.
+
+**Documentation note:** the spec that shipped this fix (`Spec_Difficulty_Modes_TwoAxis_July12_2026.md`'s follow-up, "Forced-Overtake Escalation + Reasonable-Confidence Counter-Double Leads") described the `_is_guaranteed_win()` refactor as "behaviorally identical — same three-part test, now shared code." That claim was wrong for this exact case; no separate spec file exists in the repo to amend in place, so the correction lives here instead.
+
+**Status:** ✓ Fixed, July 12/13, 2026 (as a byproduct of the Fix 1 refactor in this session).
 
 ---
 
@@ -209,9 +229,10 @@ directly what BUG-008's forced-overtake escalation needs).
 3. ~~**BUG-004** — paused pending a full Phase 3 (Opportunism) design pass.~~ **Unblocked, July 12, 2026** — that design pass happened (`Spec_Difficulty_Modes_TwoAxis_July12_2026.md`). This specific case (dump a counter when last-to-play and the trick is already locked) wasn't itself touched by that migration — it's the first real test case for applying `_should_evaluate_tactically(mode)` here, per that migration's own reasoning. Ready to spec, not just unblocked.
 4. **BUG-001** — standalone, low priority, whenever there's room for a new heuristic rather than a fix to an existing one.
 5. ~~**BUG-006** — cheap and self-contained (AVAILABLE, no new infrastructure), and worth doing alongside a revisit of BUG-002/002b since the same `count_remaining_trump()`-based check may resolve both.~~ **✓ Fixed July 9, 2026** — see entry above. BUG-002/002b revisit with the same count-based check is still open, not yet done.
-6. ~~**BUG-007** — deliberately deferred pending a design decision.~~ **Design decision made, July 11, 2026 (via BUG-009).** Katy's ruling on BUG-009 ("reasonable-confidence counter leads are acceptable; provable safety is a refinement, not a gate") applies to this branch's shape too — worth speccing BUG-007/BUG-009 together rather than BUG-007 needing its own separate ruling.
-7. **BUG-009** — design decided (July 11, 2026): lead the counter-double on a reasonable-confidence basis, not gated on provable safety. AVAILABLE, no new infrastructure — ready to spec. Also resolves BUG-007's open question in the "reasonable confidence is enough" direction; worth speccing together.
-8. **BUG-008** — design direction agreed (July 11, 2026): detect forced overtake in `PROTECT_PARTNER_WIN`, escalate to a guaranteed winner when one is held. AVAILABLE for the detection itself; the general `_is_guaranteed_win` helper (shared with the design notes below) is the one piece that needs building rather than just wiring. Ready to spec.
+6. **BUG-007** — design question resolved (July 12, 2026, via BUG-009's ruling), but branch #10 itself is still untouched code — BUG-009's fix landed at a different branch (#7). Ready to spec/implement now; do not mark this fixed until branch #10 actually consults `void_suits()`.
+7. ~~**BUG-009** — design decided (July 11, 2026): lead the counter-double on a reasonable-confidence basis, not gated on provable safety.~~ **✓ Fixed July 12, 2026** — see entry above.
+8. ~~**BUG-008** — design direction agreed (July 11, 2026): detect forced overtake in `PROTECT_PARTNER_WIN`, escalate to a guaranteed winner when one is held.~~ **✓ Fixed July 12/13, 2026** — see entry above. Found the `_is_guaranteed_win()` helper it needed doubled as the fix for a latent, unrelated correctness bug — see BUG-011.
 9. **BUG-010** — found July 12, 2026 during the difficulty-modes migration review: the `CONTROL_TRUMP` low-lead-to-draw-out-the-double technique doesn't exclude counters when picking "lowest," so it can trade away a counter unnecessarily. Not yet specced; needs its own worked examples first, per project convention.
+10. **BUG-011** — found July 12/13, 2026 as a byproduct of BUG-008's fix: the old inline guaranteed-win check treated *any* double as an automatic guaranteed win with no trump-context distinction, wrong whenever real trump was in play (not just Follow Me). Already fixed — same code as BUG-008's `_is_guaranteed_win()` refactor. See its own entry below.
 
 **Naming note carried forward:** "locked-in trick" is a reusable concept (double led / last to play / known-safe high trump), and it's worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be knowledge-agnostic (most of its cases need no inference at all); only the high-trump case would reach into the knowledge/inference layer. Whether and how each difficulty *checks* that predicate is then a separate, Phase 3 Opportunism question — which is exactly the Knowledge/Evaluation split the new philosophy header in `ai_player.gd` describes. **Phase 3 (Opportunism) has now landed (July 12, 2026)** as the `vigilance`/`opportunism` `AI_MODES` axes — wiring this predicate up is no longer blocked on Opportunism not existing, only on Phase 4 (knowledge/inference) for the high-trump case, and on someone writing the shared predicate itself.

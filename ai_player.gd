@@ -833,15 +833,19 @@ static func decide_play(
 			# rather than just our own hand: a counter-double is included once
 			# trump is provably exhausted (BUG-006), and the reason string only
 			# claims certainty when best_remaining_card_for_suit() confirms it.
+			# A counter-double of a non-trump suit (5:5, standard deck) is
+			# led on reasonable confidence, not gated on provable trump
+			# exhaustion — Katy's ruling, July 11, 2026 (BUG-009/BUG-007).
+			# It loses only to a trump-in; hiding it just delays an eventual
+			# forced discard into a trick we don't control. Provable safety
+			# (checked below, for the reason string only) upgrades the
+			# confidence level but is no longer required to lead it at all.
 			var off_safe = legal.filter(func(d):
 				if d.is_trump(trump):
 					return false
 				if d.pip_sum() != 5 and d.pip_sum() != 10:
 					return true
-				if d.is_double() and public_knowledge != null:
-					var own_trump_count = hand.filter(func(t): return t.is_trump(trump)).size()
-					return trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
-				return false)
+				return d.is_double())
 			if off_safe.size() > 0:
 				var best = _highest_in(off_safe, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				var best_suit = best.get_suit(trump, trick.nello_doubles, -1)
@@ -849,7 +853,10 @@ static func decide_play(
 				var provably_best = top_remaining != null and top_remaining.debug_string() == best.debug_string()
 
 				if best.pip_sum() == 5 or best.pip_sum() == 10:
-					reason_log.append("Leading my double to lock in the points.")
+					if provably_best:
+						reason_log.append("Leading my double — nothing left to beat it.")
+					else:
+						reason_log.append("Leading my double to cash it while I can.")
 				elif provably_best:
 					reason_log.append("Nothing can beat this.")
 				else:
@@ -874,18 +881,8 @@ static func decide_play(
 		# Throw off lowest non-counter; only burn a counter if nothing else is available.
 		if human_is_winning:
 			var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-			var guaranteed_win = winning_domino.is_double()
-			var guaranteed_via_double = guaranteed_win
-
-			if not guaranteed_win and public_knowledge != null and not winning_domino.is_trump(trump):
-				var winning_suit = winning_domino.get_suit(trump, trick.nello_doubles, lead_suit)
-				var best_in_suit = public_knowledge.best_remaining_card_for_suit(winning_suit)
-				if best_in_suit != null and best_in_suit.debug_string() == winning_domino.debug_string():
-					var own_trump_count = hand.filter(func(d): return d.is_trump(trump)).size()
-					var trump_exhausted = trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
-					if trump_exhausted:
-						guaranteed_win = true
-						guaranteed_via_double = false
+			var guaranteed_via_double = winning_domino.is_double()
+			var guaranteed_win = _is_guaranteed_win(winning_domino, hand, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 
 			if guaranteed_win:
 				# Double is an unbeatable lead, OR the winning tile is provably
@@ -907,8 +904,29 @@ static func decide_play(
 				else:
 					reason_log.append("You've got this one — staying out of your way.")
 				return lowest
-			# Not a guaranteed win — protect counters as normal.
+			# Not a guaranteed win — protect counters as normal, UNLESS every
+			# candidate beats the human's winning tile. When that's true,
+			# "stay out of the way" is structurally impossible (BUG-008) —
+			# escalate instead of taking the trick by accident with a fragile
+			# low tile.
 			var non_counters_follow = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
+			var candidates = non_counters_follow if non_counters_follow.size() > 0 else legal
+			var forced_overtake = candidates.all(func(d): return _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+
+			if forced_overtake:
+				var guaranteed = candidates.filter(func(d): return _is_guaranteed_win(d, hand, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+				var chosen: Domino
+				if guaranteed.size() > 0:
+					chosen = _lowest_in(guaranteed, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Taking it with my double — nothing beats this.")
+				elif _is_last_to_act(plays):
+					chosen = _lowest_in(candidates, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Had to take it — nobody left to answer.")
+				else:
+					chosen = _highest_in(candidates, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Had to take it — playing my strongest to make it stick.")
+				return chosen
+
 			if non_counters_follow.size() > 0:
 				var lowest = _lowest_in(non_counters_follow, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				# The "lowest" legal tile can still end up winning if we're void
@@ -1102,6 +1120,20 @@ static func decide_play(
 	# Partner is winning — save strength, don't over-contribute.
 	if partner_winning:
 		var winning_domino = _current_winning_domino(plays, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		var forced_overtake = legal.all(func(d): return _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+		if forced_overtake:
+			var guaranteed = legal.filter(func(d): return _is_guaranteed_win(d, hand, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+			var chosen: Domino
+			if guaranteed.size() > 0:
+				chosen = _lowest_in(guaranteed, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Taking it with my double — nothing beats this.")
+			elif _is_last_to_act(plays):
+				chosen = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Had to take it — nobody left to answer.")
+			else:
+				chosen = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Had to take it — playing my strongest to make it stick.")
+			return chosen
 		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 			reason_log.append("I've got this one.")
@@ -1184,6 +1216,30 @@ static func decide_play(
 
 # The five counting dominoes in standard 42.
 const COUNTING_DOMINOES := [[5,0], [4,1], [3,2], [6,4], [5,5]]
+
+# Whether `candidate`, if played, is provably unbeatable by anything still
+# in play — a double under no-trump (or a trump double), or the last live
+# tile in its suit with trump provably exhausted per PublicKnowledge.
+# Generalizes the guaranteed-win check that was inline in the human_is_winning
+# block (branch #11) so BUG-008's forced-overtake escalation can reuse the
+# identical test instead of duplicating it. See AI_Play_Behavior_Bug_Log.md,
+# "guaranteed-win detection generalization" design notes.
+static func _is_guaranteed_win(candidate: Domino, hand: Array[Domino], trump: int,
+		lead_suit: int, public_knowledge: PublicKnowledge,
+		nello_doubles: String = "high", doubles_trump_reversed: bool = false,
+		own_suit_reversed: bool = false) -> bool:
+	if candidate.is_double():
+		var c_suit = candidate.get_suit(trump, nello_doubles, lead_suit)
+		if trump < 0 or c_suit == trump:
+			return true
+	if public_knowledge == null or candidate.is_trump(trump):
+		return false
+	var suit = candidate.get_suit(trump, nello_doubles, lead_suit)
+	var best_in_suit = public_knowledge.best_remaining_card_for_suit(suit)
+	if best_in_suit == null or best_in_suit.debug_string() != candidate.debug_string():
+		return false
+	var own_trump_count = hand.filter(func(d): return d.is_trump(trump)).size()
+	return trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
 
 # Is there still a live threat in `target_suit` that a remaining-to-act
 # player could produce this trick? Returns the specific domino if so,

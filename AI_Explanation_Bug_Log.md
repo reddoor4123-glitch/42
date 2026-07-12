@@ -148,6 +148,32 @@ concrete follow-up than when this was written, still not done.
 
 ---
 
+### ✓ Issue 8 — Forced-overtake plays "I've got this one" on a tile that then loses (Trick 5, Partner)
+**Situation:** Human is winning, but every legal play beats the human's own
+card — staying under is structurally impossible (BUG-008, `AI_Play_Behavior_Bug_Log.md`
+Pattern F). The old code picked lowest-legal reflexively anyway.
+**Was:** "I've got this one." — fired whenever the win-check (`_beats(lowest,
+winning_domino)`) passed, without distinguishing "picked to win" from
+"forced to overtake with the worst available tile, likely to lose it back."
+**Now:** the forced-overtake path has its own honest strings instead of
+falling through to the old check: "Taking it with my double — nothing beats
+this." (a guaranteed winner is held), "Had to take it — nobody left to
+answer." (last to act, any winner holds), "Had to take it — playing my
+strongest to make it stick." (not last to act, no guaranteed winner —
+escalates to the strongest overtake rather than the weakest).
+**Root cause:** same shape as Issue 3 — a string set without checking
+whether the specific situation (forced vs. free choice) it was firing in
+actually supported the claim. Issue 3 was about a free choice tile that
+happened to win; this is about a forced, structurally-unavoidable overtake
+that had no "stay out of the way" option at all.
+**Fixed as part of:** `AI_Play_Behavior_Bug_Log.md` BUG-008, July 12/13, 2026.
+Both the partner-side and opponent-side (`partner_winning`) mirrors got the
+new strings. The pre-existing non-forced yield strings ("I've got this
+one.", "You've got this one — staying out of your way.") are untouched —
+they still apply correctly whenever a real protect option exists.
+
+---
+
 ## Cross-cutting pattern — the discard path
 
 The opponent-following discard fallback (`"Can't win this one — discarding
