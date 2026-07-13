@@ -166,7 +166,7 @@ if human_play != null and not is_last_player:
 
 **Status:** ✓ Fixed, July 12, 2026. `off_safe` leads a counter-double on reasonable confidence. The reason string distinguishes three cases: a provably-unbeatable double ("nothing left to beat it"), a double led without proof ("cash it while I can"), and an ordinary suit-opening lead.
 
-### ⏸→ BUG-007 — Branch #10 (forced counter lead) doesn't consult void/threat information at all — **reopened, needs its own design session (see Design Notes below)**
+### ✓ BUG-007 — Branch #10 (forced counter lead) doesn't consult void/threat information at all
 
 **Where:** `decide_play()`, partner-leading branch, final fallback when every legal tile is a counter (branch #10, `PROTECT_COUNTERS_WHILE_LEADING`, degraded).
 
@@ -175,9 +175,13 @@ if human_play != null and not is_last_player:
 **History of the fix path:**
 - Originally deferred (found alongside BUG-006, same branch-trace session) pending a design decision on whether "opponents void in this suit" alone is a strong enough safety signal, or whether it needs pairing with a trump-exhaustion check.
 - **July 12, 2026:** believed resolved by BUG-009's ruling — reasonable-confidence counter leads are acceptable, provable safety is a refinement, not a gate. Marked "design-resolved, ready to spec" — but branch #10 itself was never actually touched (BUG-009's fix landed at branch #7 instead).
-- **July 13, 2026:** today's design conversation found that BUG-009's ruling doesn't actually transfer cleanly here — see "Design notes — the two-path lead-safety model" below for why. Reopened.
+- **July 13, 2026:** design conversation found BUG-009's ruling didn't transfer cleanly here — see "Design notes — the two-path lead-safety model" below (now folded into the fix, not left as a standalone note). Reopened, then resolved same day via the Lead-Safety Priority Stack spec — see fix below.
 
-**Status:** ⏸ Reopened. Not ready to spec — needs the same worked-hands treatment `trust_gate` got, jointly with BUG-012 below, since both depend on the same underlying safety model.
+**Fix (Katy + Claude, July 13, 2026):** folded into the same Lead-Safety Priority Stack spec that fixed BUG-012 (they share one root cause and one design session — see that entry for the full priority-stack shape). Branch #10 is retired as a standalone always-`_highest_in()` fallback; it's now step 6 of the partner-leading stack ("fully blind fallback," reached only when no void information exists on anything legal), and uses the new `_lowest_cost_in()` helper — the same cost-minimization mechanism as step 5's GAMBLE tier, just over the full legal pool instead of a void-informed subset. This is the actual behavior change: the old code led *highest* when forced (worst available choice, cost-blind); the new code leads lowest-cost (prefers a non-counter if the pool happens to contain one — e.g. a low non-counter trump tile that off_safe's trump exclusion left untouched — otherwise the lowest-ranked counter).
+
+**Verified:** headless scenario with a non-counter trump mixed into an otherwise-counter-only pool correctly prefers the non-counter; an all-counter forced pool correctly falls back to lowest-rank via `_lowest_in()`.
+
+**Status:** ✓ Fixed, July 13, 2026, jointly with BUG-012.
 
 ---
 
@@ -274,21 +278,32 @@ if human_play != null and not is_last_player:
 
 ## Pattern H — `FORCE_A_VOID` treats partial opposing-team voidness as full safety
 
-### ⏸→ BUG-012 — `void_leads` fires on "any opponent void," not "all opponents void" — **needs its own design session (see below)**
+### ✓ BUG-012 — `void_leads` fired on "any opponent void," not "all opponents void"
 
 **Where:** `decide_play()`, two call sites sharing the identical filter shape: partner-leading branch 6b (partner-side `FORCE_A_VOID` mirror) and opponent-leading branch #20 (`FORCE_A_VOID` proper, expert-only via `vigilance == "full"`).
 
-**What happens:** The `void_leads` filter checks `for opp in opposing_team: if public_knowledge.void_suits(opp).has(suit): return true` — this fires the moment **any single** opponent is void, not both. The reason string ("Leading a suit our opponents can't follow.") claims plural safety that was never actually verified.
+**What happens:** The `void_leads` filter checked `for opp in opposing_team: if public_knowledge.void_suits(opp).has(suit): return true` — this fired the moment **any single** opponent was void, not both. The reason string ("Leading a suit our opponents can't follow.") claimed plural safety that was never actually verified.
 
 **Flagged hand (July 12, 2026):** Player 2 led 4:6 (a live 10-count) believing it a safe void lead — player 1 had shown void in suit 6 back in trick 1, but player 3 had not, and was still holding two suit-6 tiles. Player 3 followed suit and took the trick — 15 points lost on a lead that was narrated as guaranteed-safe.
 
-**Root cause:** the loop's `return true` fires on the first match found (`.any()` semantics); the claim being made needs `.all()` semantics — every element of `opposing_team`/`opponents` must satisfy `void_suits(opp).has(suit)`, not just one.
+**Root cause:** the loop's `return true` fired on the first match found (`.any()` semantics); the claim being made needs `.all()` semantics — every element of `opposing_team`/`opponents` must satisfy the real safety test, not just show a void hit.
 
-**Status:** ⏸ Reopened after design conversation, July 13, 2026 — see below. Not a simple any→all fix; the honest safety model turned out to be more nuanced than "how many opponents are void," and Katy has been clear the *gamble* version of this lead should stay available, not be eliminated.
+**Design session, July 13, 2026:** reopened rather than patched as a simple any→all swap, because a real safety test needed more than a vote count — see the two-path model below (now resolved into the fix, kept here for the reasoning it's built on rather than as a separate open item).
+
+**Fix — the Lead-Safety Priority Stack (Katy + Claude, July 13, 2026):** a new shared two-path safety test, `_is_lead_safe_against_opponent()`/`_is_lead_fully_safe()` (`ai_player.gd`), replaces the vote-counting filter everywhere it appeared:
+- **Partner-leading (6b) fix is the larger of the two:** the old single `void_leads` check with its `we_are_strong` self-assessment fork is retired outright (deleted, not repaired) and replaced with a full priority stack — GIFT_A_VOID (unchanged) → **SAFE tier** (new: any legal non-trump tile that's fully safe against both opponents via the two-path test, led with an honest "nothing can beat this"/"leading my double" string) → trump control (unchanged) → **GAMBLE tier** (new: the old void-hit pool, now cost-minimized via `_lowest_cost_in()` instead of the deleted self-assessment, honest reason string "Trying to force a decision — hoping this doesn't get trumped") → ordinary safe off-suit lead (unchanged mechanism, reason strings de-clawed of over-claiming now that SAFE tier owns the provable case) → fully blind fallback (this is BUG-007's fix — see that entry). `we_are_strong`'s two inputs (trump control, safe off-suit availability) are now checked upstream (trump control above; off-suit availability no longer gates GAMBLE at all, since off-suit is now just a fallback below it), making its old "lead highest, keep initiative" branch unreachable dead code under this order; its "lead lowest, pass initiative" branch survives in spirit as the GAMBLE tier's cost-minimized pick.
+- **GAMBLE tier sits above the off-suit lead, not below it (corrected same day, July 13, 2026):** the first pass had these two reversed, which meant off-suit's unconditional "any non-trump non-counter" filter always claimed a non-counter before GAMBLE tier ever saw it — leaving GAMBLE's pool structurally guaranteed to be all-counters, and `_lowest_cost_in()`'s non-counter preference dead code at that tier. Swapped so GAMBLE (an actually void-informed pick) runs before off-suit (a generic "not a counter" catch-all with no safety claim behind it) — matches where the original 6b sat relative to #7, and means `_lowest_cost_in()` now does real work at the GAMBLE tier itself, not only at the blind fallback.
+- **Opponent-leading (#20) fix is narrower, by design:** only the any→all defect is corrected (via the same `_is_lead_fully_safe()` test), with the reason string updated to "Leading a suit you can't beat." — no SAFE/GAMBLE tier split was added on the opponent side, and #20 was not reordered relative to the opponent's other lead checks. Keeps the existing asymmetry (opponents allowed to be a notch less thorough than Partner) intentional rather than accidental. Flagged by Katy as worth revisiting at the table if it doesn't feel right, not a closed question.
+
+**Verified:** headless scenarios for all tiers — flagged 6:4-style hand now resolves at trump control before ever reaching a void check; both opponents void in suit AND trump correctly hits SAFE tier with an honest string (caught and fixed a real bug in this pass — the SAFE tier's reason-string logic initially mis-inferred "is a double" from `pip_sum() == 5 or 10`, which only holds inside the old `off_safe` pool's pre-filtered context, not the new SAFE tier's broader pool; fixed to check `is_double()` directly); a single void hit with the other opponent's status unresolved falls through to GAMBLE tier; a fully blind pool with a non-counter trump mixed into off-suit counters correctly prefers the non-counter at the blind-fallback tier; after the GAMBLE/off-suit swap, a hand with both a void-hit counter and a void-hit non-counter available now correctly picks the non-counter at GAMBLE tier itself, and a hand with no void information anywhere still correctly falls through to the off-suit tier.
+
+**Confirmed before wiring in (per spec's own flag):** `void_suits(opponent).has(trump)` is tracked through the same general mechanism as any other suit — a trump-led trick a player can't follow appends `trump` to their void list exactly like any other lead suit — no special-casing needed in `_absorb_trick()`.
+
+**Status:** ✓ Fixed, July 13, 2026, jointly with BUG-007.
 
 ---
 
-## Design notes — the two-path lead-safety model (July 13, 2026, not yet blocking, governs BUG-007 and BUG-012's eventual fix)
+## Design notes — the two-path lead-safety model (July 13, 2026 — resolved same day, see BUG-007/BUG-012 above for the implemented fix)
 
 Surfaced while working through BUG-012 at the table (5:5 and 6:4 as worked examples).
 
@@ -312,15 +327,14 @@ A lead is genuinely safe overall only when **both** opposing players independent
 - **Safe tier** (void in suit AND void in trump, for every opponent still to act) — should probably just always fire when true, same as BUG-009's "don't hide a sure thing" logic.
 - **Gamble tier** (void in suit, trump live/unknown) — worth taking sometimes, not always, and the reason string should say so honestly ("trying to force a decision," not "can't follow").
 
-**Open question, not yet resolved:** what decides whether to take the gamble on a given hand. This can't be a random opportunism-style roll — Partner's cooperative judgment is knowledge-limited only, never chance-limited, per standing doctrine. Likely shaped more like `trust_gate`'s contract-margin/lead-economy reasoning than a dice roll, but that's real design work, not a quick wire-up.
+**Resolved, July 13, 2026 (same day):** the "what decides whether to take the gamble" question didn't end up needing a scalar or a roll — the fix simply always takes the GAMBLE tier when it's the best remaining option (SAFE/trump-control/off-suit all empty), cost-minimized rather than probability-gated. `we_are_strong`'s old self-assessment fork is what got retired here, not replaced with a smarter version of itself — see BUG-012's fix writeup above for the full priority stack.
 
-**BUG-007 is probably simpler than BUG-012 once this model exists**, for a reason worth naming: BUG-007 is *already forced* — every legal tile is a counter, there's no clean option, something's getting exposed regardless. That may mean the safe/gamble split matters less there than in BUG-012 (where a genuinely safe lead might be available instead) — possibly any void information at all is worth preferring among already-bad options, rather than needing the full two-path proof. Proposed as a starting point for discussion, not decided.
+**BUG-007 turned out to be exactly as simple as this note predicted:** it shares the GAMBLE tier's `_lowest_cost_in()` mechanism directly, just over the full legal pool instead of a void-informed subset (step 6, "fully blind fallback") — no separate proof needed, confirming the "already forced" framing above.
 
-**Two older loose ends, carried forward from the pre-July-13 design notes — neither resolved by anything since, don't lose them when this section eventually gets specced:**
-- **`own_suit_reversed` / Nello doubles-own-suit interaction** was never explicitly tested against `highest_remaining_trump()`/`best_remaining_card_for_suit()`. Flagged for playtest coverage back on July 6th, same as Fix 1's rollout was tracked then — still not verified.
-- **Naming/architecture suggestion:** "locked-in trick" (double led / last to play / known-safe high trump) is a reusable concept worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be mostly knowledge-agnostic (most of its cases need no inference at all); only the high-trump case reaches into the knowledge layer. Whether and how each difficulty checks that predicate is a separate, Opportunism-axis question — never built, still just a suggestion.
-
-**Next step:** treat BUG-007 and BUG-012 as one dedicated design session, worked through concrete table hands the way `trust_gate` was — before either gets specced or touched in code.
+**Two older loose ends, carried forward from the pre-July-13 design notes — NOT resolved by this fix, explicitly out of scope for the Lead-Safety Priority Stack spec (Katy, July 13, 2026) — don't lose them:**
+- **`own_suit_reversed` / Nello doubles-own-suit interaction** against the new two-path helper (`_is_lead_fully_safe()`) — still unverified, same unverified state it was in before this fix, not newly introduced by it. Flagged for playtest coverage.
+- **Naming/architecture suggestion:** "locked-in trick" (double led / last to play / known-safe high trump) is a reusable concept worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. Still just a suggestion, not built.
+- **New, same session — BUG-015 (log entry only, not specced):** the trump-control persistence issue — holding 6:6/6:5/6:4 plus another double, and switching leads to the other double before both opponents are proven void in trump. Explicitly out of scope for this spec; separate design session needed.
 
 ---
 
@@ -333,10 +347,11 @@ A lead is genuinely safe overall only when **both** opposing players independent
 5. ~~BUG-005~~ ✓ Fixed July 5, 2026. Merged in from the standalone Pattern D addendum, July 13, 2026.
 6. ~~BUG-006~~ ✓ Fixed July 9, 2026.
 7. ~~BUG-009~~ ✓ Fixed July 12, 2026.
-8. **BUG-007** — ⏸ reopened, needs a joint design session with BUG-012 (see design notes above). Do not spec in isolation.
+8. ~~BUG-007~~ ✓ Fixed July 13, 2026, jointly with BUG-012 (Lead-Safety Priority Stack — see Pattern H).
 9. ~~BUG-008~~ ✓ Fixed July 12/13, 2026.
 10. ~~BUG-010~~ ✓ Fixed July 13, 2026. Confirmed live.
 11. ~~BUG-011~~ ✓ Fixed July 12/13, 2026 (byproduct of BUG-008).
 12. ~~BUG-013~~ ✓ Fixed July 13, 2026.
 13. ~~BUG-014~~ ✓ Fixed July 13, 2026.
-14. **BUG-012** — ⏸ reopened, needs a joint design session with BUG-007 (see design notes above). Do not spec in isolation.
+14. ~~BUG-012~~ ✓ Fixed July 13, 2026, jointly with BUG-007 (Lead-Safety Priority Stack — see Pattern H).
+15. **BUG-015** — ⚑ new, log entry only, holding 6:6/6:5/6:4 + another double switches leads before both opponents are proven void in trump. Needs its own design session.
