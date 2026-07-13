@@ -274,6 +274,24 @@ if human_play != null and not is_last_player:
 
 **Status:** ✓ Fixed, July 13, 2026.
 
+### ✓ BUG-016 — `CONTROL_TRUMP` eligibility was gated by trump count, not by whether the lead was actually safe or the objective already accomplished
+
+**Where:** `decide_play()`, partner-leading branch, `CONTROL_TRUMP` (branch #8) — the eligibility gate itself, not the execution logic beneath it (`double_accounted_for`, highest-vs-low-trump lead, BUG-010's non-counter preference, BUG-014's has-been-played check — all untouched).
+
+**Root cause:** `trump_control` had always been `(trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4` — a hand-count proxy for an objective (drawing out opponent trump) that count doesn't actually measure. Two hands with identical trump counts can have opposite real standing: top-ranked trumps that can't lose, versus low trumps while an opponent quietly holds the actual highest. This is the recurring root cause behind BUG-003/BUG-003b (count threshold placement), BUG-010 (count said nothing about counter-status), and BUG-014 (count said nothing about whether the double it was drawing out was already gone) — each landed a real fix without replacing the underlying proxy.
+
+**Design session, July 13, 2026:** an initial proposal to replace the count check with a "keep leading while I hold `highest_remaining_trump()`" loop was considered and rejected — it would reintroduce persistent multi-trick state into an architecture (Selection/Commitment/Modulation) that's deliberately stateless, re-evaluated fresh on every `decide_play()` call. No loop needed: the natural re-invocation on each lead already provides "re-evaluate from scratch" for free. Further refinement distinguished the safety condition for pursuing the objective (is this lead provably safe right now) from the objective itself (has the opposing team's ability to trump in already been eliminated) — conflating them meant `CONTROL_TRUMP` could keep winning Selection even after both opponents were already confirmed void in trump, spending high trump on an already-accomplished goal.
+
+**Fix:** `CONTROL_TRUMP` is now eligible only when both hold — **rank-safety** (our best trump equals `public_knowledge.highest_remaining_trump()`, i.e. this specific lead is provably unbeatable by anything remaining anywhere) **and objective-incomplete** (`not opposing_team.all(void_suits(opp).has(trump))` — the opposing team isn't already both confirmed void in trump). Both facts already existed in `PublicKnowledge`; no new query needed. `public_knowledge == null` makes rank-safety false unconditionally, so eligibility is false — same fallback shape as BUG-014's null-safety pattern.
+
+**What this naturally reproduces with no explicit loop or state:** top three ranked trumps stay eligible three tricks running, stopping the moment either opponent shows void — even mid-run, even with more high trump still in hand. Top two ranked trumps, opponents not yet void: eligible twice, then rank-safety fails on the third lead once someone else holds the actual highest — a decision point opens naturally, resolved by whatever wins Selection next, not by a special case here.
+
+**Verified:** the hand that prompted the investigation (trump 2, holding 2:4/0:2/2:3/2:2 at trick 1) now leads 2:2 first; a hand where partner leads the top two ranked trumps across two tricks correctly fails rank-safety on the third (reason string changes off the trump-control line, confirming the gate itself turned off — the tile happened to still get chosen via the blind-fallback tier's independent cost-minimization, which is a coincidence of that specific hand, not the gate firing); a hand where both opponents are confirmed void in trump after one lead correctly stays ineligible on the next lead even though rank-safety independently still holds, proving objective-incomplete is doing real gating work and not just riding along with rank-safety; `public_knowledge == null` correctly suppresses eligibility even when the old count threshold would have fired (4 trumps, no double).
+
+**Explicitly out of scope, logged not forgotten:** objective-priority representation — whether `CONTROL_TRUMP`, once eligible, actually outranks other eligible objectives is still determined by physical position in the `if`/`elif` chain, the same mechanism behind BUG-003 and the SAFE-tier reorder earlier today (see Pattern H). `CONTROL_TRUMP` keeps its established position (ahead of the off-suit-safe tiers) but priority ordering itself isn't formalized as an inspectable structure — flagged as its own future design session, the recurring cross-cutting version of a problem this session hit twice in two different objectives.
+
+**Status:** ✓ Fixed, July 13, 2026.
+
 ---
 
 ## Pattern H — `FORCE_A_VOID` treats partial opposing-team voidness as full safety
@@ -355,3 +373,4 @@ A lead is genuinely safe overall only when **both** opposing players independent
 13. ~~BUG-014~~ ✓ Fixed July 13, 2026.
 14. ~~BUG-012~~ ✓ Fixed July 13, 2026, jointly with BUG-007 (Lead-Safety Priority Stack — see Pattern H).
 15. **BUG-015** — ⚑ new, log entry only, holding 6:6/6:5/6:4 + another double switches leads before both opponents are proven void in trump. Needs its own design session.
+16. ~~BUG-016~~ ✓ Fixed July 13, 2026 — `CONTROL_TRUMP` eligibility replaced with rank-safety + objective-incomplete, the root cause behind BUG-003/003b, BUG-010, and BUG-014.

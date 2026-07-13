@@ -796,17 +796,38 @@ static func decide_play(
 						reason_log.append("Nothing can beat this.")
 					return chosen
 
-			# Step 3 — trump control (#8), unchanged. Lead high non-trump
-			# non-counter: gives human a safe suit to follow without burning
-			# trump or risking a vulnerable point card. Checked before the
-			# fallback off-suit lead — a partner who holds enough trump to
-			# draw opponents out should lead it before defaulting to a safe
-			# off-suit tile. Threshold: 3+ trumps if the holding includes the
-			# double trump (the double itself supplies the control), otherwise
-			# 4+ is required. See AI_Play_Behavior_Bug_Log.md, BUG-003/003b.
+			# Step 3 — trump control (#8). Lead high non-trump non-counter:
+			# gives human a safe suit to follow without burning trump or
+			# risking a vulnerable point card. Checked before the fallback
+			# off-suit lead — a partner who holds enough trump to draw
+			# opponents out should lead it before defaulting to a safe
+			# off-suit tile. See AI_Play_Behavior_Bug_Log.md, BUG-003/003b.
+			#
+			# Eligibility (Katy + Claude, July 13, 2026) — replaces the old
+			# trumps.size() >= 3/4 count threshold. Count was the wrong proxy
+			# for the objective (drawing out opponent trump): two hands with
+			# identical counts can have opposite real standing (top-ranked
+			# trumps vs. low trumps while an opponent quietly holds the
+			# actual highest). Eligible only when both hold:
+			#   - Rank-safety: our best trump equals highest_remaining_trump()
+			#     — this specific lead is provably unbeatable by anything
+			#     remaining anywhere.
+			#   - Objective-incomplete: the opposing team isn't already both
+			#     confirmed void in trump — no point spending trump to draw
+			#     out a threat that's already gone.
+			# No loop or persistent state needed: decide_play() is
+			# re-invoked fresh on every lead, so re-checking rank-safety
+			# each time naturally stops a run the moment someone else holds
+			# the true highest, without tracking anything across tricks.
 			var trumps = legal.filter(func(d): return d.is_trump(trump))
 			var holds_double_trump = trumps.any(func(d): return d.is_double())
-			var trump_control = (trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4
+			var trump_control = false
+			if trumps.size() > 0:
+				var best_trump_candidate = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				var top_remaining = public_knowledge.highest_remaining_trump() if public_knowledge != null else null
+				var rank_safe = top_remaining != null and top_remaining.debug_string() == best_trump_candidate.debug_string()
+				var objective_incomplete = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
+				trump_control = rank_safe and objective_incomplete
 			if trump_control:
 				var best: Domino
 				var double_tile = Domino.new(trump, trump)

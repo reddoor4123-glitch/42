@@ -16,6 +16,9 @@ var opponent_top_container: HBoxContainer
 var opponent_left_container: VBoxContainer
 var opponent_right_container: VBoxContainer
 var info_label: Label
+var trump_indicator_label: Label
+var play_vbox: VBoxContainer
+var _hand_result_banner: Label = null
 var bid_panel: PanelContainer
 var bid_buttons: HBoxContainer
 var _pts_picker: DrumPicker = null
@@ -417,13 +420,19 @@ func _build_ui():
 	play_area_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox_mid.add_child(play_area_panel)
 
-	var play_vbox = VBoxContainer.new()
+	play_vbox = VBoxContainer.new()
 	play_area_panel.add_child(play_vbox)
 
 	info_label = Label.new()
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info_label.add_theme_color_override("font_color", Color.WHITE)
 	play_vbox.add_child(info_label)
+
+	trump_indicator_label = Label.new()
+	trump_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	trump_indicator_label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15))
+	_scaled_font(trump_indicator_label, 20)
+	play_vbox.add_child(trump_indicator_label)
 
 	play_area_container = HBoxContainer.new()
 	play_area_container.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -979,6 +988,10 @@ func _start_hand():
 
 func _start_bidding():
 	_set_info("Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+	trump_indicator_label.text = ""
+	if is_instance_valid(_hand_result_banner):
+		_hand_result_banner.queue_free()
+		_hand_result_banner = null
 	game.current_bid = null
 	human_is_forced = false
 	_human_bid_position = -1
@@ -1262,6 +1275,7 @@ func _run_post_human_bids():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 
 func _finish_bidding(_unused: Array):
+	_clear_bid_bubbles()
 	var winning = game.current_bid
 	if winning == null:
 		_set_status("No bid — reshuffling...")
@@ -1280,6 +1294,7 @@ func _finish_bidding(_unused: Array):
 			game.active_nello_doubles_mode = game.settings.nello_doubles_mode
 			game.apply_bid_result(-1)
 			_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+			trump_indicator_label.text = ""
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
 			_begin_play(winning.player_id)
@@ -1288,6 +1303,7 @@ func _finish_bidding(_unused: Array):
 		# Sevens needs no trump selection from anyone
 		game.apply_bid_result(-1)
 		_set_info("Sevens | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+		trump_indicator_label.text = ""
 		_refresh_all_hands()
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
 		_begin_play(winning.player_id)
@@ -1306,6 +1322,8 @@ func _finish_bidding(_unused: Array):
 			var best_suit = ai_eval["trump"]
 			game.apply_bid_result(best_suit)
 			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
+			_show_trump_announcement(best_suit)
 			_refresh_all_hands()
 			_set_status("%s called %s" % [_seat_label(partner_id), suit_names[best_suit]])
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
@@ -1324,6 +1342,8 @@ func _finish_bidding(_unused: Array):
 			var best_suit = ai_eval["trump"]
 			game.apply_bid_result(best_suit)
 			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
+			_show_trump_announcement(best_suit)
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
 			_begin_play()
@@ -1344,6 +1364,8 @@ func _on_trump_selected(suit: int):
 	waiting_for_trump = false
 	game.apply_bid_result(suit)
 	_set_info("Trump: %ds | Marks: You %d | Them %d" % [suit, game.team_marks[0], game.team_marks[1]])
+	trump_indicator_label.text = "Trump: %s" % _trump_display_name(suit)
+	_show_trump_announcement(suit)
 	_refresh_all_hands()
 	# Derive the correct leader from game state set by apply_bid_result():
 	# for Plunge/Splash the partner leads, otherwise the bid winner leads.
@@ -1368,6 +1390,7 @@ func _on_nello_mode_selected(mode: String):
 		game.active_nello_doubles_reversed = false
 	game.apply_bid_result(-1)
 	_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+	trump_indicator_label.text = ""
 	_refresh_all_hands()
 	_begin_play()
 
@@ -1616,6 +1639,15 @@ func _resolve_hand():
 	var marks = result.get("team_marks", [0,0])
 	_set_status("Hand over! %s wins — %s" % [team_str, result.get("reason", "")])
 
+	if is_instance_valid(_hand_result_banner):
+		_hand_result_banner.queue_free()
+	_hand_result_banner = Label.new()
+	_hand_result_banner.text = "YOU WIN THIS HAND! 🎉" if winner_team == 0 else "Hand Lost"
+	_hand_result_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(_hand_result_banner, 36)
+	_hand_result_banner.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15) if winner_team == 0 else Color(0.85, 0.35, 0.30))
+	play_vbox.add_child(_hand_result_banner)
+
 	_us_marks.set_marks(marks[0])
 	_them_marks.set_marks(marks[1])
 	_set_info("Marks: You %d | Them %d" % [marks[0], marks[1]])
@@ -1730,6 +1762,42 @@ func _set_info(text: String):
 func _set_status(text: String):
 	status_label.text = text
 	print(text)
+
+# Maps a trump value to display text. Handles the two non-numeric-suit
+# cases (-1 = Follow Me, Domino.DOUBLES_TRUMP = doubles-are-trump) that
+# only the human's trump-panel buttons can produce — AI's best_trump()
+# always returns 0-6 — so a plain suit_names[suit] index would crash on
+# either of them.
+func _trump_display_name(suit: int) -> String:
+	var suit_names = ["Blanks", "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes"]
+	if suit == -1:
+		return "No Trump (Follow Me)"
+	if suit == Domino.DOUBLES_TRUMP:
+		return "Doubles"
+	return suit_names[suit]
+
+# Large, temporary center-screen banner announcing the chosen trump —
+# fire-and-forget (callers don't await this) so it doesn't block the
+# transition into the first trick; it just overlays on top of it briefly.
+func _show_trump_announcement(suit: int):
+	if _bubble_overlay == null:
+		return
+	var label = Label.new()
+	label.text = "Trump: %s" % _trump_display_name(suit)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scaled_font(label, 42)
+	label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15))
+	_bubble_overlay.add_child(label)
+	var screen_size = _bubble_overlay.size
+	await get_tree().process_frame
+	if not is_instance_valid(label):
+		return
+	label.size = label.get_minimum_size()
+	label.position = Vector2(screen_size.x / 2 - label.size.x / 2, screen_size.y / 2 - label.size.y / 2)
+	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.6).timeout
+	if is_instance_valid(label):
+		label.queue_free()
 
 # Shows a small bid label floating near a player's area
 func _show_bid_bubble(pid: int, text: String):
