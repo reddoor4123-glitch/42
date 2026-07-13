@@ -6,6 +6,7 @@ signal value_changed(new_value: int)
 var values: Array[int] = []
 var current_index: int = 0
 var label_prefix: String = ""
+var font_scale: float = 1.0
 
 const ITEM_WIDTH  := 56.0
 const VISIBLE_ITEMS := 3
@@ -107,7 +108,7 @@ func _draw():
 		var color = COLOR_SELECTED if is_selected else COLOR_UNSELECTED
 		if not is_selected:
 			color.a = 0.6
-		var font_size = 24 if is_selected else 17
+		var font_size = round((24 if is_selected else 17) * font_scale)
 		var text_size = ThemeDB.fallback_font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
 		var text_pos = Vector2(item_center_x - text_size.x / 2.0, h / 2.0 + text_size.y / 2.0 - 4)
 		draw_string(ThemeDB.fallback_font, text_pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
@@ -118,6 +119,6 @@ func _draw():
 	# Scroll hint arrows
 	var arrow_color = Color(COLOR_UNSELECTED, 0.4)
 	if current_index > 0:
-		draw_string(ThemeDB.fallback_font, Vector2(3, h / 2.0 + 7), "◀", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, arrow_color)
+		draw_string(ThemeDB.fallback_font, Vector2(3, h / 2.0 + 7), "◀", HORIZONTAL_ALIGNMENT_LEFT, -1, round(13 * font_scale), arrow_color)
 	if current_index < values.size() - 1:
-		draw_string(ThemeDB.fallback_font, Vector2(w - 14, h / 2.0 + 7), "▶", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, arrow_color)
+		draw_string(ThemeDB.fallback_font, Vector2(w - 14, h / 2.0 + 7), "▶", HORIZONTAL_ALIGNMENT_LEFT, -1, round(13 * font_scale), arrow_color)

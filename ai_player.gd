@@ -820,11 +820,19 @@ static func decide_play(
 			var trump_control = (trumps.size() >= 3 and holds_double_trump) or trumps.size() >= 4
 			if trump_control:
 				var best: Domino
-				if holds_double_trump:
+				var double_tile = Domino.new(trump, trump)
+				var double_accounted_for = holds_double_trump or (public_knowledge != null and public_knowledge.has_been_played(double_tile))
+				if double_accounted_for:
 					best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("I have trump control — drawing out the opponents.")
 				else:
-					best = _lowest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					# BUG-010: prefer a non-counter trump for the low lead if one exists —
+					# it draws the double out just as well without risking 5 or 10 points
+					# to a near-certain capture. Only fall back to a counter trump if
+					# every trump candidate is a counter.
+					var non_counter_trumps = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
+					var draw_out_pool = non_counter_trumps if non_counter_trumps.size() > 0 else trumps
+					best = _lowest_in(draw_out_pool, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					reason_log.append("Leading low trump to draw out the double first.")
 				return best
 
@@ -867,7 +875,13 @@ static func decide_play(
 			var non_counters_lead = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 			if non_counters_lead.size() > 0:
 				var best = _highest_in(non_counters_lead, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				reason_log.append("Leading strong to set up a good trick for us.")
+				var best_suit = best.get_suit(trump, trick.nello_doubles, -1)
+				var top_remaining = public_knowledge.best_remaining_card_for_suit(best_suit) if public_knowledge != null else null
+				var provably_best = top_remaining != null and top_remaining.debug_string() == best.debug_string()
+				if provably_best:
+					reason_log.append("Nothing can beat this.")
+				else:
+					reason_log.append("Leading strong to set up a good trick for us.")
 				return best
 
 			var best = _highest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
@@ -1137,8 +1151,22 @@ static func decide_play(
 		var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 			reason_log.append("I've got this one.")
-		else:
-			reason_log.append("Nice hand!" if hand.size() == 1 else "My partner has this one — laying low.")
+			return lowest
+
+		# BUG-004: last to act means the trick's outcome is already fixed — no
+		# one remains who could beat our partner's winning domino. A stranded
+		# counter costs nothing to drop here rather than carrying it into a
+		# future trick this side might not control. Same opportunism roll as
+		# the can-win contest decision below — one shared "does this seat check
+		# for exploitable table state" trait, not two.
+		if _is_last_to_act(plays) and _should_evaluate_tactically(mode):
+			var counters_to_dump = legal.filter(func(d): return (d.pip_sum() == 5 or d.pip_sum() == 10) and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
+			if counters_to_dump.size() > 0:
+				var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				reason_log.append("Nothing left to answer — may as well drop my count.")
+				return chosen
+
+		reason_log.append("Nice hand!" if hand.size() == 1 else "My partner has this one — laying low.")
 		return lowest
 
 	# Try to win the trick.

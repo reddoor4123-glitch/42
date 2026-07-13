@@ -158,23 +158,25 @@ from the code side, even without the original session narrative.
 
 **`AI_Play_Behavior_Bug_Log.md`** — gameplay decision bugs, organized by
 pattern. Pattern A ("guaranteed trick" detection too narrow — BUG-002/002b/004):
-**BUG-004 unblocked July 12, 2026** (the Phase 3 Opportunism design pass it
-was waiting on has landed — see Pattern F below), BUG-002/002b still
-waiting on Phase 4. **Pattern B (BUG-003/003b, lead-priority ordering) is
-fixed as of July 5, 2026.** **Pattern E (BUG-006/BUG-007/BUG-009, counter
-safety at leading branches): BUG-006 and BUG-009 both fixed** (July 9 and
-July 12, 2026 respectively — BUG-009 leads a counter-double on reasonable
-confidence instead of gating on provable safety); **BUG-007 has its
-blocking design question resolved (via BUG-009's ruling) but branch #10
-itself is still uncoded** — don't mark it fixed, it's a distinct status.
+**BUG-004 fixed July 13, 2026** (drops a stranded counter when last-to-act
+on an already-decided trick, gated by the same opportunism roll as the
+can-win contest decision), BUG-002/002b still waiting on Phase 4.
+**Pattern B (BUG-003/003b, lead-priority ordering) is fixed as of July 5,
+2026.** **Pattern E (BUG-006/BUG-007/BUG-009, counter safety at leading
+branches): BUG-006 and BUG-009 both fixed** (July 9 and July 12, 2026
+respectively — BUG-009 leads a counter-double on reasonable confidence
+instead of gating on provable safety); **BUG-007 has its blocking design
+question resolved (via BUG-009's ruling) but branch #10 itself is still
+uncoded** — don't mark it fixed, it's a distinct status.
 **Pattern F (BUG-008, forced overtake; BUG-011, a latent guaranteed-win
 bug BUG-008's own refactor surfaced; and BUG-013, a self-exclusion bug in
 `_is_guaranteed_win()` that retroactively affects branch #11 too) are all
 fixed as of July 12/13, 2026.** **Pattern G (BUG-010, low-lead technique
-doesn't exclude counters)** is open, not specced, found during the same
-July 12 review. **Pattern H (BUG-012, `FORCE_A_VOID`'s `void_leads` accepts
-partial opposing-team voidness instead of requiring all)** is open, not
-specced, found July 13, 2026. Status-keyed
+doesn't exclude counters; BUG-014, the same low-lead technique kept
+firing after the double it was drawing out had already been played) are
+both fixed as of July 13, 2026.** **Pattern H (BUG-012, `FORCE_A_VOID`'s
+`void_leads` accepts partial opposing-team voidness instead of requiring
+all)** is open, not specced, found July 13, 2026. Status-keyed
 (✓ fixed / → ready / ⏳ waiting on Phase 4 / ⚑ needs examples). **Check here
 before assuming a play-decision oddity is new — it may already be a known,
 categorized bug with a fix shape written.**

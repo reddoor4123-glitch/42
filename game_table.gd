@@ -87,15 +87,23 @@ var waiting_for_bid: bool = false
 var human_is_forced: bool = false
 var _human_bid_position: int = -1
 
-# Viewport-proportional tile sizes — computed once in _build_ui()
+# Viewport-proportional tile sizes — recomputed on resize by _on_viewport_resized()
 var TILE_FULL: Vector2
 var TILE_SMALL: Vector2
 var TILE_REPLAY_HAND: Vector2
 var TILE_REPLAY_PLAYED: Vector2
 
+# Proportional font scaling (Mechanism 1: registry for stock Controls)
+const DESIGN_WIDTH: float = 576.0
+const MIN_SCALE: float = 0.75
+const MAX_SCALE: float = 1.5
+var font_scale: float = 1.0
+var _font_registry: Array = []
+
 func _ready():
 	_build_ui()
 	_start_game()
+	get_viewport().size_changed.connect(_on_viewport_resized)
 
 # ─── UI CONSTRUCTION ──────────────────────────────────────────────────────────
 
@@ -117,6 +125,7 @@ func _build_ui():
 	TILE_SMALL        = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
 	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
+	font_scale = clamp(vp_w / DESIGN_WIDTH, MIN_SCALE, MAX_SCALE)
 
 	# Root Control that fills the window
 	var root = Control.new()
@@ -227,21 +236,21 @@ func _build_ui():
 			for _p in range(half if half <= 3 else 3):
 				var dot = Label.new()
 				dot.text = "●"
-				dot.add_theme_font_size_override("font_size", 8)
+				_scaled_font(dot, 8)
 				dot.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88, 0.55))
 				half_row.add_child(dot)
 
 	var menu_title = Label.new()
 	menu_title.text = "42"
 	menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_title.add_theme_font_size_override("font_size", 48)
+	_scaled_font(menu_title, 48)
 	menu_title.add_theme_color_override("font_color", Color.WHITE)
 	menu_vbox.add_child(menu_title)
 
 	var menu_subtitle = Label.new()
 	menu_subtitle.text = "The National Game of Texas"
 	menu_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	menu_subtitle.add_theme_font_size_override("font_size", 14)
+	_scaled_font(menu_subtitle, 14)
 	menu_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	menu_vbox.add_child(menu_subtitle)
 
@@ -294,14 +303,14 @@ func _build_ui():
 	var preset_title = Label.new()
 	preset_title.text = "Choose Your Rules"
 	preset_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	preset_title.add_theme_font_size_override("font_size", 28)
+	_scaled_font(preset_title, 28)
 	preset_title.add_theme_color_override("font_color", Color.WHITE)
 	preset_vbox.add_child(preset_title)
 
 	var preset_subtitle = Label.new()
 	preset_subtitle.text = "You can change this anytime from the menu"
 	preset_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	preset_subtitle.add_theme_font_size_override("font_size", 14)
+	_scaled_font(preset_subtitle, 14)
 	preset_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	preset_vbox.add_child(preset_subtitle)
 
@@ -358,14 +367,14 @@ func _build_ui():
 	var diff_title = Label.new()
 	diff_title.text = "Choose Your Experience"
 	diff_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	diff_title.add_theme_font_size_override("font_size", 22)
+	_scaled_font(diff_title, 22)
 	diff_title.add_theme_color_override("font_color", Color.WHITE)
 	diff_vbox.add_child(diff_title)
 
 	var diff_subtitle = Label.new()
 	diff_subtitle.text = "You can change this anytime from settings"
 	diff_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	diff_subtitle.add_theme_font_size_override("font_size", 13)
+	_scaled_font(diff_subtitle, 13)
 	diff_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	diff_vbox.add_child(diff_subtitle)
 
@@ -464,7 +473,7 @@ func _build_ui():
 	var trump_label = Label.new()
 	trump_label.text = "Call Trump Suit:"
 	trump_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	trump_label.add_theme_font_size_override("font_size", 14)
+	_scaled_font(trump_label, 14)
 	trump_vbox.add_child(trump_label)
 
 	# Two rows of compact suit buttons so they don't overflow
@@ -539,7 +548,7 @@ func _build_ui():
 	var nello_label = Label.new()
 	nello_label.text = "How do doubles play?"
 	nello_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	nello_label.add_theme_font_size_override("font_size", 14)
+	_scaled_font(nello_label, 14)
 	nello_vbox.add_child(nello_label)
 
 	var nello_row = HBoxContainer.new()
@@ -682,7 +691,7 @@ func _build_ui():
 
 	_replay_trick_label = Label.new()
 	_replay_trick_label.text = "Replay — Trick 1 of 7"
-	_replay_trick_label.add_theme_font_size_override("font_size", 16)
+	_scaled_font(_replay_trick_label, 16)
 	_replay_trick_label.add_theme_color_override("font_color", Color.WHITE)
 	_replay_trick_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	r_top_bar.add_child(_replay_trick_label)
@@ -723,7 +732,7 @@ func _build_ui():
 
 	var flag_hint = Label.new()
 	flag_hint.text = "What felt off about this trick?"
-	flag_hint.add_theme_font_size_override("font_size", 13)
+	_scaled_font(flag_hint, 13)
 	flag_hint.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
 	flag_vbox.add_child(flag_hint)
 
@@ -823,6 +832,37 @@ func _build_ui():
 	r_next_btn.pressed.connect(_replay_next_trick)
 	r_bot_bar.add_child(r_next_btn)
 
+func _scaled_font(node: Control, base_size: int) -> void:
+	node.add_theme_font_size_override("font_size", round(base_size * font_scale))
+	var entry = {"node": node, "base_size": base_size}
+	_font_registry.append(entry)
+	node.tree_exiting.connect(func(): _font_registry.erase(entry))
+
+func _on_viewport_resized():
+	var vp_w: float = get_viewport().get_visible_rect().size.x
+	var tile_w: float = min(64.0, floor(vp_w / 9.0))
+	TILE_FULL          = Vector2(tile_w,        tile_w * 2.0)
+	TILE_SMALL         = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
+	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
+	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
+
+	font_scale = clamp(vp_w / DESIGN_WIDTH, MIN_SCALE, MAX_SCALE)
+	for entry in _font_registry:
+		entry["node"].add_theme_font_size_override("font_size", round(entry["base_size"] * font_scale))
+
+	if is_instance_valid(_pts_picker):
+		_pts_picker.font_scale = font_scale
+		_pts_picker.queue_redraw()
+	if is_instance_valid(_marks_picker):
+		_marks_picker.font_scale = font_scale
+		_marks_picker.queue_redraw()
+	if is_instance_valid(_us_marks):
+		_us_marks.font_scale = font_scale
+		_us_marks.queue_redraw()
+	if is_instance_valid(_them_marks):
+		_them_marks.font_scale = font_scale
+		_them_marks.queue_redraw()
+
 func _make_flag_toggle(label_text: String) -> Button:
 	var btn = Button.new()
 	btn.text = label_text
@@ -834,7 +874,7 @@ func _make_flag_toggle(label_text: String) -> Button:
 func _build_replay_player_section(label_text: String, invert: bool = false) -> Array:
 	var name_lbl = Label.new()
 	name_lbl.text = label_text
-	name_lbl.add_theme_font_size_override("font_size", 12)
+	_scaled_font(name_lbl, 12)
 	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -847,7 +887,7 @@ func _build_replay_player_section(label_text: String, invert: bool = false) -> A
 
 	var bubble_lbl = Label.new()
 	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	bubble_lbl.add_theme_font_size_override("font_size", 11)
+	_scaled_font(bubble_lbl, 11)
 	bubble_lbl.add_theme_color_override("font_color", Color.WHITE)
 	bubble_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	bubble_lbl.custom_minimum_size = Vector2(160, 0)
@@ -1067,10 +1107,11 @@ func _show_bid_panel():
 		pts_lbl.text = "Points"
 		pts_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		pts_lbl.add_theme_color_override("font_color", Color.WHITE)
-		pts_lbl.add_theme_font_size_override("font_size", 13)
+		_scaled_font(pts_lbl, 13)
 		pts_col.add_child(pts_lbl)
 
 		_pts_picker = DrumPicker.new()
+		_pts_picker.font_scale = font_scale
 		var pt_vals: Array[int] = []
 		for v in range(min_points, 43):
 			pt_vals.append(v)
@@ -1102,10 +1143,11 @@ func _show_bid_panel():
 		marks_lbl.text = _contract_label(_selected_contract_type) if (_bid_panel_expanded and _selected_contract_type != BidScript.Type.MARKS) else "Marks"
 		marks_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		marks_lbl.add_theme_color_override("font_color", Color.WHITE)
-		marks_lbl.add_theme_font_size_override("font_size", 13)
+		_scaled_font(marks_lbl, 13)
 		marks_col.add_child(marks_lbl)
 
 		_marks_picker = DrumPicker.new()
+		_marks_picker.font_scale = font_scale
 		_contract_marks_picker = _marks_picker
 		var mark_vals: Array[int] = []
 		for v in range(marks_floor, 8):
@@ -1668,7 +1710,7 @@ func _add_to_play_area(player_id: int, domino: Domino):
 	lbl.text = _seat_label(player_id)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_font_size_override("font_size", 13)
+	_scaled_font(lbl, 13)
 	vb.add_child(lbl)
 
 func _clear_play_area():
@@ -1700,7 +1742,7 @@ func _show_bid_bubble(pid: int, text: String):
 
 	var lbl = Label.new()
 	lbl.text = text
-	lbl.add_theme_font_size_override("font_size", 13)
+	_scaled_font(lbl, 13)
 	lbl.add_theme_color_override("font_color", Color.WHITE)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -1780,7 +1822,7 @@ func _build_settings_content(from_create: bool = false):
 	var title = Label.new()
 	title.text = "Settings"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 20)
+	_scaled_font(title, 20)
 	title.add_theme_color_override("font_color", Color.WHITE)
 	_settings_content_vbox.add_child(title)
 
@@ -1942,7 +1984,7 @@ func _add_checkbox_row(parent: VBoxContainer, label: String, value: bool, setter
 	var cb = CheckBox.new()
 	cb.text = label
 	cb.button_pressed = value
-	cb.add_theme_font_size_override("font_size", 15)
+	_scaled_font(cb, 15)
 	cb.toggled.connect(setter)
 	parent.add_child(cb)
 	return cb
@@ -1967,7 +2009,7 @@ func _add_option_row(parent: VBoxContainer, label: String, options: Array, curre
 	lbl.text = label + ":"
 	lbl.custom_minimum_size = Vector2(170, 0)
 	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_font_size_override("font_size", 15)
+	_scaled_font(lbl, 15)
 	row.add_child(lbl)
 	var opt = OptionButton.new()
 	var sel_idx = 0
@@ -1987,7 +2029,7 @@ func _add_spinbox_row(parent: VBoxContainer, label: String, min_v: int, max_v: i
 	lbl.text = label + ":"
 	lbl.custom_minimum_size = Vector2(170, 0)
 	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_font_size_override("font_size", 15)
+	_scaled_font(lbl, 15)
 	row.add_child(lbl)
 	var sb = SpinBox.new()
 	sb.min_value = min_v
@@ -2198,7 +2240,7 @@ func _show_save_preset_popup():
 	prompt_lbl.text = "Name your ruleset:"
 	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
-	prompt_lbl.add_theme_font_size_override("font_size", 16)
+	_scaled_font(prompt_lbl, 16)
 	vb.add_child(prompt_lbl)
 
 	var line_edit = LineEdit.new()
@@ -2279,7 +2321,7 @@ func _show_custom_preset_options(cname: String):
 	title.text = cname
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_color", Color.WHITE)
-	title.add_theme_font_size_override("font_size", 16)
+	_scaled_font(title, 16)
 	vb.add_child(title)
 
 	vb.add_child(HSeparator.new())
@@ -2343,7 +2385,7 @@ func _show_rename_preset_popup(old_name: String):
 	prompt_lbl.text = "Rename \"%s\":" % old_name
 	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
-	prompt_lbl.add_theme_font_size_override("font_size", 16)
+	_scaled_font(prompt_lbl, 16)
 	vb.add_child(prompt_lbl)
 
 	var line_edit = LineEdit.new()
@@ -2439,7 +2481,7 @@ func _show_delete_preset_confirm(cname: String):
 	lbl.text = "Delete \"%s\"?" % cname
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.add_theme_color_override("font_color", Color.WHITE)
-	lbl.add_theme_font_size_override("font_size", 16)
+	_scaled_font(lbl, 16)
 	vb.add_child(lbl)
 
 	var btn_row = HBoxContainer.new()

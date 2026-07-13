@@ -7,6 +7,7 @@ extends Control
 var marks: int = 0
 var team_color: Color = Color.WHITE
 var label_text: String = "US"
+var font_scale: float = 1.0
 
 const STROKE_LIT    := Color(0.95, 0.90, 0.70)   # Warm white/gold when earned
 const STROKE_UNLIT  := Color(0.25, 0.25, 0.25)   # Dark grey unearned
@@ -35,9 +36,9 @@ func set_team(color: Color, label: String):
 func _draw():
 	var font = ThemeDB.fallback_font
 	# Team label at top
-	var lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 11)
+	var lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_CENTER, -1, round(11 * font_scale))
 	draw_string(font, Vector2(W/2 - lbl_size.x/2, 14), label_text,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, team_color)
+		HORIZONTAL_ALIGNMENT_LEFT, -1, round(13 * font_scale), team_color)
 
 	# Draw all 7 strokes
 	var stroke_data = _get_strokes()
