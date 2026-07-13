@@ -942,7 +942,7 @@ static func decide_play(
 				return chosen
 
 			if non_counters_follow.size() > 0:
-				var lowest = _lowest_in(non_counters_follow, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+				var lowest = _pick_partner_discard(non_counters_follow, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				# The "lowest" legal tile can still end up winning if we're void
 				# in the lead suit and every legal tile happens to be trump —
 				# picking the smallest trump doesn't stop it from beating a
@@ -952,7 +952,7 @@ static func decide_play(
 				else:
 					reason_log.append("You've got this one — staying out of your way.")
 				return lowest
-			var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+			var lowest = _pick_partner_discard(legal, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
 				reason_log.append("Nice hand!" if hand.size() == 1 else "I've got this one.")
 			else:
@@ -1047,7 +1047,7 @@ static func decide_play(
 		# Can't win — discard to protect point cards.
 		var non_counters_discard = legal.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
 		if non_counters_discard.size() > 0:
-			var discard = _lowest_in(non_counters_discard, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+			var discard = _pick_partner_discard(non_counters_discard, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 			var had_counter_to_avoid = non_counters_discard.size() < legal.size()
 			var double_avoided = non_counters_discard.any(func(d): return d.is_double()) and not discard.is_double()
 			if legal.size() == 1:
@@ -1063,7 +1063,7 @@ static func decide_play(
 			else:
 				reason_log.append("Can't win this one — discarding low.")
 			return discard
-		var discard = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		var discard = _pick_partner_discard(legal, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 		if legal.size() == 1:
 			reason_log.append("Had to follow suit.")
 		elif hand.size() == 1:
@@ -1361,6 +1361,35 @@ static func _lowest_in(dominos: Array, trump: int, lead_suit: int,
 		if d.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed) < lowest.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed):
 			lowest = d
 	return lowest
+
+# Picks the discard/yield candidate from `pool`, breaking the "all doubles tie
+# at rank 13" artifact in _lowest_in() when every candidate is a double. In
+# that case only, prefers to part with the double whose own suit has the
+# least life left in it (fewest un-played tiles of that suit still
+# unaccounted for), keeping the double most likely to still catch a trick
+# later. Any pool containing even one non-double defers entirely to
+# _lowest_in() — a non-double's rank (0-6) is always below a double's fixed
+# 13, so that comparison is already correct and untouched.
+static func _pick_partner_discard(pool: Array[Domino], trump: int, lead_suit: int,
+		public_knowledge: PublicKnowledge, nello_doubles: String = "high",
+		doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
+	var all_doubles = pool.size() > 0 and pool.all(func(d): return d.is_double())
+	if not all_doubles or public_knowledge == null or pool.size() <= 1:
+		return _lowest_in(pool, trump, lead_suit, nello_doubles, doubles_trump_reversed, own_suit_reversed)
+
+	var worst: Domino = pool[0]
+	var worst_life: int = public_knowledge.remaining_count(worst.left)
+	for d in pool:
+		var life = public_knowledge.remaining_count(d.left)
+		if life < 0:
+			# Sentinel — no meaningful answer (Sevens has no suit concept).
+			# Shouldn't be reachable here since Sevens bypasses decide_play()
+			# entirely, but fall back defensively rather than trust a -1.
+			return _lowest_in(pool, trump, lead_suit, nello_doubles, doubles_trump_reversed, own_suit_reversed)
+		if life < worst_life:
+			worst = d
+			worst_life = life
+	return worst
 
 # Whether an opponent bothers running the real tactical evaluation (margin/
 # counter/lead-economy) before committing to a trick, versus committing

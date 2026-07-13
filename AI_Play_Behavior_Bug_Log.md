@@ -72,17 +72,25 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) share one underlying gap: the c
 
 ## Pattern C — Discard value isn't just "lowest rank" among unlike tiles
 
-### ⚑ BUG-001 — Discard selection among doubles doesn't weigh relative counter-protection value
+### ✓ BUG-001 — Discard selection among doubles doesn't weigh which double's suit still has life left in it (Partner only)
 
-**File:** `ai_player.gd` — discard path when stuck holding only doubles and unable to follow suit (uses `_lowest_in()`, which ranks by `get_rank()`).
+**File:** `ai_player.gd` — partner-side discard/yield call sites when the candidate pool is all doubles (uses `_lowest_in()`, which ranks by `get_rank()`).
 
-**Situation:** Hand is all doubles: 6:6, 3:3, 5:5, 2:2. Discarded 6:6; should have discarded 2:2 — each double's real value depends on whether its suit's counter tile is still live and could be captured by that double if led, which `_lowest_in()` has no concept of.
+**Situation:** Hand is all doubles: 6:6, 3:3, 5:5, 2:2. Discarded 6:6; should have discarded 2:2.
 
-**Why this isn't a simple ranking bug:** this isn't a bug in existing logic so much as a heuristic the system doesn't have yet — `_lowest_in()` ranks purely by suit/trump rank, with no concept of "which of my doubles guards a counter that could still be led."
+**Root cause:** `Domino.get_rank()` returns a flat `13` for every double regardless of pip value — correct for in-trick comparisons (any double beats any non-double), but it means `_lowest_in()`'s strict `<` comparison can never fire when every candidate in the pool is a double. `lowest` silently stays whichever tile happened to be first in the array — not a real decision, an unbroken tie masquerading as one.
 
-**Note:** Visible information (every player can see which counters have appeared), reasoned about identically regardless of difficulty — an Evaluation-shape addition once specced, not a knowledge or difficulty question.
+**Reframed root cause, broader than the original write-up:** it's not only about guarding a live counter — a double's usefulness as a future lead/catch depends on whether its own suit still has *any* life left in it at all. A double whose suit is exhausted is dead weight; one whose suit still has unplayed tiles can still win a trick if that suit gets led. The original framing (protect a specific counter) is a special case of this broader one — a live counter is one reason a suit still has life, not the only one. `PublicKnowledge.remaining_count(suit)` already answers this directly.
 
-**Status:** ⚑ Low priority, standalone. Doesn't block or get blocked by anything else in this log.
+**Fix (Katy, July 13, 2026):** a dedicated helper, `_pick_partner_discard()`, added alongside `_lowest_in()` rather than modifying it in place — `_lowest_in()`/`_highest_in()` are called from every kind of decision in the file (leading, following, winning), and a discard-shaped tiebreak doesn't obviously generalize to a leading decision, where a led double always wins its trick regardless of what else is out there. The new helper only intervenes when every candidate in the pool is a double (and `public_knowledge` is available): it discards the double whose suit has the fewest unplayed tiles remaining (`remaining_count(d.left)`), keeping the one most likely to still catch a trick later. Any pool with even one non-double, or a null `public_knowledge`, defers entirely to the untouched `_lowest_in()`. Applied at both partner-side call sites: the `human_is_winning`/not-guaranteed-win yield, and the "can't win either" discard path. No difficulty gate — matches existing partner doctrine (no gate on partner's `PublicKnowledge` access, this is visible-to-everyone information).
+
+**Reveals:** AVAILABLE — `remaining_count(suit)` already existed with zero consumers anywhere in the codebase before this fix; this is its first real consumer.
+
+**Verified:** direct helper test (suit with 1 tile remaining vs. suit with 5 remaining — the dead-suit double correctly chosen) plus two full `decide_play()` end-to-end runs, one through each call site, both selecting the exhausted-suit double over the live one. Mixed pool (double + non-double) and `public_knowledge == null` both confirmed to fall back to `_lowest_in()`'s exact prior behavior, unchanged.
+
+**Flagged, not in scope — Opponent has the identical defect:** the opponent-following discard block (separate code, same `_lowest_in()` call pattern) has the exact same tie artifact. Deliberately not fixed in this pass (Katy, July 13, 2026). Before touching it, it needs its own decision: per existing precedent (e.g. the expert void-lead check, `_live_counter_for_suit()`), opponent-side knowledge-based logic is typically gated behind `vigilance == "full"` rather than applied unconditionally the way partner's is. Whether this specific fact (suit-liveness of a discard candidate) should follow that same gate, or is closer to "visible to everyone regardless of skill" the way BUG-014 was, is an open question worth its own short discussion before speccing — not a decision to make implicitly by copying the partner fix over. Logged here as a known candidate, not forgotten.
+
+**Status:** ✓ Fixed (Partner only), July 13, 2026. Opponent-side mirror left open — see above.
 
 ---
 
@@ -321,7 +329,7 @@ A lead is genuinely safe overall only when **both** opposing players independent
 1. ~~BUG-003/003b~~ ✓ Fixed July 5, 2026.
 2. ~~BUG-002/002b~~ ✓ Fixed July 13, 2026 (via BUG-013's combined fix).
 3. ~~BUG-004~~ ✓ Fixed July 13, 2026. Confirmed live.
-4. **BUG-001** — ⚑ standalone, low priority, whenever there's room.
+4. ~~BUG-001~~ ✓ Fixed (Partner only) July 13, 2026. Opponent-side mirror left open — see Pattern C.
 5. ~~BUG-005~~ ✓ Fixed July 5, 2026. Merged in from the standalone Pattern D addendum, July 13, 2026.
 6. ~~BUG-006~~ ✓ Fixed July 9, 2026.
 7. ~~BUG-009~~ ✓ Fixed July 12, 2026.
