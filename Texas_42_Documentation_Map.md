@@ -167,10 +167,14 @@ July 12, 2026 respectively — BUG-009 leads a counter-double on reasonable
 confidence instead of gating on provable safety); **BUG-007 has its
 blocking design question resolved (via BUG-009's ruling) but branch #10
 itself is still uncoded** — don't mark it fixed, it's a distinct status.
-**Pattern F (BUG-008, forced overtake, and BUG-011, a latent guaranteed-win
-bug BUG-008's own refactor surfaced) are both fixed as of July 12/13,
-2026.** **Pattern G (BUG-010, low-lead technique doesn't exclude counters)**
-is open, not specced, found during the same July 12 review. Status-keyed
+**Pattern F (BUG-008, forced overtake; BUG-011, a latent guaranteed-win
+bug BUG-008's own refactor surfaced; and BUG-013, a self-exclusion bug in
+`_is_guaranteed_win()` that retroactively affects branch #11 too) are all
+fixed as of July 12/13, 2026.** **Pattern G (BUG-010, low-lead technique
+doesn't exclude counters)** is open, not specced, found during the same
+July 12 review. **Pattern H (BUG-012, `FORCE_A_VOID`'s `void_leads` accepts
+partial opposing-team voidness instead of requiring all)** is open, not
+specced, found July 13, 2026. Status-keyed
 (✓ fixed / → ready / ⏳ waiting on Phase 4 / ⚑ needs examples). **Check here
 before assuming a play-decision oddity is new — it may already be a known,
 categorized bug with a fix shape written.**

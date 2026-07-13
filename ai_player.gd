@@ -1225,12 +1225,38 @@ static func _is_guaranteed_win(candidate: Domino, hand: Array[Domino], trump: in
 		var c_suit = candidate.get_suit(trump, nello_doubles, lead_suit)
 		if trump < 0 or c_suit == trump:
 			return true
-	if public_knowledge == null or candidate.is_trump(trump):
+	if public_knowledge == null:
 		return false
+	# NOTE: `candidate` may already be recorded as played in `public_knowledge`
+	# (e.g. it's the tile currently winning the trick, already in
+	# current_trick.plays) — best_remaining_card_for_suit()/
+	# highest_remaining_trump() exclude played tiles, so they exclude
+	# `candidate` itself from their own search and return the best of
+	# whatever's left instead. Two things follow: (1) a null result means
+	# nothing else of that suit/trump remains anywhere — safe, not unsafe;
+	# (2) a non-null result is the TRUE highest-ranked remaining tile, so it
+	# must be compared by RANK against candidate, not by identity — it can
+	# easily be lower-ranked than candidate (e.g. candidate is the second-
+	# highest trump and the top one was already played), in which case it's
+	# harmless regardless of whose hand it's in. Only a result that both
+	# outranks candidate AND isn't sitting in this player's own hand (a tile
+	# they hold can't also be played by someone else this trick) is a real
+	# threat.
+	var candidate_rank = candidate.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
+	if candidate.is_trump(trump):
+		var highest_trump = public_knowledge.highest_remaining_trump()
+		if highest_trump == null:
+			return true
+		var highest_rank = highest_trump.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
+		if highest_rank <= candidate_rank:
+			return true
+		return hand.any(func(h): return h.debug_string() == highest_trump.debug_string())
 	var suit = candidate.get_suit(trump, nello_doubles, lead_suit)
 	var best_in_suit = public_knowledge.best_remaining_card_for_suit(suit)
-	if best_in_suit == null or best_in_suit.debug_string() != candidate.debug_string():
-		return false
+	if best_in_suit != null:
+		var best_rank = best_in_suit.get_rank(trump, nello_doubles, lead_suit, doubles_trump_reversed, own_suit_reversed)
+		if best_rank > candidate_rank and not hand.any(func(h): return h.debug_string() == best_in_suit.debug_string()):
+			return false
 	var own_trump_count = hand.filter(func(d): return d.is_trump(trump)).size()
 	return trump < 0 or public_knowledge.count_remaining_trump() - own_trump_count == 0
 

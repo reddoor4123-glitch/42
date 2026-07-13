@@ -170,6 +170,55 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) are the same underlying gap: th
 
 **Status:** ✓ Fixed, July 12/13, 2026 (as a byproduct of the Fix 1 refactor in this session).
 
+### ✓ BUG-013 — `_is_guaranteed_win()` could never recognize a live winning tile as safe (self-exclusion)
+
+**Where:** `decide_play()`, `_is_guaranteed_win()` helper (used by the `human_is_winning` dump-check and BUG-008's forced-overtake escalation). File: `ai_player.gd`.
+
+**What happens:** the paste-ready spec that added a trump-suit branch to `_is_guaranteed_win()` (comparing the candidate against `PublicKnowledge.highest_remaining_trump()`) surfaced during verification that neither the new trump check nor the pre-existing non-trump check (`best_remaining_card_for_suit()`, live since branch #11's July 6, 2026 generalization) could ever actually return `true` for the tile they're most commonly asked about — the currently-winning tile already on the table.
+
+**Root cause:** `best_remaining_card_for_suit()`/`highest_remaining_trump()` both exclude already-played tiles from their search. The tile being checked (`candidate` — typically `winning_domino`, already recorded in the in-progress trick's plays) is therefore excluded from its own query's result set. The old code required a literal self-match (`best_in_suit.debug_string() == candidate.debug_string()`), which was structurally impossible once the candidate excludes itself. Confirmed via direct isolated calls to `_is_guaranteed_win()`: even in a hand where every other tile of a suit was accounted for, the query returned `null` (not the candidate), which the old code treated as *unsafe* rather than the maximally-safe signal it actually is.
+
+**Consequence:** the "generalized beyond doubles" guaranteed-win detection documented as playtest-confirmed for branch #11 (and, by inheritance, BUG-008's forced-overtake escalation for non-trump/non-double candidates) may never have actually fired for a real currently-winning tile in real play — it silently fell through to the conservative "not guaranteed" path every time, correct-by-accident rather than by design.
+
+**Fix, first pass (Claude Code):** reframed both checks around "is there still a threat outside this player's control?" instead of a literal self-match — a `null` result (nothing else of that suit/trump remains anywhere) treated as safe; a non-null result treated as a real threat only if it's *not* sitting in the deciding player's own hand. Caught by external review (Chat) before commit: this version never compared *rank* — since `best_remaining_card_for_suit()`/`highest_remaining_trump()` always return the true highest-ranked remaining tile (excluding the self-excluded candidate), that returned tile can legitimately be *lower*-ranked than candidate (e.g. candidate is the second-highest trump and only the already-played double outranked it) — in which case it's harmless regardless of whose hand it's in, but the first-pass fix would still have flagged it as a threat. Confirmed the flaw was real by re-checking an earlier "negative control" test: it had (unintentionally) picked a lower-ranked remaining tile and gotten `false` back, which was itself the bug, not a passing test.
+
+**Fix, combined (final):** both checks now compare by **rank** first — if the true highest-ranked remaining tile (or, for the suit case, the best-in-suit tile) does not outrank `candidate`, it's safe regardless of whose hand it's in. Only when that tile *does* outrank `candidate` does the own-hand check apply — safe if it's sitting in the deciding player's own hand (can't be played against them this trick), a real threat otherwise. Chat's rank-only proposal was missing the own-hand half; Claude Code's own-hand-only fix was missing the rank half. Neither alone was correct; combined, both gaps close.
+
+**Verified:** four scenarios via direct calls to `_is_guaranteed_win()` (bypassing `decide_play()`), isolating each combination — remaining tile lower-ranked than candidate and not in hand (true), higher-ranked and not in hand (false, genuine threat), higher-ranked and in own hand (true), and nothing remaining at all (true). Full regression suite re-run afterward (BUG-008's flagged-hand replay, forced-overtake with/without last-to-act, BUG-009's counter-double lead, and the discard-block dead-code cleanup from the prior session) — no behavior changes to any previously-passing case.
+
+**Documentation note:** the spec that shipped the trump-suit addition described it as touching only the trump case ("Everything else... is untouched"). That was accurate as written — the self-exclusion issue was pre-existing in the untouched non-trump logic too, not introduced by the trump addition. Flagged during verification rather than assumed correct because it "matched the existing pattern" — and the first-pass fix itself needed a second, external-reviewed pass before it was actually correct. Two independent review passes, two different gaps caught — worth noting as a case where "looks obviously right" wasn't a substitute for enumerating the actual case space.
+
+**Status:** ✓ Fixed, July 13, 2026.
+
+---
+
+## Pattern H — `FORCE_A_VOID`'s opposing-team check accepts partial voidness
+
+### → BUG-012 — `void_leads` treats "any opponent void" as sufficient, when the safety claim requires "all opponents void"
+
+**Where:** `decide_play()`, two call sites — partner-leading branch 6b (`FORCE_A_VOID`'s partner-leading mirror) and opponent-leading branch #20 (`FORCE_A_VOID`). File: `ai_player.gd`.
+
+**What happens:** both `void_leads` filters loop over the opposing team (exactly two players, since partner-leading excludes self+partner and opponent-leading excludes self+partner symmetrically) and `return true` the moment **any one** of them is found void in the candidate's suit:
+```gdscript
+for opp in opposing_team:
+    if public_knowledge.void_suits(opp).has(suit):
+        return true
+return false
+```
+But the safety claim these branches make — leading this suit is safe from a natural follow because the opposing team can't follow it — requires **all** opposing players to be void, not just one. If only one of two opponents is void, the other can still follow suit naturally and beat the lead.
+
+**Example:** partner leads into a suit where the left opponent is void but the right opponent still holds it — the right opponent follows suit normally and takes the trick, while the reason string ("Leading a suit our opponents can't follow." / "Leading a suit I know you're out of.") claims a safety that only ever existed for one of the two opponents.
+
+**Root cause:** the loop's `return true` fires on the first match found, which is `.any()` semantics; the claim being made needs `.all()` semantics — every element of `opposing_team`/`opponents` must satisfy `void_suits(opp).has(suit)`, not just one.
+
+**Fix shape:** not yet specced. Likely a straightforward `.all()`-style rewrite (e.g. `opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(suit))`) at both call sites, since they share the identical shape.
+
+**Reveals:** AVAILABLE — `void_suits()` already exists and is correctly implemented; this is a logic-shape defect in how the two call sites consume it, not a missing fact.
+
+**Found during:** this session's review (July 13, 2026), confirmed still live in the current file, untouched by the `_is_guaranteed_win()` fix batch (BUG-013) or any other fix this session.
+
+**Status:** Open, not specced.
+
 ---
 
 ## Pattern G — Trump-lead technique doesn't exclude counters from consideration
@@ -233,6 +282,8 @@ directly what BUG-008's forced-overtake escalation needs).
 7. ~~**BUG-009** — design decided (July 11, 2026): lead the counter-double on a reasonable-confidence basis, not gated on provable safety.~~ **✓ Fixed July 12, 2026** — see entry above.
 8. ~~**BUG-008** — design direction agreed (July 11, 2026): detect forced overtake in `PROTECT_PARTNER_WIN`, escalate to a guaranteed winner when one is held.~~ **✓ Fixed July 12/13, 2026** — see entry above. Found the `_is_guaranteed_win()` helper it needed doubled as the fix for a latent, unrelated correctness bug — see BUG-011.
 9. **BUG-010** — found July 12, 2026 during the difficulty-modes migration review: the `CONTROL_TRUMP` low-lead-to-draw-out-the-double technique doesn't exclude counters when picking "lowest," so it can trade away a counter unnecessarily. Not yet specced; needs its own worked examples first, per project convention.
-10. **BUG-011** — found July 12/13, 2026 as a byproduct of BUG-008's fix: the old inline guaranteed-win check treated *any* double as an automatic guaranteed win with no trump-context distinction, wrong whenever real trump was in play (not just Follow Me). Already fixed — same code as BUG-008's `_is_guaranteed_win()` refactor. See its own entry below.
+10. **BUG-011** — found July 12/13, 2026 as a byproduct of BUG-008's fix: the old inline guaranteed-win check treated *any* double as an automatic guaranteed win with no trump-context distinction, wrong whenever real trump was in play (not just Follow Me). Already fixed — same code as BUG-008's `_is_guaranteed_win()` refactor. See its own entry above.
+11. ~~**BUG-013** — `_is_guaranteed_win()`'s trump/suit checks could never return true for a live winning tile (self-exclusion — the candidate is already recorded as played, so it excludes itself from its own "highest remaining" query).~~ **✓ Fixed July 13, 2026** — see entry above. Retroactively fixes branch #11's non-trump guaranteed-win generalization too, which had the identical latent issue since July 6, 2026.
+12. **BUG-012** — `FORCE_A_VOID`'s `void_leads` filters (branch 6b and branch #20) use "any opposing player void" when the safety claim requires "all opposing players void" — confirmed still live, untouched by this session's other fixes. Not yet specced; straightforward `.all()`-style fix at both call sites once scheduled.
 
 **Naming note carried forward:** "locked-in trick" is a reusable concept (double led / last to play / known-safe high trump), and it's worth a single named predicate — something like `_trick_is_decided()` — rather than separate ad hoc checks scattered across the partner and opponent branches. This predicate itself would be knowledge-agnostic (most of its cases need no inference at all); only the high-trump case would reach into the knowledge/inference layer. Whether and how each difficulty *checks* that predicate is then a separate, Phase 3 Opportunism question — which is exactly the Knowledge/Evaluation split the new philosophy header in `ai_player.gd` describes. **Phase 3 (Opportunism) has now landed (July 12, 2026)** as the `vigilance`/`opportunism` `AI_MODES` axes — wiring this predicate up is no longer blocked on Opportunism not existing, only on Phase 4 (knowledge/inference) for the high-trump case, and on someone writing the shared predicate itself.
