@@ -768,35 +768,21 @@ static func decide_play(
 					return chosen
 
 			# ── Lead-safety priority stack (Katy + Claude, July 13, 2026) ──────
-			# Steps 2-6 below replace the old any-vs-all void-lead check (6b)
+			# Steps below replace the old any-vs-all void-lead check (6b)
 			# and the old #7/#9/#10 tiers with one coherent stack, each
 			# returning immediately if it fires. See AI_Play_Behavior_Bug_Log.md,
 			# BUG-007/BUG-012.
+			#
+			# CONTROL_TRUMP (and the low-trump heuristic below it) were moved
+			# ahead of the SAFE tier the same night (Katy + Claude, July 13,
+			# 2026, late session) — SAFE tier could otherwise preempt an
+			# eligible trump-control lead with an off-trump double (e.g.
+			# 5:5), which is exactly backwards: drawing trump when we
+			# provably can takes priority over cashing an unrelated safe
+			# double. See AI_Play_Behavior_Bug_Log.md, BUG-016.
 			var opposing_team = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
 
-			# Step 2 — SAFE tier. Subsumes the old provably-highest check that
-			# lived in OPEN_SAFE_SUIT (#7) and the safe half of the old
-			# any-vs-all void-lead check (6b/FORCE_A_VOID's partner mirror).
-			# A tile only qualifies if _is_lead_fully_safe() holds against BOTH
-			# opponents independently (each may clear either safety path, they
-			# don't need to clear the same one) — a strict proof, not a
-			# confidence heuristic. These are free points; take them
-			# confidently.
-			if public_knowledge != null:
-				var safe_tier = legal.filter(func(d):
-					if d.is_trump(trump):
-						return false
-					var suit = d.get_suit(trump, trick.nello_doubles, -1)
-					return _is_lead_fully_safe(d, suit, opposing_team, trump, public_knowledge, trick.nello_doubles))
-				if safe_tier.size() > 0:
-					var chosen = _highest_in(safe_tier, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					if chosen.is_double():
-						reason_log.append("Leading my double — nothing left to beat it.")
-					else:
-						reason_log.append("Nothing can beat this.")
-					return chosen
-
-			# Step 3 — trump control (#8). Lead high non-trump non-counter:
+			# Step 2 — trump control (#8). Lead high non-trump non-counter:
 			# gives human a safe suit to follow without burning trump or
 			# risking a vulnerable point card. Checked before the fallback
 			# off-suit lead — a partner who holds enough trump to draw
@@ -846,7 +832,58 @@ static func decide_play(
 					reason_log.append("Leading low trump to draw out the double first.")
 				return best
 
-			# Step 4 — GAMBLE-tier void lead (moved above the off-suit lead,
+			# Step 3 — TEMPORARY HEURISTIC RESTORATION (BUG-016 follow-up,
+			# Katy + Claude, July 13, 2026, late session) — old count
+			# threshold, reinstated as its own branch rather than folded
+			# back into CONTROL_TRUMP's now-correct rank-safety gate. The
+			# double is always the top-ranked trump while in play, so
+			# holding it already falls under the corrected CONTROL_TRUMP
+			# above — no separate fix needed there. But strong trump
+			# WITHOUT the double no longer triggers anything once
+			# CONTROL_TRUMP requires provable rank-safety, which a non-double
+			# holding essentially never has this early — the old
+			# trumps.size() >= 4 no-double case had gone dead. This is NOT
+			# the final trump-evaluation model (quantity/ceiling/continuity/
+			# counter-cost) discussed this session — that's parked, designed
+			# not built, pending calibration against real hands. This is a
+			# stopgap to stop the regression, using the exact threshold that
+			# was quietly serving this purpose before today's tightening.
+			# `not trump_control` guard prevents overlap/duplicate firing
+			# with CONTROL_TRUMP above. See AI_Play_Behavior_Bug_Log.md,
+			# BUG-016.
+			if not trump_control and trumps.size() >= 4 and not holds_double_trump:
+				var objective_incomplete_heuristic = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
+				if objective_incomplete_heuristic:
+					var non_counter_trumps_h = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
+					var draw_out_pool_h = non_counter_trumps_h if non_counter_trumps_h.size() > 0 else trumps
+					var best_h = _lowest_in(draw_out_pool_h, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					reason_log.append("Leading low trump to draw out the double first.")
+					return best_h
+
+			# Step 4 — SAFE tier. Subsumes the old provably-highest check that
+			# lived in OPEN_SAFE_SUIT (#7) and the safe half of the old
+			# any-vs-all void-lead check (6b/FORCE_A_VOID's partner mirror).
+			# A tile only qualifies if _is_lead_fully_safe() holds against BOTH
+			# opponents independently (each may clear either safety path, they
+			# don't need to clear the same one) — a strict proof, not a
+			# confidence heuristic. These are free points; take them
+			# confidently. Runs after trump control/the low-trump heuristic
+			# — see the note above the priority-stack header for why.
+			if public_knowledge != null:
+				var safe_tier = legal.filter(func(d):
+					if d.is_trump(trump):
+						return false
+					var suit = d.get_suit(trump, trick.nello_doubles, -1)
+					return _is_lead_fully_safe(d, suit, opposing_team, trump, public_knowledge, trick.nello_doubles))
+				if safe_tier.size() > 0:
+					var chosen = _highest_in(safe_tier, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+					if chosen.is_double():
+						reason_log.append("Leading my double — nothing left to beat it.")
+					else:
+						reason_log.append("Nothing can beat this.")
+					return chosen
+
+			# Step 5 — GAMBLE-tier void lead (moved above the off-suit lead,
 			# July 13, 2026 — matches the original 6b's position relative to
 			# OPEN_SAFE_SUIT/#7). Reached only if the SAFE tier and trump
 			# control above found nothing. The opposing team has a known void
@@ -879,7 +916,7 @@ static func decide_play(
 					reason_log.append("Trying to force a decision — hoping this doesn't get trumped.")
 					return chosen
 
-			# Step 5 — ordinary safe off-suit lead (#7, OPEN_SAFE_SUIT),
+			# Step 6 — ordinary safe off-suit lead (#7, OPEN_SAFE_SUIT),
 			# reasonable-confidence tier, only reached once trump control,
 			# the SAFE tier, and the GAMBLE tier above all found nothing —
 			# meaning nothing legal has ANY void information at all. This is
@@ -909,7 +946,7 @@ static func decide_play(
 					reason_log.append("Opening this suit for you to build on.")
 				return best
 
-			# Step 6 — fully blind fallback (was #9/#10), reached only when no
+			# Step 7 — fully blind fallback (was #9/#10), reached only when no
 			# void information exists on anything legal AND nothing off-suit
 			# non-counter/double is available either. BUG-007's fix: the old
 			# code led highest here with no regard for cost; this now uses
