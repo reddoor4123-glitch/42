@@ -3,11 +3,20 @@ extends Control
 
 # Emitted when human player taps this domino
 signal domino_pressed(tile)
+# Drag-to-reorder signals (mirrors TrickPile's release-gated, distance-
+# threshold drag detection). domino_pressed now fires on a clean release
+# rather than on press, so a genuine drag never also fires a play/arm.
+signal domino_drag_started(tile)
+signal domino_drag_moved(tile, global_position: Vector2)
+signal domino_drag_ended(tile, was_drag: bool)
 
 var domino: Domino = null
 var face_up: bool = true
 var is_playable: bool = false   # Highlighted as a legal move
 var is_selected: bool = false
+
+var _press_pos: Vector2 = Vector2.ZERO
+var _dragging: bool = false
 
 # Visual constants — change these to tune look/feel
 const DOMINO_WIDTH   := 64.0
@@ -48,9 +57,24 @@ func set_selected(selected: bool):
 	queue_redraw()
 
 func _on_gui_input(event: InputEvent):
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		if face_up:
-			domino_pressed.emit(self)
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_press_pos = event.position
+			_dragging = false
+		else:
+			if _dragging:
+				domino_drag_ended.emit(self, true)
+			else:
+				if face_up:
+					domino_pressed.emit(self)
+				domino_drag_ended.emit(self, false)
+			_dragging = false
+	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		if not _dragging and event.position.distance_to(_press_pos) > 6:
+			_dragging = true
+			domino_drag_started.emit(self)
+		if _dragging:
+			domino_drag_moved.emit(self, get_global_mouse_position())
 
 func _draw():
 	var w := size.x

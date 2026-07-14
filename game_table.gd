@@ -28,6 +28,7 @@ var _selected_contract_type: int = BidScript.Type.MARKS
 var _contract_marks_picker: DrumPicker = null
 var _bid_bubbles: Dictionary = {}  # player_id -> Label
 var _bubble_overlay: Control = null
+var _drag_ghost: DominoTile = null
 var _us_marks: MarksDisplay = null
 var _them_marks: MarksDisplay = null
 var _us_tricks: TrickPile = null
@@ -1541,6 +1542,56 @@ func _on_human_domino_pressed(tile: DominoTile):
 		_armed_domino = tile.domino
 	_update_armable_highlights()
 
+# ── Drag-to-reorder hand (Katy, July 13, 2026) ──────────────────────────────
+# Available anytime, pre-bid and during active play — not phase-restricted.
+# Safe because nothing indexes into Player.hand by position (every consumer
+# iterates/filters), and deal_snapshot captures deal-time order separately
+# before any reordering could occur. Human seat only — opponent/partner
+# hands render in their own containers, which never connect these signals.
+func _on_hand_drag_started(tile: DominoTile):
+	tile.modulate.a = 0.35  # original tile fades in place, marks the "source" slot
+	_drag_ghost = DominoTile.new()
+	_bubble_overlay.add_child(_drag_ghost)
+	_drag_ghost.setup(tile.domino, true, game.trump)
+	_drag_ghost.size = tile.size
+	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_ghost.modulate.a = 0.92
+
+func _on_hand_drag_moved(tile: DominoTile, global_pos: Vector2):
+	if not is_instance_valid(_drag_ghost):
+		return
+	_drag_ghost.position = _drag_ghost.get_parent().get_local_mouse_position() - _drag_ghost.size / 2.0
+
+func _on_hand_drag_ended(tile: DominoTile, was_drag: bool):
+	tile.modulate.a = 1.0
+	if not was_drag:
+		if is_instance_valid(_drag_ghost):
+			_drag_ghost.queue_free()
+		_drag_ghost = null
+		return
+
+	var drop_center_x = _drag_ghost.global_position.x + _drag_ghost.size.x / 2.0
+	var siblings = player_hand_container.get_children()
+	var new_index = siblings.size()
+	for i in range(siblings.size()):
+		var sib = siblings[i]
+		if sib == tile:
+			continue
+		if drop_center_x < sib.global_position.x + sib.size.x / 2.0:
+			new_index = i
+			break
+
+	var hand = game.players[human_seat].hand
+	hand.erase(tile.domino)
+	new_index = clampi(new_index, 0, hand.size())
+	hand.insert(new_index, tile.domino)
+
+	if is_instance_valid(_drag_ghost):
+		_drag_ghost.queue_free()
+	_drag_ghost = null
+
+	_refresh_all_hands()
+
 func _animate_ai_play(player: Player, domino: Domino):
 	_execute_play(player, domino)
 
@@ -1725,6 +1776,13 @@ func _populate_hand_container(container: Container, hand: Array, face: bool, sma
 		tile.custom_minimum_size = TILE_SMALL if small else TILE_FULL
 		if face:
 			tile.domino_pressed.connect(_on_human_domino_pressed)
+			# No .bind(tile) here — the drag signals already emit the tile
+			# as their own first argument (mirrors domino_pressed's plain
+			# connect above); binding it too would append a duplicate
+			# trailing arg and throw an arity mismatch at emit time.
+			tile.domino_drag_started.connect(_on_hand_drag_started)
+			tile.domino_drag_moved.connect(_on_hand_drag_moved)
+			tile.domino_drag_ended.connect(_on_hand_drag_ended)
 
 func _add_to_play_area(player_id: int, domino: Domino):
 	var vb = VBoxContainer.new()
@@ -1789,12 +1847,16 @@ func _show_trump_announcement(suit: int):
 	_scaled_font(label, 42)
 	label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15))
 	_bubble_overlay.add_child(label)
-	var screen_size = _bubble_overlay.size
 	await get_tree().process_frame
 	if not is_instance_valid(label):
 		return
 	label.size = label.get_minimum_size()
-	label.position = Vector2(screen_size.x / 2 - label.size.x / 2, screen_size.y / 2 - label.size.y / 2)
+	# Centered on play_area_container (the empty trick-display zone at this
+	# point in the flow) rather than the whole screen — dead-centering on
+	# the full viewport put it right on top of status_label's turn-prompt
+	# text just below it.
+	var target_rect = play_area_container.get_global_rect()
+	label.position = Vector2(target_rect.position.x + target_rect.size.x / 2 - label.size.x / 2, target_rect.position.y + target_rect.size.y / 2 - label.size.y / 2)
 	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.6).timeout
 	if is_instance_valid(label):
 		label.queue_free()
