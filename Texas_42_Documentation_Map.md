@@ -23,15 +23,20 @@ removed, ~23 dead settings gone, four real features built), and BUG-006/
 BUG-008/009/010. Has its own "last verified" line — check that date before
 trusting it blindly on a much later visit.
 
-**`Texas_42_AI_Bidding_Structure_Overview.md`**
-A from-scratch technical description of `decide_bid()`'s three-layer
-architecture, written for outside review. Corrected in place July 12, 2026
-(see the update note at its top) to reflect the four evaluator fixes — the
-original text below that note is kept for the parts that didn't change
-(Layer 1's trump scoring, Layer 3's execution rules, the open questions
-about partner-trust and the fixed threshold). **Open this for the most
-detailed walkthrough of the bidding math itself** — more implementation
-detail than Onboarding §4 has room for.
+**`Texas_42_Bidding_System_Overview_and_Open_Items_July13_2026.md`**
+Current, from-scratch technical description of `decide_bid()`'s three-layer
+architecture plus a single consolidated open-items list for bidding —
+supersedes `Texas_42_AI_Bidding_Structure_Overview.md` (now archived, see
+below). **Open this for the most detailed walkthrough of the bidding math
+itself**, and as the first place to check before logging a new bidding
+open item — more implementation detail than Onboarding §4 has room for.
+
+**`Texas_42_AI_Bidding_Structure_Overview.md`** — **ARCHIVED July 14, 2026**,
+moved to `archive/`. Fully superseded by
+`Texas_42_Bidding_System_Overview_and_Open_Items_July13_2026.md` above.
+Historical text below kept for the record, not current: a from-scratch
+technical description of `decide_bid()`'s three-layer architecture,
+corrected in place July 12, 2026 to reflect the four evaluator fixes.
 
 **`Phase3_Objective_Audit.md`**
 The working document for the Phase 3 difficulty-branch collapse. Full
@@ -100,7 +105,10 @@ Both are current as of July 5 (BUG-003/003b and the MARKS question are
 marked resolved in both).
 
 **Raw concept audits — `Phase1_Raw_Concept_Audit.md`, `Phase2_Raw_Concept_Audit.md`**
-Deliberately unlocked inventories: every place a Phase-1- or Phase-2-adjacent
+— **ARCHIVED July 14, 2026**, moved to `archive/`. Fully superseded by
+`Phase1_Control_Layer_Audit.md` and `Phase2_Control_Layer_Audit.md`
+respectively, their explicitly-named successors. Historical description
+below kept for the record: deliberately unlocked inventories: every place a Phase-1- or Phase-2-adjacent
 concept appears in code/comments/docs, without unifying or classifying —
 that step happens in the corresponding Control-Layer/Cooperation audit, not
 here. Useful when you need the raw evidence a locked conclusion was built
@@ -112,7 +120,8 @@ is kept as the historical record of what the code looked like before the
 fix. Don't mistake an uncorrected code snippet in either raw audit for
 current code — check the Control-Layer audit or `ai_player.gd` itself first.
 
-**`Difficulty_Feed_Points_Inventory.md`** — **CLOSED, July 12, 2026.**
+**`Difficulty_Feed_Points_Inventory.md`** — **CLOSED, July 12, 2026; ARCHIVED
+July 14, 2026,** moved to `archive/`.
 Was the current, evidence-based per-branch recommendation for the six historically-bare
 `if difficulty == ...` branches. Every remaining open item it tracked (the Expert
 "no trust rule" bypass, `value_gate`, the beginner reflexive-win shortcut, the
@@ -125,7 +134,14 @@ longer a live recommendation doc.
 
 ---
 
-## Tier 2 — Dated session summaries (chronological)
+## Tier 2 — Dated session summaries (chronological) — **ARCHIVED July 14, 2026**
+
+Every doc in this tier has been moved to `archive/` (same filename). Fully
+superseded by Onboarding + the current Tier 1 docs above; kept here for
+historical reference only — one exception worth flagging: `archive/Texas_42_Session_Summary_July_12_2026_DifficultyModesDesign.md`
+carries high-value stress-test tables behind the Vigilance/Opportunism
+design that would be expensive to reconstruct, so it's worth keeping easy
+to find even though archived.
 
 | Date | Doc | Covers |
 |---|---|---|
@@ -267,14 +283,15 @@ existing entries.
 
 ## Known documentation debt (not urgent, just tracked)
 
-- **Five session summaries referenced by earlier drafts of this map don't
-  exist in this repo**: `Texas_42_Session_Summary_July_2_2026.md`,
-  `Texas_42_Session_Summary_July_4_2026.md` (plain/Phase B),
+- **Closed, July 14, 2026** — five session summaries referenced by earlier
+  drafts of this map (`Texas_42_Session_Summary_July_2_2026.md`,
+  `Texas_42_Session_Summary_July_4_2026.md` plain/Phase B,
   `..._PublicKnowledge.md`, `..._PhaseC_HandRecordUI.md`, and
-  `..._TurnPacingAndSevens.md`. If they turn up later (e.g. exported from
-  wherever this doc set originally lived), add them back to the Tier 2
-  table above. Until then, don't cite them as available — check Onboarding
-  first for the code-side facts they'd have covered.
+  `..._TurnPacingAndSevens.md`) were confirmed genuinely absent from this
+  repo, not a listing error — they were archived elsewhere by Katy before
+  this doc set's current form existed. Not documentation debt; don't add
+  them back or search for them. Check Onboarding first for the code-side
+  facts they'd have covered.
 - **`AI_Bid_Behavior_Bug_Log.md` Pattern B** (trump rank blindness) is
   marked "likely resolved already" via hand-recomputation, not an actual
   playtest verification. Worth an explicit verification pass to close it

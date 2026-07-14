@@ -115,7 +115,7 @@ const AI_MODES := {
 # ─── HAND EVALUATION ─────────────────────────────────────────────────────────
 
 # Score a hand assuming a given trump suit.
-# Returns a dictionary with estimated points, tricks, and confidence.
+# Returns a dictionary with estimated points and tricks.
 static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 	var trump_dominos: Array[Domino] = []
 	var off_dominos: Array[Domino] = []

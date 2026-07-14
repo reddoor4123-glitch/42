@@ -2,7 +2,7 @@
 
 *Written as if introducing a new consultant to the codebase for the first time.*
 
-*Last verified against code: July 13, 2026. This document is meant to be kept current — if you
+*Last verified against code: July 14, 2026. This document is meant to be kept current — if you
 land here after a session that changed AI behavior, wiring, or philosophy, update the relevant
 section rather than leaving it to drift. For full navigation across every session summary, bug
 log, and audit doc (there are now quite a few), start with `Texas_42_Documentation_Map.md` — this
@@ -10,14 +10,14 @@ doc stays focused on orientation and current architecture, that one is the index
 
 ## 1. What this project is
 
-A Texas 42 domino game built in **Godot 4 (GDScript)**, mobile-first portrait layout with desktop as secondary, with an eye toward eventual publishing. Katy is the project owner and lead designer.
+A Texas 42 domino game built in **Godot 4 (GDScript)**, with an eye toward eventual publishing. Katy is the project owner and lead designer. **Development has been desktop-first since the first build** — the project was originally scoped mobile-first, but the earliest build came together as desktop, and Katy made the call early on to keep developing desktop-first rather than fight that. Mobile is a deliberately deferred target (mobile-*aimed*, not mobile-first) — proportional/viewport-relative sizing conventions (§2) are kept up so a mobile pass stays realistic later, but no mobile-specific layout work is active.
 
 **Design philosophy — read this before touching AI code:**
 
 - **Table behavior is design intent, not flavor text.** When Katy describes how a real player behaves at a 42 table, that description is the precise spec — not a mood board.
 - **Authenticity beats intelligence.** The AI should feel like real people Katy has played 42 with — not discover clever-but-unrealistic optimizations. The north star: *"That partner plays just like my uncle."*
 - **The first question on any judgment-heavy behavior is "does this belong in the existing system at all?"** — not "how do we tune it?" Sevens and Nello both turned out to need entirely separate code paths rather than tuned parameters, because they're structurally different games hiding inside the same trick-taking shell.
-- **Partner cooperation intent is difficulty-invariant.** Difficulty changes judgment quality and awareness, never whether the partner is trying to help you. Opponents and partners will eventually get separate difficulty parameters, since they optimize for opposite goals.
+- **Partner cooperation intent is difficulty-invariant.** Difficulty changes judgment quality and awareness, never whether the partner is trying to help you. **Closing note, July 14, 2026:** the old worry that one `AI_MODES` dict drives both partner and opponents identically is resolved in spirit by the Vigilance/Opportunism migration (§4) — Partner has zero difficulty branching left anywhere and simply doesn't vary by difficulty at all, rather than getting its own literal parameter set the way this was originally envisioned. Opponents still use `vigilance`/`opportunism`. Treat this as closed, not open architecture work.
 
 ## 2. Function containment & anti-hardcoding — a standing principle
 
@@ -26,6 +26,15 @@ This comes up constantly enough in review that it deserves its own section, sepa
 - **Each subsystem owns its own concern and nothing bleeds across the boundary.** `Trick` is purely mechanical (turn order, legality, resolving a winner) — it must never accumulate inference logic. `PublicKnowledge` is the *only* place inference about voids/played tiles/etc. lives — if any other file (including `AIPlayer` or `game_table.gd`) inspects `trick.plays` to reason about suit-following, that's the boundary being crossed, even for a one-line convenience check. Two implementations of the same inference is treated as a real bug class, not a style nit — it already happened once (the ranking split-brain, see §6) and cost a full audit-and-fix session.
 - **Difficulty is not a library of special cases.** Before writing `if difficulty == "expert"`, the file's own doctrine requires classifying the difference as **Knowledge** (an information asymmetry — belongs behind `PublicKnowledge`), **Evaluation** (same information, different weighting — belongs in shared decision logic parameterized by `AI_MODES`), or genuinely **Neither** (a last-resort bare branch). `AI_MODES` is a single dict of named parameters — that's the intended place personality differences live, not scattered conditionals. **Play-side, as of July 12, 2026:** `risk_bias`/`max_overbid` (bidding only), `vigilance` (`"none"`/`"full"` — gates whether `PublicKnowledge` is consulted at all) and `opportunism` (`0.0`-`1.0`, rolled fresh per eligible decision via `_should_evaluate_tactically()` — whether an opponent runs the real tactical evaluation or commits reflexively). The old string-valued `opportunism` placeholder and the never-wired `cooperation_bias` key are both gone — `decide_play()` now has zero bare `if difficulty == ...` branches anywhere, partner included. See `Spec_Difficulty_Modes_TwoAxis_July12_2026.md` and §4/§6 below.
 - **Avoid hardcoding wherever a computed/derived value will do**, especially anything affecting layout or game math: mobile tile sizes are computed proportionally from viewport width rather than fixed pixel constants (an established convention, not yet applied everywhere — font sizes are still hardcoded and flagged as future cleanup).
+- **Mobile portrait layout — plan, not yet built (carried forward from an
+  archived July 2, 2026 doc so the plan isn't lost with it):** when the
+  portrait pass is picked up, detect aspect ratio at startup and branch
+  `_build_ui()` into `_build_ui_landscape()` / `_build_ui_portrait()`. Menu
+  panels currently have a fixed 480px minimum width, which will need
+  relaxing for narrow screens — their content is already naturally vertical
+  and should adapt cleanly once that constraint is loosened. Game logic is
+  already fully decoupled from layout, so this split should be
+  straightforward when the time comes — not a reason to start it early.
 - **State lives in exactly one place.** `PublicKnowledge` is rebuilt fresh from a `PublicFrame` at every decision point rather than cached/mutated incrementally — deliberately, to avoid drift bugs between a stored dictionary and the history it's supposed to represent. `HandRecordWriter` holds only bookkeeping about *its own* job (has it persisted yet, under what filename) and is explicitly barred from holding a copy of hand data — there's a written guardrail: *"Any future extension must not introduce persistent cross-hand state outside `game.gd` or `HandRecordWriter`."*
 - **When a spec's complexity starts cascading, that's a signal to shrink scope**, not push through — this has happened a couple of times and the response was always to simplify, not add machinery to compensate.
 
