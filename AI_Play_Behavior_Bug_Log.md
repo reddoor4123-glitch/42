@@ -98,7 +98,7 @@ Three separate bugs (BUG-002, BUG-002b, BUG-004) share one underlying gap: the c
 
 ### ✓ BUG-005 — Partner's hold-vs-commit decision on a trump-only win was keyed to turn order, not to any factor that actually mattered
 
-**Where:** `decide_play()`, branch #16 in `Phase3_Objective_Audit.md`'s table (partner following, trump-only can-win, inside `SECURE_FOR_PARTNER`) — the `trust_gate` check.
+**Where:** `decide_play()`, branch #16 in `Phase3_Objective_Audit_REWRITE_July14_2026.md`'s table (partner following, trump-only can-win, inside `SECURE_FOR_PARTNER`) — the `trust_gate` check.
 
 **Old code:**
 ```gdscript

@@ -1,6 +1,6 @@
 # Phase 2 Control-Layer Audit (v1, locked)
 
-*Companion to `Phase3_Objective_Audit.md` and successor to
+*Companion to `Phase3_Objective_Audit_REWRITE_July14_2026.md` and successor to
 `Phase2_Raw_Concept_Audit.md`. Where the raw audit inventoried every
 Phase-2-labeled concept as found, this document is the settled structural
 model those concepts sort into — arrived at by stress-testing candidate
@@ -22,7 +22,7 @@ Phase 2 is not a decision-making phase. It does not choose objectives and
 it does not decide whether to act on them. **Phase 2's only real job is to
 manufacture scalars that other stages consume.** The stages that consume
 them are permanent, phase-agnostic parts of the objective pipeline already
-described in `Phase3_Objective_Audit.md`.
+described in `Phase3_Objective_Audit_REWRITE_July14_2026.md`.
 
 There are exactly three control categories in the system. A fourth
 candidate ("Knowledge" as a pipeline stage above Selection) was proposed
@@ -48,8 +48,10 @@ entire pipeline as a hard invariant, not a category the pipeline resolves
 into. That claim was tested directly against real table scenarios during
 the Phase 1 resolution session and found to be wrong. The cardinal rule
 (`human_is_winning`) is ordinary Selection — `PROTECT_PARTNER_WIN`, geometric,
-difficulty-invariant, the same shape as every other objective in
-`Phase3_Objective_Audit.md`'s branch table (#4, #11, #12). It does not sit
+difficulty-invariant, the same shape as every other objective (see
+`Phase3_Objective_Audit_REWRITE_July14_2026.md`'s objective vocabulary; the
+branch numbers originally cited here, #4/#11/#12, are v1 numbering and
+aren't confirmed to still apply post-rewrite). It does not sit
 above the pipeline and does not need its own category. See
 `Phase1_Control_Layer_Audit.md` for the full resolution, including the one
 genuine exception that *was* found (a long-horizon lead-control concept
@@ -91,8 +93,8 @@ ordinary Selection-stage objectives.
 |---|---|---|
 | `FORCE_A_VOID` | PublicKnowledge-derived (`void_suits`) | Implemented, expert-only, playtest-pending |
 | `opportunism` | PublicKnowledge-derived (intended) | **Inert placeholder.** Declared in `AI_MODES`, read, never acted on. Once built, belongs here — same shape as `FORCE_A_VOID`, not a new layer, not Modulation. |
-| All other named objectives (`PROTECT_PARTNER_WIN`, `SECURE_FOR_PARTNER`, `CASH_COUNTERS`, `CONTROL_TRUMP`, `ESCAPE`, `OPEN_SAFE_SUIT`, `PROTECT_COUNTERS_WHILE_LEADING`) | Internal-state | Implemented — see `Phase3_Objective_Audit.md` for full branch table |
-| `FEEL_OUT_THE_HAND` | Internal-state (`hand.size()==7`), difficulty-gated only | **Removed (July 6, 2026).** Previously logged here as "confirmed genuine exception — a case where difficulty changes which mission is even in play." That didn't hold up: no legitimate strategic basis for unconditionally suppressing trump control on trick one regardless of hand strength. Deleted from `ai_player.gd` rather than left as a direct branch — see `Phase3_Objective_Audit.md` branch #19. |
+| All other named objectives (`PROTECT_PARTNER_WIN`, `SECURE_FOR_PARTNER`, `CASH_COUNTERS`, `CONTROL_TRUMP`, `ESCAPE`, `OPEN_SAFE_SUIT`, `PROTECT_COUNTERS_WHILE_LEADING`) | Internal-state | Implemented — see `Phase3_Objective_Audit_REWRITE_July14_2026.md` for full branch table |
+| `FEEL_OUT_THE_HAND` | Internal-state (`hand.size()==7`), difficulty-gated only | **Removed (July 6, 2026).** Previously logged here as "confirmed genuine exception — a case where difficulty changes which mission is even in play." That didn't hold up: no legitimate strategic basis for unconditionally suppressing trump control on trick one regardless of hand strength. Deleted from `ai_player.gd` rather than left as a direct branch — confirmed still gone in `Phase3_Objective_Audit_REWRITE_July14_2026.md`'s "Retired since v1" list (the v1 branch number, #19, isn't repeated there). |
 
 ### Rejected alternative — "Knowledge" as a fourth pipeline stage above Selection
 
@@ -137,7 +139,7 @@ checked against the code and found to be a reason-string quality gap only
 
 | Concept | Current gate input | Shape | Status |
 |---|---|---|---|
-| `trust_gate` (`decide_play()` branch #16) | Contract margin (zero-sum reachability) → live counter status (`_live_counter_for_suit()`) → lead economy | Sequential scalar/deterministic checks, no turn-order or trust component | **Rewritten under BUG-005** (implemented, playtest-confirmed, July 5). No longer a candidate source for `trust_threshold` — see `Phase3_Objective_Audit.md` correction. Name `trust_gate` is now a misnomer kept only for cross-reference continuity; consider renaming in a future pass. |
+| `trust_gate` (`decide_play()` branch #16) | Contract margin (zero-sum reachability) → live counter status (`_live_counter_for_suit()`) → lead economy | Sequential scalar/deterministic checks, no turn-order or trust component | **Rewritten under BUG-005** (implemented, playtest-confirmed, July 5). No longer a candidate source for `trust_threshold` — see `Phase3_Objective_Audit_REWRITE_July14_2026.md` correction. Name `trust_gate` is now a misnomer kept only for cross-reference continuity; consider renaming in a future pass. |
 | `value_gate` (`decide_play()` branch #25) | `trick_pts >= 5`, hardcoded | Scalar threshold, not yet parameterized | Implemented. Candidate `AI_MODES` param: `contest_threshold`. **Known bug:** failure path's reason string is a generic `ESCAPE`-flavored line ("Can't win this one — discarding low"), which misstates the belief state (AI *can* win, is choosing not to contest). Logged as a candidate for the Phase 1 reason-string rewrite, not fixed here. |
 | Void-lead aggressive/conservative fork | Does not exist yet | N/A | **Design-only, no code.** If built as "same `FORCE_A_VOID` intent, second signal decides highest-vs-lowest realization," it becomes a third instance of this category by definition — same shape as `trust_gate`/`value_gate`. This was the open question from the July 5 prep doc; it's now answered conditionally: not yet real, but if built, this is where it goes. |
 
@@ -252,5 +254,5 @@ not a Phase 2 concept.
   `AI_MODES` parameters now have a confirmed home (`trust_threshold` /
   `contest_threshold` → Commitment) rather than an ambiguous "Phase 2" one.
 - No code changes are implied or required by this document. It is
-  classification only, same as `Phase3_Objective_Audit.md` was for
-  objectives.
+  classification only, same as `Phase3_Objective_Audit_REWRITE_July14_2026.md`
+  is for objectives.

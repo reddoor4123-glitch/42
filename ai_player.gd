@@ -2,90 +2,21 @@ class_name AIPlayer
 extends RefCounted
 
 # ═══════════════════════════════════════════════════════════════════
-#  AI DESIGN PHILOSOPHY
+#  AI DESIGN DOCTRINE — see AI_Design_Doctrine.md
 # ═══════════════════════════════════════════════════════════════════
-# The goal is not technical perfection. The goal is emotional authenticity.
+# The full design philosophy, the Decision Geometry concept, the
+# Knowledge/Evaluation difficulty litmus test, and the Trick Objectives
+# naming convention all live in AI_Design_Doctrine.md now — read it
+# before proposing a change to decide_bid() or decide_play(). Kept out
+# of this file so the doctrine (which should barely ever change) stops
+# drifting out of sync with the code (which changes constantly) — see
+# that document's own note on why CONTEST_IF_WORTHWHILE sat in this
+# header for weeks after it was actually retired.
 #
-# Partner trusts the human player and plays for the team's contract.
-# Opponents play solid, honest 42 — not bloodthirsty, not stupid.
-#
-# Decision axes (implemented progressively):
-#   Phase 1: Cooperation — partner behavior, team-first decisions  ← YOU ARE HERE
-#   Phase 2: Risk       — bidding personality and play aggression
-#   Phase 3: Opportunism — expert ability to capitalize on mistakes
-#   Phase 4: Awareness  — inference, void tracking, pattern recognition
-#
-# Future: Confidence (decision certainty influencing play selection)
-# Future: Named personalities as presets over these axes
-# Future: Family-observed behaviors as personality templates
-#
-# "That partner plays like Uncle Ed." — that's the target.
-# ═══════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════
-#  DECISION GEOMETRY — VISIBLY DERIVABLE STRUCTURAL FACTS
-# ═══════════════════════════════════════════════════════════════════
-# Some decision-relevant facts are neither hidden information nor
-# behavioral weighting — they are directly observable properties of
-# the current decision moment, true for every seat regardless of
-# difficulty. Examples: is this player last to act in the trick?
-# How many legal moves exist? Is the partner currently winning?
-#
-# These are pure helper predicates over visible plays/legal state.
-# They are NOT part of PublicKnowledge (no hidden info, no inference,
-# no accumulation over hand_history) and they are NOT difficulty
-# gates (every seat computes the same answer to the same question).
-#
-# Existing helpers already in this family (see HELPERS section below):
-#   _current_winning_domino, _find_current_winner_id,
-#   _partner_is_winning, _estimate_trick_value, _find_player_play,
-#   _is_last_to_act
-#
-# IMPORTANT — do not prematurely unify these into a single
-# "trick is decided" predicate. A trick can become locked for at
-# least three structurally different reasons — a double led (rule
-# of tiles), last-to-act (turn arithmetic, this file), or a known-
-# safe high trump whose only beater has already fallen (hidden
-# information — depends on Phase 4 knowledge/inference). They are
-# not branches of one concept; they are three different subsystems
-# that sometimes produce the same outcome. Do not write
-# _trick_is_decided() until Phase 4 can actually supply the third
-# case — see AI_Play_Behavior_Bug_Log.md, Pattern A / BUG-004.
-# ═══════════════════════════════════════════════════════════════════
-
-# ═══════════════════════════════════════════════════════════════════
-#  DIFFICULTY DIFFERENCES — THE KNOWLEDGE/EVALUATION LITMUS TEST
-# ═══════════════════════════════════════════════════════════════════
-# The goal is for different difficulties to arrive at different decisions
-# for understandable reasons — not because they run different games.
-#
-# Difficulty is not a library of special-case plays. All difficulties share
-# one decision engine; they differ only in what a player knows and how they
-# weigh what they know. Before adding an `if difficulty == "..."` branch,
-# classify what's actually going on:
-#
-#   KNOWLEDGE  — What information is this player allowed to use? Genuine
-#                information asymmetry (inference, derived facts like
-#                voids, anything not equally available to every seat)
-#                belongs behind the project's knowledge/inference layer,
-#                not a difficulty string. That layer is PublicKnowledge —
-#                see its header for the vocabulary-layer contract every
-#                Knowledge-classified branch here ultimately defers to.
-#
-#   EVALUATION — Everyone can use the same information; difficulties differ
-#                only in whether they act on it, or how they weigh it. This
-#                belongs in the shared decision logic, parameterized by an
-#                AI_MODES axis (risk_bias, vigilance, opportunism, ...) —
-#                not a bare difficulty check.
-#
-#   NEITHER    — No information- or evaluation-based model fits. Only then
-#                is a direct difficulty branch acceptable, and it should be
-#                treated as a last resort, not a default.
-#
-# If a proposed change starts with `if difficulty == ...`, stop first and
-# classify it as a Knowledge difference, an Evaluation difference, or a
-# genuine special case. The classification should drive the implementation
-# — not the other way around.
+# For the current, exact branch-by-branch state of decide_play(), see
+# Phase3_Objective_Audit_REWRITE_July14_2026.md instead of either of the
+# above — this comment and AI_Design_Doctrine.md both intentionally
+# avoid branch-level detail that would go stale.
 # ═══════════════════════════════════════════════════════════════════
 
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
@@ -507,131 +438,16 @@ static func _log_bid_decision(
 # is_partner: true when this AI player is the human's partner (seat +2 from human).
 
 # ═══════════════════════════════════════════════════════════════════
-#  TRICK OBJECTIVES — NAMING WHAT THE BRANCHES ALREADY DECIDE
+#  TRICK OBJECTIVES — see AI_Design_Doctrine.md
 # ═══════════════════════════════════════════════════════════════════
-# This is not a new subsystem. No TrickObjective enum, no class, no
-# stored state. It's a naming convention for something decide_play()
-# already does implicitly: before comparing any dominoes, the branch
-# structure has effectively already chosen a mission for the trick —
-# decided before most domino comparison happens, not all of it
-# (comparisons like "cheapest winner" or "highest available" still
-# occur, but downstream of the mission, not in place of it). Naming
-# these objectives makes the Phase 3 difficulty-branch collapse (see
-# below) tractable — it gives each bare `difficulty ==` check a
-# concrete thing to be evaluated against, instead of being judged in
-# isolation.
-#
-# Two tiers exist. Don't conflate them:
-#
-#   CONTRACT-LEVEL intent — decided once, for the whole hand, at the
-#   very top of decide_play(). Already fully explicit as the Sevens /
-#   Nello / Marks early-return branches. Nothing to change here; this
-#   *is* the pattern working correctly at a coarser grain.
-#
-#   TRICK-LEVEL intent — decided fresh every trick, inside standard
-#   play. Currently implicit in branch order. This is the new naming.
-#
-# Objectives are read off decision geometry, not personality —
-# partner_winning == true is geometry; "protect partner" is the
-# objective that geometry implies. Evaluation (AI_MODES) then decides
-# how well that objective gets executed. Geometry → objective →
-# evaluation is the intended chain; personality never skips ahead to
-# pick a different objective for the same geometry.
-#
-# The trick-level objectives that already exist in the code today:
-#
-#   PROTECT_PARTNER_WIN   — partner (human) is currently winning.
-#                            Line ~570. Stay out of the way; dump
-#                            counters only if the win is guaranteed
-#                            (double led).
-#   SECURE_FOR_PARTNER     — partner is not winning, we can win.
-#                            Line ~594. Win it, preferring non-trump,
-#                            with a trust-based hold-back for standard
-#                            difficulty when someone else might cover.
-#   CASH_COUNTERS          — (opponent side) can win, prefer winning
-#                            with a counter over a plain domino.
-#                            Line ~741.
-#   CONTEST_IF_WORTHWHILE  — (opponent side, beginner only) can win,
-#                            but only bother if the trick already
-#                            holds enough value. Line ~727.
-#   ESCAPE                 — can't win this trick. Discard to protect
-#                            counters, cheapest safe tile first.
-#                            Lines ~637, ~750.
-#   CONTROL_TRUMP          — leading, hold enough trump to draw
-#                            opponents out. Line ~733.
-#   FORCE_A_VOID           — leading, PublicKnowledge-gated, target a
-#                            suit a known-void opponent can't follow.
-#                            Two instances: opponent-leading (expert
-#                            only, Line ~937) and partner-leading (all
-#                            difficulties, Line ~694 — see the
-#                            difficulty-asymmetry note below).
-#   GIFT_A_VOID            — leading, partner only, PublicKnowledge-
-#                            gated, target a suit the HUMAN is known
-#                            void in — the mirror image of
-#                            FORCE_A_VOID: opening an opportunity for
-#                            the human instead of forcing a cost onto
-#                            an opponent. All difficulties. Line ~670.
-#
-# Note: these aren't all the same grain. PROTECT_PARTNER_WIN,
-# SECURE_FOR_PARTNER, and ESCAPE are true objectives — what you're
-# trying to accomplish. CONTROL_TRUMP, FORCE_A_VOID, and GIFT_A_VOID
-# are closer to strategies/tactics in service of an objective ("gain
-# control," "extend the lead," "create an opening") that isn't
-# separately named here. Left as-is deliberately — naming that parent
-# objective isn't needed for the Phase 3 collapse, and forcing
-# everything to one grain would be taxonomy for its own sake.
-#
-# For each objective, the Phase 3 question is not "does difficulty
-# change this play" but "does difficulty change which objective gets
-# selected, or just how well the selected objective is executed":
-#
-#   - PROTECT_PARTNER_WIN, SECURE_FOR_PARTNER, ESCAPE, CONTROL_TRUMP
-#     are difficulty-invariant in *selection* — every seat reaches
-#     them from the same geometry (partner_winning, can_win, etc,
-#     already Decision Geometry, not knowledge). Difficulty may only
-#     change execution quality within the objective (e.g. the
-#     standard trust-hold inside SECURE_FOR_PARTNER). That's
-#     Evaluation, and it already lives where it should.
-#   - CONTEST_IF_WORTHWHILE is a beginner-only *threshold* on top of
-#     CASH_COUNTERS, not a separate mission — the objective is the
-#     same ("win it if it's worth it"), difficulty only moves the bar
-#     for "worth it." Also Evaluation.
-#   - FORCE_A_VOID's opponent-leading instance is Knowledge-gated by
-#     construction (requires PublicKnowledge) and is correctly
-#     expert-only for that reason, not because lower difficulties have
-#     a different mission when leading — they simply can't see the void.
-#   - FORCE_A_VOID's partner-leading instance and GIFT_A_VOID are
-#     deliberately NOT difficulty-gated (added July 6, 2026, gate
-#     removed the same day) — cooperative judgment is constant across
-#     difficulty per this file's own AI Design Philosophy header
-#     ("partner cooperation intent is difficulty-invariant"); only
-#     knowledge access limits it, not which difficulty was picked. This
-#     is an intentional asymmetry, not an oversight: beginner/standard
-#     partners now get void-awareness that beginner/standard opponents
-#     still don't, because FORCE_A_VOID's opponent-leading instance
-#     stays expert-gated above. Two instances of the same-shaped
-#     predicate, two different difficulty rules — by design, not drift.
-#
-# Net effect for the Phase 3 collapse: of the six originally-flagged bare
-# `difficulty ==` branches, five are Evaluation-tuning *within* a shared,
-# difficulty-invariant objective, and belong as AI_MODES parameters
-# (e.g. a "contest_threshold" or "trust_others" knob) rather than
-# inline branches. The sixth, FEEL_OUT_THE_HAND (beginner-only opening-
-# trick trump avoidance), was originally logged as "the one true
-# exception" — a genuine mission difference, not just an execution
-# difference. On closer inspection it wasn't: there was no legitimate
-# strategic basis for unconditionally suppressing trump control on
-# trick one regardless of hand strength, the same violation class as
-# the also-removed beginner "discard highest first" branch (ESCAPE,
-# following-as-partner). Both were removed entirely rather than
-# reclassified — "goals change, not IQ" ruled them out, it didn't
-# relocate them. No genuine Neither-category exception remains standing
-# among the six; if one shows up later, it should clear the same bar
-# these two failed before being treated as settled.
-#
-# This naming is documentation only. reason_log strings, branch
-# order, and helper functions are unchanged by this section — it's a
-# map for the collapse work, not a rewrite in itself.
+# The naming convention for what this function's branch structure
+# already decides (PROTECT_PARTNER_WIN, SECURE_FOR_PARTNER, CONTROL_TRUMP,
+# etc.) — the concept, not the current branch list — lives in
+# AI_Design_Doctrine.md now. For the current, exact list of objectives
+# and their branch-by-branch mechanics, see
+# Phase3_Objective_Audit_REWRITE_July14_2026.md instead — this comment
+# and the doctrine doc both intentionally avoid detail that would go
+# stale as decide_play() itself changes.
 # ═══════════════════════════════════════════════════════════════════
 static func decide_play(
 	legal: Array[Domino],

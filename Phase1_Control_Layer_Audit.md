@@ -1,6 +1,6 @@
 # Phase 1 Control-Layer Audit (v1, locked)
 
-*Companion to `Phase3_Objective_Audit.md` and `Phase2_Control_Layer_Audit.md`, and successor to
+*Companion to `Phase3_Objective_Audit_REWRITE_July14_2026.md` and `Phase2_Control_Layer_Audit.md`, and successor to
 `Phase1_Raw_Concept_Audit.md`. Where the raw audit inventoried every Phase-1-labeled concept as
 found, this document is the settled resolution — arrived at the same way Phase 2's was: not by
 re-deriving the branch table, but by narrating real table scenarios until the underlying shape
@@ -25,9 +25,11 @@ pipeline — see "The parked concept" below, which is now Phase 1's sole live oc
 
 **Correction to a prior locked document:** `Phase2_Control_Layer_Audit.md` states that "Phase 1's
 cardinal rule sits above this entire pipeline as a hard invariant... it is not a category the
-pipeline resolves into." That claim is now confirmed wrong. `Phase3_Objective_Audit.md`'s branch
-table already had it right — `PROTECT_PARTNER_WIN` (branches #4, #11, #12) is ordinary Selection,
-geometric, difficulty-invariant, the same shape as every other objective. `Phase2_Control_Layer_
+pipeline resolves into." That claim is now confirmed wrong. The Phase 3 branch table already had
+it right — `PROTECT_PARTNER_WIN` is ordinary Selection, geometric, difficulty-invariant, the same
+shape as every other objective (see `Phase3_Objective_Audit_REWRITE_July14_2026.md`'s objective
+vocabulary; the specific branch numbers this line originally cited — #4/#11/#12 — were v1's
+numbering and aren't confirmed to still apply after the July 14, 2026 rewrite). `Phase2_Control_Layer_
 Audit.md` should be corrected to remove the "above the pipeline" framing; this document is the
 record of why.
 
@@ -147,6 +149,7 @@ lead-control-sequencing concept shows up.
   > tracked as the parked concept in `Phase1_Control_Layer_Audit.md`. That document, not this one,
   > is the concept's canonical home going forward.*
 
-- **`Texas_42_Documentation_Map.md`** — add this document alongside the `Phase3_Objective_Audit.md`
-  / `Phase2_Control_Layer_Audit.md` entries in the Tier-1-adjacent lookup table (same housekeeping
-  item already pending from the Phase 2 session, can be done together).
+- **`Texas_42_Documentation_Map.md`** — add this document alongside the
+  `Phase3_Objective_Audit_REWRITE_July14_2026.md` / `Phase2_Control_Layer_Audit.md` entries in the
+  Tier-1-adjacent lookup table (already done — this document has its own Tier 1 entry as of the
+  July 5-6, 2026 map refresh).
