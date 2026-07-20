@@ -1,0 +1,88 @@
+{
+	"full_log": [
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO top2_trump_expert — target P1, difficulty=expert (top-2-trump-only hand)",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 6:6, 5:6, 4:5, 3:4, 2:4, 1:2, 0:1",
+		"  trumps held: 2   (old >=3 check: false, old >=4 check: false)",
+		"  best trump in hand: 6:6   highest_remaining_trump(): 6:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  NEW-code CONTROL_TRUMP eligible (rank_safe AND not-all-void): true",
+		"  OLD-code would ever fire a trump-specific branch here: false",
+		"  >>> CHOSE: 6:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 4:5, 3:4, 2:4, 1:2, 0:1",
+		"  trumps held: 1   (old >=3 check: false, old >=4 check: false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  NEW-code CONTROL_TRUMP eligible (rank_safe AND not-all-void): true",
+		"  OLD-code would ever fire a trump-specific branch here: false",
+		"  >>> CHOSE: 5:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 2",
+		"",
+		"SCENARIO top2_trump_expert RESULT: target seat P1 has no trump remaining after trick 2"
+	],
+	"top2_trump_expert": {
+		"scenario": "top2_trump_expert",
+		"stop_reason": "target seat P1 has no trump remaining after trick 2",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_in_hand": "6:6",
+					"highest_remaining_trump": "6:6",
+					"new_code_control_trump_eligible": true,
+					"old_code_would_ever_fire_trump_branch": false,
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"rank_safe": true,
+					"trumps_held": 2,
+					"trumps_size_gte_3": false,
+					"trumps_size_gte_4": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_in_hand": "5:6",
+					"highest_remaining_trump": "5:6",
+					"new_code_control_trump_eligible": true,
+					"old_code_would_ever_fire_trump_branch": false,
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"rank_safe": true,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"trumps_size_gte_4": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 2,
+				"winner": 1
+			}
+		]
+	}
+}

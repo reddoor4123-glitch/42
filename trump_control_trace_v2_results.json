@@ -1,0 +1,1769 @@
+{
+	"B_hardened_beginner": {
+		"difficulty": "beginner",
+		"scenario": "B_hardened_beginner",
+		"stop_reason": "target seat P1 has no trump remaining after trick 3",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "6:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "6:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 3,
+					"trumps_size_gte_3": true,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_TRUMP_LEAD (trumps.size() >= 3)",
+				"target_reason": "Drawing out trumps.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "4:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 2,
+					"trumps_size_gte_3": false,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_STRONG_COUNTER",
+				"target_reason": "Leading my strong count to lock in the points.",
+				"trick": 2,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "FALLBACK_BEST",
+				"target_reason": "Leading my best domino.",
+				"trick": 3,
+				"winner": 1
+			}
+		]
+	},
+	"B_hardened_expert": {
+		"difficulty": "expert",
+		"scenario": "B_hardened_expert",
+		"stop_reason": "target seat P1 has no trump remaining after trick 3",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "6:6",
+					"control_trump_eligible": true,
+					"highest_remaining_trump": "6:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 3,
+					"trumps_size_gte_3": true,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": true,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 2,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 2,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "4:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_STRONG_COUNTER",
+				"target_reason": "Leading my strong count to lock in the points.",
+				"trick": 3,
+				"winner": 1
+			}
+		]
+	},
+	"B_hardened_standard": {
+		"difficulty": "standard",
+		"scenario": "B_hardened_standard",
+		"stop_reason": "target seat P1 has no trump remaining after trick 3",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "6:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "6:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 3,
+					"trumps_size_gte_3": true,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_TRUMP_LEAD (trumps.size() >= 3)",
+				"target_reason": "Drawing out trumps.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "4:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 2,
+					"trumps_size_gte_3": false,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_STRONG_COUNTER",
+				"target_reason": "Leading my strong count to lock in the points.",
+				"trick": 2,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "1:2"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 4,
+							"tile": "1:4"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "2:3"
+						},
+						{
+							"fully_safe": false,
+							"is_double": false,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": false,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": false,
+									"void_in_suit": false
+								}
+							],
+							"suit": 5,
+							"tile": "3:5"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "none",
+					"vigilance_gate_open": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "FALLBACK_BEST",
+				"target_reason": "Leading my best domino.",
+				"trick": 3,
+				"winner": 1
+			}
+		]
+	},
+	"B_original_expert": {
+		"difficulty": "expert",
+		"scenario": "B_original_expert",
+		"stop_reason": "target seat P1 has no trump remaining after trick 7",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "6:6",
+					"control_trump_eligible": true,
+					"highest_remaining_trump": "6:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 0,
+							"tile": "0:0"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 1,
+							"tile": "1:1"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "2:2"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"0:0",
+						"1:1",
+						"2:2",
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 3,
+					"trumps_size_gte_3": true,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"control_trump_eligible": true,
+					"highest_remaining_trump": "5:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": false,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 0,
+							"tile": "0:0"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 1,
+							"tile": "1:1"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "2:2"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"0:0",
+						"1:1",
+						"2:2",
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 2,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 2,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "0:0",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 0,
+							"tile": "0:0"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 1,
+							"tile": "1:1"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "2:2"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"0:0",
+						"1:1",
+						"2:2",
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 3,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "1:1",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 1,
+							"tile": "1:1"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "2:2"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"1:1",
+						"2:2",
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 4,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "2:2",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 2,
+							"tile": "2:2"
+						},
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"2:2",
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 5,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "3:3",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [
+						{
+							"fully_safe": true,
+							"is_double": true,
+							"per_opponent": [
+								{
+									"opponent": 0,
+									"safe_against": true,
+									"void_in_suit": false
+								},
+								{
+									"opponent": 2,
+									"safe_against": true,
+									"void_in_suit": false
+								}
+							],
+							"suit": 3,
+							"tile": "3:3"
+						}
+					],
+					"rank_safe": true,
+					"safe_lead_candidates": [
+						"3:3"
+					],
+					"safe_tier_would_fire": true,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 6,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "4:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "4:6",
+					"control_trump_eligible": false,
+					"highest_remaining_trump": "4:6",
+					"opposing_team": [
+						0,
+						2
+					],
+					"opposing_team_all_void_in_trump": true,
+					"per_tile_safety": [],
+					"rank_safe": true,
+					"safe_lead_candidates": [],
+					"safe_tier_would_fire": false,
+					"trumps_held": 1,
+					"trumps_size_gte_3": false,
+					"vigilance": "full",
+					"vigilance_gate_open": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_STRONG_COUNTER",
+				"target_reason": "Leading my strong count to lock in the points.",
+				"trick": 7,
+				"winner": 1
+			}
+		]
+	},
+	"full_log": [
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO B_original_expert — target P1, difficulty=expert, vigilance=full",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 6:6, 5:6, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 0:0 (suit 0 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 1:1 (suit 1 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 2:2 (suit 2 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"0:0\", \"1:1\", \"2:2\", \"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 3   (trumps.size() >= 3 -> true)",
+		"  best trump in hand: 6:6   highest_remaining_trump(): 6:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): true",
+		"  >>> CHOSE: 6:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 5:6, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 0:0 (suit 0 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 1:1 (suit 1 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 2:2 (suit 2 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"0:0\", \"1:1\", \"2:2\", \"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 2   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): true",
+		"  >>> CHOSE: 5:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 3 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 0:0 (suit 0 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 1:1 (suit 1 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 2:2 (suit 2 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"0:0\", \"1:1\", \"2:2\", \"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 0:0   objective: OPPONENT_SAFE_LEAD",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 4 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 1:1, 2:2, 3:3, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 1:1 (suit 1 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 2:2 (suit 2 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"1:1\", \"2:2\", \"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 1:1   objective: OPPONENT_SAFE_LEAD",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 5 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 2:2, 3:3, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 2:2 (suit 2 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"2:2\", \"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 2:2   objective: OPPONENT_SAFE_LEAD",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 6 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 3:3, 4:6",
+		"  vigilance=full (gate open: true)",
+		"    candidate 3:3 (suit 3 DOUBLE): fully_safe=true  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": true }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": true }]",
+		"  safe_lead_candidates: [\"3:3\"]",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): true",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 3:3   objective: OPPONENT_SAFE_LEAD",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 7 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 4:6",
+		"  vigilance=full (gate open: true)",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 4:6   objective: OPPONENT_STRONG_COUNTER",
+		"  >>> reason_log: \"Leading my strong count to lock in the points.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 7",
+		"",
+		"SCENARIO B_original_expert RESULT: target seat P1 has no trump remaining after trick 7",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO B_hardened_expert — target P1, difficulty=expert, vigilance=full",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 6:6, 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=full (gate open: true)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 3   (trumps.size() >= 3 -> true)",
+		"  best trump in hand: 6:6   highest_remaining_trump(): 6:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): true",
+		"  >>> CHOSE: 6:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=full (gate open: true)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 2   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): true",
+		"  >>> CHOSE: 5:6   objective: CONTROL_TRUMP",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 3 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=full (gate open: true)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 4:6   highest_remaining_trump(): 4:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 4:6   objective: OPPONENT_STRONG_COUNTER",
+		"  >>> reason_log: \"Leading my strong count to lock in the points.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 3",
+		"",
+		"SCENARIO B_hardened_expert RESULT: target seat P1 has no trump remaining after trick 3",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO B_hardened_standard — target P1, difficulty=standard, vigilance=none",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 6:6, 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 3   (trumps.size() >= 3 -> true)",
+		"  best trump in hand: 6:6   highest_remaining_trump(): 6:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 6:6   objective: OPPONENT_TRUMP_LEAD (trumps.size() >= 3)",
+		"  >>> reason_log: \"Drawing out trumps.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 2   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 4:6   objective: OPPONENT_STRONG_COUNTER",
+		"  >>> reason_log: \"Leading my strong count to lock in the points.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 3 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 5:6   objective: FALLBACK_BEST",
+		"  >>> reason_log: \"Leading my best domino.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 3",
+		"",
+		"SCENARIO B_hardened_standard RESULT: target seat P1 has no trump remaining after trick 3",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO B_hardened_beginner — target P1, difficulty=beginner, vigilance=none",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 6:6, 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 3   (trumps.size() >= 3 -> true)",
+		"  best trump in hand: 6:6   highest_remaining_trump(): 6:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 6:6   objective: OPPONENT_TRUMP_LEAD (trumps.size() >= 3)",
+		"  >>> reason_log: \"Drawing out trumps.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 4:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 2   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: false",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 4:6   objective: OPPONENT_STRONG_COUNTER",
+		"  >>> reason_log: \"Leading my strong count to lock in the points.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 3 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 5:6, 3:5, 2:3, 1:2, 1:4",
+		"  vigilance=none (gate open: false)",
+		"    candidate 1:2 (suit 2): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 1:4 (suit 4): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 2:3 (suit 3): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"    candidate 3:5 (suit 5): fully_safe=false  [{ \"opponent\": 0, \"void_in_suit\": false, \"safe_against\": false }, { \"opponent\": 2, \"void_in_suit\": false, \"safe_against\": false }]",
+		"  safe_lead_candidates: []",
+		"  SAFE-tier would fire (vigilance open AND a candidate is fully safe): false",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  best trump in hand: 5:6   highest_remaining_trump(): 5:6   rank_safe: true",
+		"  opposing_team [0, 2] all void in trump: true",
+		"  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): false",
+		"  >>> CHOSE: 5:6   objective: FALLBACK_BEST",
+		"  >>> reason_log: \"Leading my best domino.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 3",
+		"",
+		"SCENARIO B_hardened_beginner RESULT: target seat P1 has no trump remaining after trick 3"
+	]
+}

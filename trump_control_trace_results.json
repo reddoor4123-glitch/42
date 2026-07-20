@@ -1,0 +1,242 @@
+{
+	"full_log": [
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO A (Partner control, P2 leads) — target seat P2 (is_partner=true)",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P2 ──",
+		"  P2 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 6:6, 5:6, 4:6",
+		"  highest_remaining_trump(): 6:6",
+		"  best trump in hand:        6:6",
+		"  rank_safe:                 true",
+		"  opposing_team [1, 3] all void in trump: false",
+		"  CONTROL_TRUMP eligible (rank_safe AND not-all-void): true",
+		"  Step-3 heuristic fallback eligible (trumps>=4, no double, not-all-void): false",
+		"  >>> CHOSE: 6:6   objective: CONTROL_TRUMP (double accounted for)",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P2",
+		"",
+		"── Trick 2 — leader P2 ──",
+		"  P2 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 5:6, 4:6",
+		"  highest_remaining_trump(): 5:6",
+		"  best trump in hand:        5:6",
+		"  rank_safe:                 true",
+		"  opposing_team [1, 3] all void in trump: false",
+		"  CONTROL_TRUMP eligible (rank_safe AND not-all-void): true",
+		"  Step-3 heuristic fallback eligible (trumps>=4, no double, not-all-void): false",
+		"  >>> CHOSE: 5:6   objective: CONTROL_TRUMP (double accounted for)",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P2",
+		"  >>> STOP: opposing team confirmed void in trump after trick 2 (CONTROL_TRUMP objective satisfied)",
+		"",
+		"SCENARIO A (Partner control, P2 leads) RESULT: opposing team confirmed void in trump after trick 2 (CONTROL_TRUMP objective satisfied)",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"SCENARIO B (Opponent control, P1 leads) — target seat P1 (is_partner=false)",
+		"═══════════════════════════════════════════════════════════",
+		"",
+		"── Trick 1 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 6:6, 5:6, 4:6",
+		"  trumps held: 3   (trumps.size() >= 3 -> true)",
+		"  >>> CHOSE: 6:6   objective: CONTROL_TRUMP (double accounted for)",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 2 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 5:6, 4:6",
+		"  trumps held: 2   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 5:6   objective: CONTROL_TRUMP (double accounted for)",
+		"  >>> reason_log: \"I have trump control — drawing out the opponents.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 3 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 0:0, 1:1, 2:2, 3:3, 4:6",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 0:0   objective: OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 4 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 1:1, 2:2, 3:3, 4:6",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 1:1   objective: OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 5 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 2:2, 3:3, 4:6",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 2:2   objective: OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 6 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 3:3, 4:6",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 3:3   objective: OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+		"  >>> reason_log: \"Leading a suit you can't beat.\"",
+		"  Trick winner: P1",
+		"",
+		"── Trick 7 — leader P1 ──",
+		"  P1 hand (sorted by trump rank): 4:6",
+		"  trumps held: 1   (trumps.size() >= 3 -> false)",
+		"  >>> CHOSE: 4:6   objective: OPPONENT_STRONG_COUNTER",
+		"  >>> reason_log: \"Leading my strong count to lock in the points.\"",
+		"  Trick winner: P1",
+		"  >>> STOP: target seat P1 has no trump remaining after trick 7",
+		"",
+		"SCENARIO B (Opponent control, P1 leads) RESULT: target seat P1 has no trump remaining after trick 7"
+	],
+	"scenario_a": {
+		"scenario": "A (Partner control, P2 leads)",
+		"stop_reason": "opposing team confirmed void in trump after trick 2 (CONTROL_TRUMP objective satisfied)",
+		"target_seat": 2,
+		"tricks": [
+			{
+				"leader": 2,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "6:6",
+					"heuristic_fallback_eligible": false,
+					"highest_remaining_trump": "6:6",
+					"holds_double_trump": true,
+					"opposing_team": [
+						1,
+						3
+					],
+					"opposing_team_all_void_in_trump": false,
+					"rank_safe": true,
+					"trump_control_eligible": true,
+					"trumps_held": 3
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP (double accounted for)",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 1,
+				"winner": 2
+			},
+			{
+				"leader": 2,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"best_trump_candidate": "5:6",
+					"heuristic_fallback_eligible": false,
+					"highest_remaining_trump": "5:6",
+					"holds_double_trump": false,
+					"opposing_team": [
+						1,
+						3
+					],
+					"opposing_team_all_void_in_trump": false,
+					"rank_safe": true,
+					"trump_control_eligible": true,
+					"trumps_held": 2
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP (double accounted for)",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 2,
+				"winner": 2
+			}
+		]
+	},
+	"scenario_b": {
+		"scenario": "B (Opponent control, P1 leads)",
+		"stop_reason": "target seat P1 has no trump remaining after trick 7",
+		"target_seat": 1,
+		"tricks": [
+			{
+				"leader": 1,
+				"target_chosen": "6:6",
+				"target_diagnostics": {
+					"trumps_held": 3,
+					"trumps_size_gte_3": true
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP (double accounted for)",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 1,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "5:6",
+				"target_diagnostics": {
+					"trumps_held": 2,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "CONTROL_TRUMP (double accounted for)",
+				"target_reason": "I have trump control — drawing out the opponents.",
+				"trick": 2,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "0:0",
+				"target_diagnostics": {
+					"trumps_held": 1,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 3,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "1:1",
+				"target_diagnostics": {
+					"trumps_held": 1,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 4,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "2:2",
+				"target_diagnostics": {
+					"trumps_held": 1,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 5,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "3:3",
+				"target_diagnostics": {
+					"trumps_held": 1,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": false,
+				"target_objective_label": "OPPONENT_SAFE_LEAD (BUG-012 two-path check)",
+				"target_reason": "Leading a suit you can't beat.",
+				"trick": 6,
+				"winner": 1
+			},
+			{
+				"leader": 1,
+				"target_chosen": "4:6",
+				"target_diagnostics": {
+					"trumps_held": 1,
+					"trumps_size_gte_3": false
+				},
+				"target_led_trump": true,
+				"target_objective_label": "OPPONENT_STRONG_COUNTER",
+				"target_reason": "Leading my strong count to lock in the points.",
+				"trick": 7,
+				"winner": 1
+			}
+		]
+	}
+}

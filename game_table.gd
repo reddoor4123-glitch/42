@@ -1023,7 +1023,7 @@ func _run_bidding_sequence():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
@@ -1268,7 +1268,7 @@ func _run_post_human_bids():
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
-		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions)
+		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
 		if ai_bid.type != BidScript.Type.PASS:
 			game.current_bid = ai_bid
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])

@@ -204,6 +204,11 @@ static func best_trump(hand: Array[Domino]) -> Dictionary:
 
 # ─── BID DECISION ────────────────────────────────────────────────────────────
 
+# Partner-Overbid Margin Gate (July 20 2026) — a tuning value (Katy's stated
+# instinct from one worked example), not architecture. Should be obviously
+# adjustable, not buried in an inline expression. See decide_bid() below.
+const PARTNER_OVERBID_MARGIN := 3
+
 # Returns a Bid for this AI player given the current high bid and settings.
 static func decide_bid(
 	hand: Array[Domino],
@@ -212,7 +217,9 @@ static func decide_bid(
 	settings: RefCounted,      # GameSettings
 	is_forced: bool = false,
 	difficulty: String = "standard",
-	bid_decisions: Array = []   # out-parameter, mirrors reason_log convention
+	bid_decisions: Array = [],  # out-parameter, mirrors reason_log convention
+	shaker: int = -1,
+	human_seat: int = -1
 ) -> RefCounted:
 
 	var BidScript = load("res://bid.gd")
@@ -331,11 +338,35 @@ static func decide_bid(
 			should_bid, target_bid, est_pts, current_high, marks_bid, control_hand, bid_decisions)
 		return marks_bid
 
+	# Partner-Overbid Margin Gate: only the human experiences the social cost
+	# of being overbid by a marginal hand from their own partner — P1/P3
+	# overbidding each other has no experiential cost to anyone. Scoped
+	# narrowly to P2 taking the bid from P0 specifically (partner_id ==
+	# human_seat AND current_high is actually held by that partner) — not a
+	# general seat-agnostic mechanism. Reads target_bid (Layer 2's output)
+	# and nothing else; does not call evaluate_hand()/best_trump() or touch
+	# Layer 2's formula. Composes with _announced_points_bid() below: the
+	# elevated bar only gates entry into this branch — _announced_points_bid()
+	# still receives the real min_points, not required_target, so a hand that
+	# clears this gate by a wide margin still announces conservatively, not
+	# its full private confidence. Marks bids are not covered (see Non-Goals,
+	# Spec: Partner-Overbid Margin Gate) — this sits after the marks-bid
+	# early return above, so marks flow through unaffected.
+	var partner_id: int = (player_id + 2) % 4
+	# current_high.type == POINTS is redundant here — the outer
+	# points_still_legal check already forces false whenever current_high.type
+	# != POINTS, so this branch can never be reached otherwise. Kept anyway:
+	# this condition should read correctly on its own without requiring the
+	# outer gate to be traced to understand it.
+	var overbidding_human_partner: bool = current_high != null \
+		and current_high.type == BidScript.Type.POINTS \
+		and current_high.player_id == partner_id \
+		and partner_id == human_seat
+	var required_target: int = min_points + PARTNER_OVERBID_MARGIN if overbidding_human_partner else min_points
+
 	if should_bid and points_still_legal:
-		if min_points <= target_bid:
-			var final_bid = min(target_bid, min_points + max_overbid)
-			final_bid = max(final_bid, min_points)
-			final_bid = min(final_bid, 42)
+		if required_target <= target_bid:
+			var final_bid = _announced_points_bid(target_bid, min_points, player_id, shaker, max_overbid)
 			var pts_bid = BidScript.new(BidScript.Type.POINTS, final_bid, player_id)
 			_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
 				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand, bid_decisions)
@@ -352,6 +383,41 @@ static func decide_bid(
 	_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
 		should_bid, target_bid, est_pts, current_high, pass_bid, control_hand, bid_decisions)
 	return pass_bid
+
+# ─── ANNOUNCED-BID FILTER (Two-Tier Margin + Shaker Minimum) ────────────────
+# Layer 3 execution only — does not re-score the hand. Governs how much of
+# Layer 2's private target_bid gets ANNOUNCED at the table:
+#   - Shaker is definitionally the last bidder (game.gd's bid_order() always
+#     appends shaker last) — nothing left to pressure, so no reason to
+#     announce above the legal minimum regardless of hand strength.
+#     Unconditional: applies whether should_bid was reached voluntarily or
+#     via is_forced (is_forced flows through the same should_bid/target_bid
+#     path — see decide_bid() above).
+#   - Otherwise: a marginal hand (target_bid within one increment of the
+#     legal minimum) announces the flat minimum; a genuinely strong hand
+#     announces one increment of insurance above the minimum — not the
+#     private target. Deliberately a flat +1, not scaled to target_bid's
+#     magnitude: the point is to withhold the ceiling, not reveal a smaller
+#     fraction of it.
+# max_overbid is applied as an active safety bound AFTER the two-tier logic
+# (not the primary mechanism) — a no-op today since every current AI_MODES
+# preset has max_overbid >= 1, but real protection the moment a Custom AI
+# personality sets max_overbid = 0 ("never overbid, ever"), which the
+# two-tier filter's "+1" branch would otherwise silently violate. Takes
+# max_overbid as a direct parameter (not read from AI_MODES internally) so
+# the clamp can be exercised with a synthetic value in tests, ahead of any
+# real difficulty preset that can produce max_overbid < 1.
+static func _announced_points_bid(target_bid: int, min_points: int, player_id: int, shaker: int, max_overbid: int) -> int:
+	var final_bid: int
+	if player_id == shaker:
+		final_bid = min_points
+	elif target_bid <= min_points + 1:
+		final_bid = min_points
+	else:
+		final_bid = min_points + 1
+	final_bid = min(final_bid, min_points + max_overbid)
+	final_bid = min(final_bid, 42)
+	return final_bid
 
 static func _log_bid_decision(
 	hand: Array[Domino],
@@ -598,83 +664,21 @@ static func decide_play(
 			# double. See AI_Play_Behavior_Bug_Log.md, BUG-016.
 			var opposing_team = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
 
-			# Step 2 — trump control (#8). Lead high non-trump non-counter:
-			# gives human a safe suit to follow without burning trump or
-			# risking a vulnerable point card. Checked before the fallback
-			# off-suit lead — a partner who holds enough trump to draw
-			# opponents out should lead it before defaulting to a safe
-			# off-suit tile. See AI_Play_Behavior_Bug_Log.md, BUG-003/003b.
-			#
-			# Eligibility (Katy + Claude, July 13, 2026) — replaces the old
-			# trumps.size() >= 3/4 count threshold. Count was the wrong proxy
-			# for the objective (drawing out opponent trump): two hands with
-			# identical counts can have opposite real standing (top-ranked
-			# trumps vs. low trumps while an opponent quietly holds the
-			# actual highest). Eligible only when both hold:
-			#   - Rank-safety: our best trump equals highest_remaining_trump()
-			#     — this specific lead is provably unbeatable by anything
-			#     remaining anywhere.
-			#   - Objective-incomplete: the opposing team isn't already both
-			#     confirmed void in trump — no point spending trump to draw
-			#     out a threat that's already gone.
-			# No loop or persistent state needed: decide_play() is
-			# re-invoked fresh on every lead, so re-checking rank-safety
-			# each time naturally stops a run the moment someone else holds
-			# the true highest, without tracking anything across tricks.
-			var trumps = legal.filter(func(d): return d.is_trump(trump))
-			var holds_double_trump = trumps.any(func(d): return d.is_double())
-			var trump_control = false
-			if trumps.size() > 0:
-				var best_trump_candidate = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-				var top_remaining = public_knowledge.highest_remaining_trump() if public_knowledge != null else null
-				var rank_safe = top_remaining != null and top_remaining.debug_string() == best_trump_candidate.debug_string()
-				var objective_incomplete = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
-				trump_control = rank_safe and objective_incomplete
-			if trump_control:
-				var best: Domino
-				var double_tile = Domino.new(trump, trump)
-				var double_accounted_for = holds_double_trump or (public_knowledge != null and public_knowledge.has_been_played(double_tile))
-				if double_accounted_for:
-					best = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					reason_log.append("I have trump control — drawing out the opponents.")
-				else:
-					# BUG-010: prefer a non-counter trump for the low lead if one exists —
-					# it draws the double out just as well without risking 5 or 10 points
-					# to a near-certain capture. Only fall back to a counter trump if
-					# every trump candidate is a counter.
-					var non_counter_trumps = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
-					var draw_out_pool = non_counter_trumps if non_counter_trumps.size() > 0 else trumps
-					best = _lowest_in(draw_out_pool, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					reason_log.append("Leading low trump to draw out the double first.")
-				return best
-
-			# Step 3 — TEMPORARY HEURISTIC RESTORATION (BUG-016 follow-up,
-			# Katy + Claude, July 13, 2026, late session) — old count
-			# threshold, reinstated as its own branch rather than folded
-			# back into CONTROL_TRUMP's now-correct rank-safety gate. The
-			# double is always the top-ranked trump while in play, so
-			# holding it already falls under the corrected CONTROL_TRUMP
-			# above — no separate fix needed there. But strong trump
-			# WITHOUT the double no longer triggers anything once
-			# CONTROL_TRUMP requires provable rank-safety, which a non-double
-			# holding essentially never has this early — the old
-			# trumps.size() >= 4 no-double case had gone dead. This is NOT
-			# the final trump-evaluation model (quantity/ceiling/continuity/
-			# counter-cost) discussed this session — that's parked, designed
-			# not built, pending calibration against real hands. This is a
-			# stopgap to stop the regression, using the exact threshold that
-			# was quietly serving this purpose before today's tightening.
-			# `not trump_control` guard prevents overlap/duplicate firing
-			# with CONTROL_TRUMP above. See AI_Play_Behavior_Bug_Log.md,
-			# BUG-016.
-			if not trump_control and trumps.size() >= 4 and not holds_double_trump:
-				var objective_incomplete_heuristic = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
-				if objective_incomplete_heuristic:
-					var non_counter_trumps_h = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
-					var draw_out_pool_h = non_counter_trumps_h if non_counter_trumps_h.size() > 0 else trumps
-					var best_h = _lowest_in(draw_out_pool_h, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					reason_log.append("Leading low trump to draw out the double first.")
-					return best_h
+			# Step 2 — trump control (#8), and Step 3 — its heuristic
+			# fallback. Logic lives in _control_trump_lead() and
+			# _control_trump_heuristic_fallback() (below in this file) so
+			# Partner and full-vigilance Opponent run the exact same
+			# rank-safe/objective-incomplete eligibility test instead of two
+			# separately-maintained copies. See the Unified Trump-Control
+			# Lead Decision spec, July 20 2026, and AI_Play_Behavior_Bug_Log.md,
+			# BUG-003/003b, BUG-010, BUG-016 for the history behind the logic
+			# itself.
+			var control_trump = _control_trump_lead(legal, trump, player_id, partner_id, public_knowledge, trick, lead_suit, reason_log)
+			if control_trump != null:
+				return control_trump
+			var control_trump_fallback = _control_trump_heuristic_fallback(legal, trump, player_id, partner_id, public_knowledge, trick, lead_suit, reason_log)
+			if control_trump_fallback != null:
+				return control_trump_fallback
 
 			# Step 4 — SAFE tier. Subsumes the old provably-highest check that
 			# lived in OPEN_SAFE_SUIT (#7) and the safe half of the old
@@ -969,11 +973,29 @@ static func decide_play(
 	# branch #19.)
 
 	if is_leading:
+		# Unified Trump-Control Lead Decision (July 20 2026): full-vigilance
+		# Opponent runs the exact same rank-safe/objective-incomplete
+		# trump-control check Partner runs (_control_trump_lead(), plus its
+		# Step-3 heuristic fallback), gated on vigilance and positioned
+		# ahead of the safe-lead check below — mirroring exactly where
+		# CONTROL_TRUMP sits relative to Partner's own SAFE tier (BUG-016's
+		# precedent). Beginner/Standard (vigilance == "none") can't reach
+		# this — no PublicKnowledge access — and fall through unchanged to
+		# the plain trumps.size() >= 3 heuristic further below.
+		if mode["vigilance"] == "full" and public_knowledge != null:
+			var control_trump = _control_trump_lead(legal, trump, player_id, partner_id, public_knowledge, trick, lead_suit, reason_log)
+			if control_trump != null:
+				return control_trump
+			var control_trump_fallback = _control_trump_heuristic_fallback(legal, trump, player_id, partner_id, public_knowledge, trick, lead_suit, reason_log)
+			if control_trump_fallback != null:
+				return control_trump_fallback
+
 		# Expert: target a suit that's genuinely safe against both opponents —
 		# leading it forces the one who's still live to trump in (spending
-		# trump) or discard (possibly a counter). Runs before the trump-control
-		# check below, so a known-safe lead takes priority over a generic
-		# trump-control lead when both are available.
+		# trump) or discard (possibly a counter). Runs before the generic
+		# trumps.size() >= 3 check below, so a known-safe lead takes priority
+		# over a bare-count trump lead when both are available (and after
+		# the rank-safe CONTROL_TRUMP check above, per BUG-016's ordering).
 		#
 		# BUG-012 fix, July 13, 2026: this used to fire on ANY single opponent
 		# being void in the suit, which isn't actually safe — a void opponent
@@ -982,8 +1004,7 @@ static func decide_play(
 		# opponent must independently either be unable to beat this tile while
 		# following suit (provably highest), or be void in both the suit and
 		# trump. Deliberately narrower in scope than partner's fix — this only
-		# corrects the false-safety defect in THIS check; it does not reorder
-		# #20 relative to the opponent's other lead checks, and does not add
+		# corrects the false-safety defect in THIS check; it does not add
 		# partner's SAFE/GAMBLE tier split on the opponent side. See
 		# AI_Play_Behavior_Bug_Log.md, BUG-007/BUG-012.
 		if mode["vigilance"] == "full" and public_knowledge != null:
@@ -1262,6 +1283,97 @@ static func _live_counter_for_suit(
 # threat as resolved. Deliberately conservative, not a probability.
 static func _worst_case_counter_pip_estimate(_lead_suit: int, _hand: Array[Domino], _trump: int) -> int:
 	return 10
+
+# ─── UNIFIED TRUMP-CONTROL LEAD DECISION ────────────────────────────────────
+# Shared by Partner and by full-vigilance Opponent (see the Unified
+# Trump-Control Lead Decision spec, July 20 2026) so both seats reach
+# identical trump-leading decisions given identical PublicKnowledge —
+# differences should come only from the vigilance axis (knowledge access),
+# never from two separately-maintained copies of the same strategic logic.
+#
+# Eligibility (Katy + Claude, July 13, 2026, originally Partner-only —
+# BUG-016): our best trump equals highest_remaining_trump() (rank-safe —
+# this specific lead is provably unbeatable by anything remaining anywhere)
+# AND the opposing team isn't already confirmed void in trump
+# (objective-incomplete — no point spending trump to draw out a threat
+# that's already gone). No loop or persistent state needed: decide_play()
+# is re-invoked fresh on every lead, so re-checking rank-safety each time
+# naturally stops a run the moment the objective completes or someone else
+# holds the true highest.
+#
+# Returns null if not eligible — callers must check for that and fall
+# through to their own next tier, matching the early-return pattern used
+# throughout this file.
+static func _control_trump_lead(
+	legal: Array, trump: int, player_id: int, partner_id: int,
+	public_knowledge: PublicKnowledge, trick: RefCounted, lead_suit: int,
+	reason_log: Array
+) -> Domino:
+	var trumps = legal.filter(func(d): return d.is_trump(trump))
+	if trumps.size() == 0:
+		return null
+
+	var opposing_team = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
+	var best_trump_candidate = _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+	var top_remaining = public_knowledge.highest_remaining_trump() if public_knowledge != null else null
+	var rank_safe = top_remaining != null and top_remaining.debug_string() == best_trump_candidate.debug_string()
+	var objective_incomplete = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
+	if not (rank_safe and objective_incomplete):
+		return null
+
+	var holds_double_trump = trumps.any(func(d): return d.is_double())
+	var double_tile = Domino.new(trump, trump)
+	var double_accounted_for = holds_double_trump or (public_knowledge != null and public_knowledge.has_been_played(double_tile))
+	if double_accounted_for:
+		reason_log.append("I have trump control — drawing out the opponents.")
+		return _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+
+	# BUG-010: prefer a non-counter trump for the low lead if one exists —
+	# it draws the double out just as well without risking 5 or 10 points
+	# to a near-certain capture. Only fall back to a counter trump if every
+	# trump candidate is a counter.
+	var non_counter_trumps = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
+	var draw_out_pool = non_counter_trumps if non_counter_trumps.size() > 0 else trumps
+	reason_log.append("Leading low trump to draw out the double first.")
+	return _lowest_in(draw_out_pool, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+
+# TEMPORARY HEURISTIC RESTORATION (BUG-016 follow-up, Katy + Claude, July 13,
+# 2026, late session) — old trumps.size() >= 4 count threshold, kept as its
+# own tier rather than folded back into _control_trump_lead()'s now-correct
+# rank-safety gate. The double is always the top-ranked trump while in play,
+# so holding it already falls under _control_trump_lead() above — no
+# separate fix needed there. But strong trump WITHOUT the double no longer
+# triggers anything once trump control requires provable rank-safety, which
+# a non-double holding essentially never has this early — the old
+# trumps.size() >= 4 no-double case had gone dead. This is NOT the final
+# trump-evaluation model (quantity/ceiling/continuity/counter-cost) —
+# that's parked, designed not built, pending calibration against real
+# hands. This is a stopgap to stop the regression, using the exact
+# threshold that was quietly serving this purpose before the July 13
+# tightening. Callers must run this only after _control_trump_lead() has
+# already returned null, to avoid overlap/duplicate firing. See
+# AI_Play_Behavior_Bug_Log.md, BUG-016.
+#
+# Returns null if not eligible.
+static func _control_trump_heuristic_fallback(
+	legal: Array, trump: int, player_id: int, partner_id: int,
+	public_knowledge: PublicKnowledge, trick: RefCounted, lead_suit: int,
+	reason_log: Array
+) -> Domino:
+	var trumps = legal.filter(func(d): return d.is_trump(trump))
+	var holds_double_trump = trumps.any(func(d): return d.is_double())
+	if trumps.size() < 4 or holds_double_trump:
+		return null
+
+	var opposing_team = [0, 1, 2, 3].filter(func(p): return p != player_id and p != partner_id)
+	var objective_incomplete = public_knowledge == null or not opposing_team.all(func(opp): return public_knowledge.void_suits(opp).has(trump))
+	if not objective_incomplete:
+		return null
+
+	var non_counter_trumps = trumps.filter(func(d): return d.pip_sum() != 5 and d.pip_sum() != 10)
+	var draw_out_pool = non_counter_trumps if non_counter_trumps.size() > 0 else trumps
+	reason_log.append("Leading low trump to draw out the double first.")
+	return _lowest_in(draw_out_pool, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 
 static func _highest_in(dominos: Array, trump: int, lead_suit: int,
 		nello_doubles: String = "high", doubles_trump_reversed: bool = false, own_suit_reversed: bool = false) -> Domino:
