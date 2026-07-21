@@ -1,0 +1,3518 @@
+{
+	"failures": [],
+	"full_log": [
+		"═══════════════════════════════════════════════════════════",
+		"6a — exact-match regression test",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: 6a_flagged_hand_now_picks_trump_3 — best_trump() returned trump=3 (selection_score=33.483, legacy=33.783)",
+		"  PASS: 6a_job5_regression_hand_now_picks_trump_3 — best_trump() returned trump=3 (selection_score=35.750, legacy=38.050)",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"6c — calculate_trump_control_value() smoke test",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: 6c_control_value_0_false — trump_count=0 has_double_trump=false -> expected 0.0, got 0.000",
+		"  PASS: 6c_control_value_0_true — trump_count=0 has_double_trump=true -> expected 2.5, got 2.500",
+		"  PASS: 6c_control_value_3_false — trump_count=3 has_double_trump=false -> expected 0.0, got 0.000",
+		"  PASS: 6c_control_value_3_true — trump_count=3 has_double_trump=true -> expected 2.5, got 2.500",
+		"  PASS: 6c_control_value_4_false — trump_count=4 has_double_trump=false -> expected 1.5, got 1.500",
+		"  PASS: 6c_control_value_4_true — trump_count=4 has_double_trump=true -> expected 4.0, got 4.000",
+		"  PASS: 6c_control_value_5_false — trump_count=5 has_double_trump=false -> expected 4.5, got 4.500",
+		"  PASS: 6c_control_value_5_true — trump_count=5 has_double_trump=true -> expected 7.0, got 7.000",
+		"  PASS: 6c_control_value_6_false — trump_count=6 has_double_trump=false -> expected 6.5, got 6.500",
+		"  PASS: 6c_control_value_6_true — trump_count=6 has_double_trump=true -> expected 9.0, got 9.000",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"6b/6d — rerun against all 40 Job 5 hands (live GDScript, not Python)",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: 6b_exactly_one_hand_flips — expected exactly 1 flip (the Job 5 regression hand), got 1: [{ \"bidder_hand\": [[1.0, 3.0], [0.0, 6.0], [0.0, 3.0], [6.0, 6.0], [1.0, 1.0], [4.0, 4.0], [3.0, 3.0]], \"old_chosen\": 0.0, \"new_chosen\": 3 }]",
+		"  PASS: 6b_the_one_flip_is_the_expected_regression_hand — flipped hand: [[1.0, 3.0], [0.0, 6.0], [0.0, 3.0], [6.0, 6.0], [1.0, 1.0], [4.0, 4.0], [3.0, 3.0]] (old=0 -> new=3)",
+		"  PASS: 6d_realization_shift_still_unfixed — expected chosen suit to remain 5 (unchanged), got 5 — still an open disagreement, as expected",
+		"  PASS: 6d_no_clear_pattern_still_unfixed — expected chosen suit to remain 1 (unchanged), got 1 — still an open disagreement, as expected",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"ALL CHECKS PASSED",
+		"═══════════════════════════════════════════════════════════"
+	],
+	"job5_comparison": {
+		"flipped_hands": [
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						3.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						0.0,
+						3.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						3.0,
+						3.0
+					]
+				],
+				"new_chosen": 3,
+				"old_chosen": 0.0
+			}
+		],
+		"n_flipped": 1,
+		"n_hands": 40,
+		"per_hand_comparison": [
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						1.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						0.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.4761904761905,
+						"legacy_selection_score": 34.4761904761905,
+						"selection_score": 28.4761904761905,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.2,
+						"legacy_selection_score": 28.2,
+						"selection_score": 26.7,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.3238095238095,
+						"legacy_selection_score": 19.3238095238095,
+						"selection_score": 17.3238095238095,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.6952380952381,
+						"legacy_selection_score": 19.6952380952381,
+						"selection_score": 20.1952380952381,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.4857142857143,
+						"legacy_selection_score": 26.4857142857143,
+						"selection_score": 24.9857142857143,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.3238095238095,
+						"legacy_selection_score": 22.3238095238095,
+						"selection_score": 20.3238095238095,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.3238095238095,
+						"legacy_selection_score": 19.3238095238095,
+						"selection_score": 17.3238095238095,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						4.0,
+						6.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						1.0,
+						2.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						4.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 30.447619047619,
+						"legacy_selection_score": 33.247619047619,
+						"selection_score": 32.947619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.552380952381,
+						"legacy_selection_score": 32.552380952381,
+						"selection_score": 28.552380952381,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 27.1904761904762,
+						"legacy_selection_score": 29.1904761904762,
+						"selection_score": 27.1904761904762,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 28.6928571428571,
+						"legacy_selection_score": 29.4928571428571,
+						"selection_score": 31.1928571428571,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 33.6047619047619,
+						"legacy_selection_score": 36.4047619047619,
+						"selection_score": 36.1047619047619,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 31.4309523809524,
+						"legacy_selection_score": 32.2309523809524,
+						"selection_score": 33.9309523809524,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 30.3476190476191,
+						"legacy_selection_score": 32.347619047619,
+						"selection_score": 30.3476190476191,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						5.0,
+						5.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						3.0,
+						4.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.675,
+						"legacy_selection_score": 21.675,
+						"selection_score": 21.675,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 27.3107142857143,
+						"legacy_selection_score": 29.3107142857143,
+						"selection_score": 27.3107142857143,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.9535714285714,
+						"legacy_selection_score": 26.9535714285714,
+						"selection_score": 24.9535714285714,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.3107142857143,
+						"legacy_selection_score": 26.3107142857143,
+						"selection_score": 24.3107142857143,
+						"trump": 3
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 31.275,
+						"legacy_selection_score": 39.275,
+						"selection_score": 35.275,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.5785714285714,
+						"legacy_selection_score": 31.5785714285714,
+						"selection_score": 30.0785714285714,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.5464285714286,
+						"legacy_selection_score": 28.5464285714286,
+						"selection_score": 27.0464285714286,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						1.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						1.0,
+						6.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						1.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 10.5297619047619,
+						"legacy_selection_score": 12.5297619047619,
+						"selection_score": 10.5297619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 23.4404761904762,
+						"legacy_selection_score": 34.4404761904762,
+						"selection_score": 27.4404761904762,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 9.64880952380952,
+						"legacy_selection_score": 11.6488095238095,
+						"selection_score": 9.64880952380952,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 10.0892857142857,
+						"legacy_selection_score": 12.0892857142857,
+						"selection_score": 10.0892857142857,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.0845238095238,
+						"legacy_selection_score": 20.0845238095238,
+						"selection_score": 16.0845238095238,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.7321428571429,
+						"legacy_selection_score": 16.7321428571429,
+						"selection_score": 12.7321428571429,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.027380952381,
+						"legacy_selection_score": 16.027380952381,
+						"selection_score": 12.027380952381,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						3.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						2.0,
+						3.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						5.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 2,
+				"old_chosen_suit": 2.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.3321428571429,
+						"legacy_selection_score": 22.3321428571429,
+						"selection_score": 18.3321428571429,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.6964285714286,
+						"legacy_selection_score": 17.6964285714286,
+						"selection_score": 15.6964285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 25.575,
+						"legacy_selection_score": 31.575,
+						"selection_score": 25.575,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.6892857142857,
+						"legacy_selection_score": 24.6892857142857,
+						"selection_score": 20.6892857142857,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.8821428571429,
+						"legacy_selection_score": 23.0821428571429,
+						"selection_score": 20.3821428571429,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 18.7285714285714,
+						"legacy_selection_score": 21.9285714285714,
+						"selection_score": 21.2285714285714,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.3392857142857,
+						"legacy_selection_score": 18.3392857142857,
+						"selection_score": 16.3392857142857,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						6.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						6.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 6,
+				"old_chosen_suit": 6.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.3904761904762,
+						"legacy_selection_score": 17.3904761904762,
+						"selection_score": 17.3904761904762,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.2,
+						"legacy_selection_score": 27.4,
+						"selection_score": 24.7,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.8666666666667,
+						"legacy_selection_score": 27.8666666666667,
+						"selection_score": 23.8666666666667,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.3714285714286,
+						"legacy_selection_score": 21.3714285714286,
+						"selection_score": 19.3714285714286,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.1238095238095,
+						"legacy_selection_score": 28.1238095238095,
+						"selection_score": 24.1238095238095,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.047619047619,
+						"legacy_selection_score": 25.047619047619,
+						"selection_score": 21.047619047619,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.1619047619048,
+						"legacy_selection_score": 32.3619047619048,
+						"selection_score": 27.6619047619048,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						1.0,
+						6.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						5.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.3892857142857,
+						"legacy_selection_score": 28.5892857142857,
+						"selection_score": 25.8892857142857,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.4821428571429,
+						"legacy_selection_score": 25.4821428571429,
+						"selection_score": 21.4821428571429,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.525,
+						"legacy_selection_score": 20.525,
+						"selection_score": 18.525,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.2464285714286,
+						"legacy_selection_score": 15.2464285714286,
+						"selection_score": 15.2464285714286,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.2464285714286,
+						"legacy_selection_score": 15.2464285714286,
+						"selection_score": 15.2464285714286,
+						"trump": 4
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 27.3857142857143,
+						"legacy_selection_score": 36.5857142857143,
+						"selection_score": 31.3857142857143,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.325,
+						"legacy_selection_score": 26.325,
+						"selection_score": 20.325,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						4.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						0.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.4928571428571,
+						"legacy_selection_score": 25.4928571428571,
+						"selection_score": 21.4928571428571,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.6714285714286,
+						"legacy_selection_score": 13.6714285714286,
+						"selection_score": 13.6714285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.6714285714286,
+						"legacy_selection_score": 13.6714285714286,
+						"selection_score": 13.6714285714286,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.5857142857143,
+						"legacy_selection_score": 23.5857142857143,
+						"selection_score": 19.5857142857143,
+						"trump": 3
+					},
+					{
+						"control_value": 1.5,
+						"corrected_estimated_points": 23.4857142857143,
+						"legacy_selection_score": 31.4857142857143,
+						"selection_score": 24.9857142857143,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.1142857142857,
+						"legacy_selection_score": 23.1142857142857,
+						"selection_score": 19.1142857142857,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.6571428571429,
+						"legacy_selection_score": 29.6571428571429,
+						"selection_score": 23.1571428571429,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						6.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						3.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.6380952380952,
+						"legacy_selection_score": 32.8380952380952,
+						"selection_score": 28.1380952380952,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.5904761904762,
+						"legacy_selection_score": 22.5904761904762,
+						"selection_score": 20.5904761904762,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.4428571428571,
+						"legacy_selection_score": 15.4428571428571,
+						"selection_score": 15.4428571428571,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.5904761904762,
+						"legacy_selection_score": 19.5904761904762,
+						"selection_score": 17.5904761904762,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.1047619047619,
+						"legacy_selection_score": 32.1047619047619,
+						"selection_score": 26.1047619047619,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.5428571428571,
+						"legacy_selection_score": 21.5428571428571,
+						"selection_score": 19.5428571428571,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 21.7619047619048,
+						"legacy_selection_score": 28.9619047619048,
+						"selection_score": 24.2619047619048,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						6.0,
+						6.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						1.0,
+						6.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						2.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.6285714285714,
+						"legacy_selection_score": 20.8285714285714,
+						"selection_score": 20.1285714285714,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 25.5047619047619,
+						"legacy_selection_score": 31.5047619047619,
+						"selection_score": 25.5047619047619,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.4952380952381,
+						"legacy_selection_score": 20.4952380952381,
+						"selection_score": 18.4952380952381,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.352380952381,
+						"legacy_selection_score": 19.352380952381,
+						"selection_score": 17.352380952381,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.7904761904762,
+						"legacy_selection_score": 26.7904761904762,
+						"selection_score": 22.7904761904762,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.352380952381,
+						"legacy_selection_score": 19.352380952381,
+						"selection_score": 17.352380952381,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.7619047619048,
+						"legacy_selection_score": 29.9619047619048,
+						"selection_score": 25.2619047619048,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						2.0,
+						3.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						0.0,
+						3.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 23.8380952380952,
+						"legacy_selection_score": 33.0380952380952,
+						"selection_score": 27.8380952380952,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.4761904761905,
+						"legacy_selection_score": 15.4761904761905,
+						"selection_score": 13.4761904761905,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.3142857142857,
+						"legacy_selection_score": 21.3142857142857,
+						"selection_score": 17.3142857142857,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 18.6190476190476,
+						"legacy_selection_score": 25.8190476190476,
+						"selection_score": 21.1190476190476,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 9.97142857142857,
+						"legacy_selection_score": 9.97142857142857,
+						"selection_score": 9.97142857142857,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.552380952381,
+						"legacy_selection_score": 20.552380952381,
+						"selection_score": 16.552380952381,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 9.97142857142857,
+						"legacy_selection_score": 9.97142857142857,
+						"selection_score": 9.97142857142857,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						2.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						5.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.3404761904762,
+						"legacy_selection_score": 27.3404761904762,
+						"selection_score": 23.3404761904762,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.8642857142857,
+						"legacy_selection_score": 27.8642857142857,
+						"selection_score": 23.8642857142857,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.4547619047619,
+						"legacy_selection_score": 23.4547619047619,
+						"selection_score": 21.4547619047619,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.3547619047619,
+						"legacy_selection_score": 20.3547619047619,
+						"selection_score": 20.3547619047619,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.7690476190476,
+						"legacy_selection_score": 26.7690476190476,
+						"selection_score": 24.7690476190476,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.5904761904762,
+						"legacy_selection_score": 34.7904761904762,
+						"selection_score": 30.0904761904762,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 26.7261904761905,
+						"legacy_selection_score": 33.9261904761905,
+						"selection_score": 29.2261904761905,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						5.0,
+						5.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 25.9714285714286,
+						"legacy_selection_score": 35.1714285714286,
+						"selection_score": 29.9714285714286,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.7809523809524,
+						"legacy_selection_score": 18.7809523809524,
+						"selection_score": 16.7809523809524,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.3047619047619,
+						"legacy_selection_score": 20.3047619047619,
+						"selection_score": 18.3047619047619,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.1809523809524,
+						"legacy_selection_score": 15.1809523809524,
+						"selection_score": 15.1809523809524,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.1428571428571,
+						"legacy_selection_score": 23.1428571428571,
+						"selection_score": 19.1428571428571,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 21.5428571428571,
+						"legacy_selection_score": 26.7428571428571,
+						"selection_score": 24.0428571428571,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.4571428571429,
+						"legacy_selection_score": 22.4571428571429,
+						"selection_score": 18.4571428571429,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						6.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						3.0,
+						5.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.9392857142857,
+						"legacy_selection_score": 26.9392857142857,
+						"selection_score": 22.9392857142857,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.6607142857143,
+						"legacy_selection_score": 18.6607142857143,
+						"selection_score": 16.6607142857143,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.625,
+						"legacy_selection_score": 19.625,
+						"selection_score": 17.625,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.975,
+						"legacy_selection_score": 22.975,
+						"selection_score": 18.975,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.2392857142857,
+						"legacy_selection_score": 22.4392857142857,
+						"selection_score": 19.7392857142857,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.3928571428571,
+						"legacy_selection_score": 32.5928571428571,
+						"selection_score": 27.8928571428571,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.3392857142857,
+						"legacy_selection_score": 18.3392857142857,
+						"selection_score": 16.3392857142857,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						6.0,
+						6.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						3.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 6,
+				"old_chosen_suit": 6.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.7428571428571,
+						"legacy_selection_score": 20.7428571428571,
+						"selection_score": 20.7428571428571,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 26.6,
+						"legacy_selection_score": 30.6,
+						"selection_score": 29.1,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.9047619047619,
+						"legacy_selection_score": 24.9047619047619,
+						"selection_score": 25.4047619047619,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 27.752380952381,
+						"legacy_selection_score": 31.752380952381,
+						"selection_score": 27.752380952381,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.5428571428571,
+						"legacy_selection_score": 32.5428571428571,
+						"selection_score": 28.5428571428571,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.7238095238095,
+						"legacy_selection_score": 24.7238095238095,
+						"selection_score": 22.7238095238095,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.1809523809524,
+						"legacy_selection_score": 35.1809523809524,
+						"selection_score": 31.6809523809524,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						6.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						0.0,
+						4.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						1.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 14.25,
+						"legacy_selection_score": 16.25,
+						"selection_score": 14.25,
+						"trump": 0
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 25.6,
+						"legacy_selection_score": 34.8,
+						"selection_score": 29.6,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.25,
+						"legacy_selection_score": 17.25,
+						"selection_score": 15.25,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.75,
+						"legacy_selection_score": 14.75,
+						"selection_score": 12.75,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.25,
+						"legacy_selection_score": 14.25,
+						"selection_score": 12.25,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.75,
+						"legacy_selection_score": 14.75,
+						"selection_score": 12.75,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 16.75,
+						"legacy_selection_score": 23.95,
+						"selection_score": 19.25,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						5.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						0.0,
+						2.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 29.7,
+						"legacy_selection_score": 35.7,
+						"selection_score": 29.7,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.0,
+						"legacy_selection_score": 23.0,
+						"selection_score": 21.0,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.9,
+						"legacy_selection_score": 26.9,
+						"selection_score": 25.4,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.5,
+						"legacy_selection_score": 25.5,
+						"selection_score": 23.5,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 19.1,
+						"legacy_selection_score": 21.1,
+						"selection_score": 21.6,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.5,
+						"legacy_selection_score": 24.5,
+						"selection_score": 22.5,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.7,
+						"legacy_selection_score": 24.7,
+						"selection_score": 23.2,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						3.0
+					],
+					[
+						3.0,
+						5.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						1.0,
+						3.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						0.0,
+						0.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 3,
+				"old_chosen_suit": 3.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 14.6642857142857,
+						"legacy_selection_score": 17.8642857142857,
+						"selection_score": 17.1642857142857,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.5071428571429,
+						"legacy_selection_score": 17.5071428571429,
+						"selection_score": 15.5071428571429,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.0,
+						"legacy_selection_score": 27.0,
+						"selection_score": 23.0,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.4095238095238,
+						"legacy_selection_score": 30.4095238095238,
+						"selection_score": 24.4095238095238,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.3357142857143,
+						"legacy_selection_score": 12.3357142857143,
+						"selection_score": 12.3357142857143,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.8857142857143,
+						"legacy_selection_score": 21.8857142857143,
+						"selection_score": 17.8857142857143,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 18.0119047619048,
+						"legacy_selection_score": 25.2119047619048,
+						"selection_score": 20.5119047619048,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						5.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						2.0,
+						3.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						6.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.9380952380952,
+						"legacy_selection_score": 26.9380952380952,
+						"selection_score": 24.9380952380952,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.0833333333333,
+						"legacy_selection_score": 24.0833333333333,
+						"selection_score": 24.5833333333333,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.4142857142857,
+						"legacy_selection_score": 26.4142857142857,
+						"selection_score": 24.4142857142857,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.8238095238095,
+						"legacy_selection_score": 30.8238095238095,
+						"selection_score": 26.8238095238095,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.6809523809524,
+						"legacy_selection_score": 22.6809523809524,
+						"selection_score": 20.6809523809524,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.55,
+						"legacy_selection_score": 35.55,
+						"selection_score": 32.05,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.3142857142857,
+						"legacy_selection_score": 27.3142857142857,
+						"selection_score": 25.8142857142857,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						5.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						1.0,
+						2.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						1.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.5785714285714,
+						"legacy_selection_score": 28.5785714285714,
+						"selection_score": 24.5785714285714,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.6785714285714,
+						"legacy_selection_score": 24.6785714285714,
+						"selection_score": 20.6785714285714,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.4,
+						"legacy_selection_score": 19.4,
+						"selection_score": 17.4,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.4321428571429,
+						"legacy_selection_score": 20.6321428571429,
+						"selection_score": 19.9321428571429,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.7285714285714,
+						"legacy_selection_score": 15.7285714285714,
+						"selection_score": 15.7285714285714,
+						"trump": 4
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 27.8678571428571,
+						"legacy_selection_score": 37.0678571428571,
+						"selection_score": 31.8678571428571,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.4928571428571,
+						"legacy_selection_score": 22.4928571428571,
+						"selection_score": 18.4928571428571,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						6.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						0.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.497619047619,
+						"legacy_selection_score": 28.497619047619,
+						"selection_score": 26.497619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.2142857142857,
+						"legacy_selection_score": 25.2142857142857,
+						"selection_score": 23.2142857142857,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.497619047619,
+						"legacy_selection_score": 25.497619047619,
+						"selection_score": 23.497619047619,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.0892857142857,
+						"legacy_selection_score": 26.0892857142857,
+						"selection_score": 26.5892857142857,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 28.0809523809524,
+						"legacy_selection_score": 32.0809523809524,
+						"selection_score": 30.5809523809524,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 31.9916666666667,
+						"legacy_selection_score": 37.9916666666667,
+						"selection_score": 34.4916666666667,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.3761904761905,
+						"legacy_selection_score": 30.3761904761905,
+						"selection_score": 26.3761904761905,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						6.0
+					],
+					[
+						1.0,
+						2.0
+					],
+					[
+						1.0,
+						6.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						4.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.047619047619,
+						"legacy_selection_score": 27.247619047619,
+						"selection_score": 24.547619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.152380952381,
+						"legacy_selection_score": 26.152380952381,
+						"selection_score": 22.152380952381,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.8857142857143,
+						"legacy_selection_score": 19.8857142857143,
+						"selection_score": 17.8857142857143,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.9047619047619,
+						"legacy_selection_score": 15.9047619047619,
+						"selection_score": 15.9047619047619,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.047619047619,
+						"legacy_selection_score": 32.247619047619,
+						"selection_score": 27.547619047619,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.1142857142857,
+						"legacy_selection_score": 20.1142857142857,
+						"selection_score": 18.1142857142857,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.7809523809524,
+						"legacy_selection_score": 29.7809523809524,
+						"selection_score": 23.7809523809524,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						5.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						6.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 3,
+				"old_chosen_suit": 3.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.25,
+						"legacy_selection_score": 23.25,
+						"selection_score": 21.25,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 22.9,
+						"legacy_selection_score": 26.9,
+						"selection_score": 25.4,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.75,
+						"legacy_selection_score": 25.75,
+						"selection_score": 23.75,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.35,
+						"legacy_selection_score": 32.35,
+						"selection_score": 28.35,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 18.85,
+						"legacy_selection_score": 20.85,
+						"selection_score": 21.35,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.25,
+						"legacy_selection_score": 24.25,
+						"selection_score": 22.25,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.05,
+						"legacy_selection_score": 31.05,
+						"selection_score": 27.55,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						4.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						4.0,
+						6.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						2.0,
+						3.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.5738095238095,
+						"legacy_selection_score": 15.5738095238095,
+						"selection_score": 15.5738095238095,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.7214285714286,
+						"legacy_selection_score": 22.7214285714286,
+						"selection_score": 20.7214285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.1309523809524,
+						"legacy_selection_score": 27.1309523809524,
+						"selection_score": 23.1309523809524,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.5904761904762,
+						"legacy_selection_score": 31.7904761904762,
+						"selection_score": 27.0904761904762,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.9404761904762,
+						"legacy_selection_score": 33.1404761904762,
+						"selection_score": 28.4404761904762,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.5738095238095,
+						"legacy_selection_score": 15.5738095238095,
+						"selection_score": 15.5738095238095,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.9738095238095,
+						"legacy_selection_score": 28.9738095238095,
+						"selection_score": 22.9738095238095,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						0.0,
+						2.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						0.0,
+						4.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 0,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 25.9452380952381,
+						"legacy_selection_score": 35.1452380952381,
+						"selection_score": 29.9452380952381,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 10.2214285714286,
+						"legacy_selection_score": 10.2214285714286,
+						"selection_score": 10.2214285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.1238095238095,
+						"legacy_selection_score": 20.1238095238095,
+						"selection_score": 16.1238095238095,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 14.7142857142857,
+						"legacy_selection_score": 16.7142857142857,
+						"selection_score": 14.7142857142857,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 12.0714285714286,
+						"legacy_selection_score": 14.0714285714286,
+						"selection_score": 12.0714285714286,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.802380952381,
+						"legacy_selection_score": 21.802380952381,
+						"selection_score": 17.802380952381,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 14.4,
+						"legacy_selection_score": 19.6,
+						"selection_score": 16.9,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						3.0
+					],
+					[
+						1.0,
+						2.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						2.0,
+						6.0
+					],
+					[
+						6.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 2,
+				"old_chosen_suit": 2.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 18.85,
+						"legacy_selection_score": 20.85,
+						"selection_score": 21.35,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.3,
+						"legacy_selection_score": 31.3,
+						"selection_score": 27.8,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.75,
+						"legacy_selection_score": 34.75,
+						"selection_score": 28.75,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.05,
+						"legacy_selection_score": 21.05,
+						"selection_score": 19.05,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 16.45,
+						"legacy_selection_score": 16.45,
+						"selection_score": 16.45,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.55,
+						"legacy_selection_score": 21.55,
+						"selection_score": 19.55,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.45,
+						"legacy_selection_score": 24.45,
+						"selection_score": 22.95,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						3.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						3.0,
+						5.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						2.0,
+						2.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.9333333333333,
+						"legacy_selection_score": 25.7333333333333,
+						"selection_score": 27.4333333333333,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.95,
+						"legacy_selection_score": 32.75,
+						"selection_score": 32.45,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.5571428571429,
+						"legacy_selection_score": 32.3571428571429,
+						"selection_score": 32.0571428571429,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 28.7095238095238,
+						"legacy_selection_score": 32.7095238095238,
+						"selection_score": 28.7095238095238,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.0380952380952,
+						"legacy_selection_score": 28.0380952380952,
+						"selection_score": 26.0380952380952,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.1642857142857,
+						"legacy_selection_score": 31.9642857142857,
+						"selection_score": 31.6642857142857,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.6761904761905,
+						"legacy_selection_score": 21.6761904761905,
+						"selection_score": 21.6761904761905,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						4.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						3.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						1.0,
+						3.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 3,
+				"old_chosen_suit": 3.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 15.4,
+						"legacy_selection_score": 20.6,
+						"selection_score": 17.9,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.0,
+						"legacy_selection_score": 15.0,
+						"selection_score": 13.0,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.5,
+						"legacy_selection_score": 15.5,
+						"selection_score": 13.5,
+						"trump": 2
+					},
+					{
+						"control_value": 1.5,
+						"corrected_estimated_points": 23.3,
+						"legacy_selection_score": 31.3,
+						"selection_score": 24.8,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.5,
+						"legacy_selection_score": 24.7,
+						"selection_score": 20.0,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 9.4,
+						"legacy_selection_score": 9.4,
+						"selection_score": 9.4,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 13.0,
+						"legacy_selection_score": 15.0,
+						"selection_score": 13.0,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						5.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						1.0,
+						2.0
+					],
+					[
+						3.0,
+						4.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						1.0,
+						1.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.0857142857143,
+						"legacy_selection_score": 23.0857142857143,
+						"selection_score": 21.0857142857143,
+						"trump": 0
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 28.9238095238095,
+						"legacy_selection_score": 36.9238095238095,
+						"selection_score": 32.9238095238095,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.0857142857143,
+						"legacy_selection_score": 23.0857142857143,
+						"selection_score": 21.0857142857143,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.2285714285714,
+						"legacy_selection_score": 24.2285714285714,
+						"selection_score": 22.2285714285714,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.6285714285714,
+						"legacy_selection_score": 27.6285714285714,
+						"selection_score": 26.1285714285714,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.6761904761905,
+						"legacy_selection_score": 29.6761904761905,
+						"selection_score": 28.1761904761905,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.1047619047619,
+						"legacy_selection_score": 19.1047619047619,
+						"selection_score": 19.1047619047619,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						5.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.447619047619,
+						"legacy_selection_score": 27.447619047619,
+						"selection_score": 23.447619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.0571428571429,
+						"legacy_selection_score": 27.0571428571429,
+						"selection_score": 25.5571428571429,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.2095238095238,
+						"legacy_selection_score": 28.2095238095238,
+						"selection_score": 24.2095238095238,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.9904761904762,
+						"legacy_selection_score": 24.9904761904762,
+						"selection_score": 22.9904761904762,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.8857142857143,
+						"legacy_selection_score": 22.8857142857143,
+						"selection_score": 23.3857142857143,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 26.0571428571429,
+						"legacy_selection_score": 30.0571428571429,
+						"selection_score": 28.5571428571429,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.847619047619,
+						"legacy_selection_score": 23.847619047619,
+						"selection_score": 21.847619047619,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						4.0,
+						6.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						2.0,
+						3.0
+					],
+					[
+						3.0,
+						4.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						1.0,
+						6.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 2,
+				"old_chosen_suit": 2.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.5797619047619,
+						"legacy_selection_score": 18.5797619047619,
+						"selection_score": 18.5797619047619,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.1583333333333,
+						"legacy_selection_score": 22.1583333333333,
+						"selection_score": 20.1583333333333,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 26.5369047619048,
+						"legacy_selection_score": 33.7369047619048,
+						"selection_score": 29.0369047619048,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.4940476190476,
+						"legacy_selection_score": 28.4940476190476,
+						"selection_score": 24.4940476190476,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 25.3845238095238,
+						"legacy_selection_score": 31.3845238095238,
+						"selection_score": 25.3845238095238,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.1166666666667,
+						"legacy_selection_score": 26.3166666666667,
+						"selection_score": 25.6166666666667,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.3202380952381,
+						"legacy_selection_score": 27.3202380952381,
+						"selection_score": 23.3202380952381,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						1.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						1.0,
+						6.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						1.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.2285714285714,
+						"legacy_selection_score": 22.2285714285714,
+						"selection_score": 20.2285714285714,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.6035714285714,
+						"legacy_selection_score": 35.6035714285714,
+						"selection_score": 32.1035714285714,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 24.8357142857143,
+						"legacy_selection_score": 30.8357142857143,
+						"selection_score": 27.3357142857143,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.2357142857143,
+						"legacy_selection_score": 18.2357142857143,
+						"selection_score": 18.2357142857143,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 22.9071428571429,
+						"legacy_selection_score": 24.9071428571429,
+						"selection_score": 22.9071428571429,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 25.0392857142857,
+						"legacy_selection_score": 29.0392857142857,
+						"selection_score": 27.5392857142857,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.9071428571429,
+						"legacy_selection_score": 21.9071428571429,
+						"selection_score": 19.9071428571429,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						6.0,
+						6.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						5.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 29.6785714285714,
+						"legacy_selection_score": 36.6785714285714,
+						"selection_score": 32.1785714285714,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 33.45,
+						"legacy_selection_score": 37.45,
+						"selection_score": 33.45,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.6857142857143,
+						"legacy_selection_score": 32.6857142857143,
+						"selection_score": 30.1857142857143,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.525,
+						"legacy_selection_score": 32.525,
+						"selection_score": 30.025,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 31.1357142857143,
+						"legacy_selection_score": 33.1357142857143,
+						"selection_score": 31.1357142857143,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 30.2035714285714,
+						"legacy_selection_score": 35.2035714285714,
+						"selection_score": 32.7035714285714,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.0428571428571,
+						"legacy_selection_score": 32.0428571428571,
+						"selection_score": 29.5428571428571,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						4.0,
+						4.0
+					],
+					[
+						5.0,
+						5.0
+					],
+					[
+						2.0,
+						2.0
+					],
+					[
+						1.0,
+						4.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						1.0,
+						1.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 1,
+				"old_chosen_suit": 1.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.3035714285714,
+						"legacy_selection_score": 26.3035714285714,
+						"selection_score": 26.3035714285714,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 33.3214285714286,
+						"legacy_selection_score": 40.3214285714286,
+						"selection_score": 35.8214285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 30.4821428571429,
+						"legacy_selection_score": 37.4821428571429,
+						"selection_score": 32.9821428571429,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.3642857142857,
+						"legacy_selection_score": 32.3642857142857,
+						"selection_score": 29.8642857142857,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 31.875,
+						"legacy_selection_score": 38.875,
+						"selection_score": 34.375,
+						"trump": 4
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 32.0357142857143,
+						"legacy_selection_score": 39.0357142857143,
+						"selection_score": 34.5357142857143,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.3035714285714,
+						"legacy_selection_score": 26.3035714285714,
+						"selection_score": 26.3035714285714,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						3.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						0.0,
+						1.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						4.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 2,
+				"old_chosen_suit": 2.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.2869047619048,
+						"legacy_selection_score": 17.2869047619048,
+						"selection_score": 15.2869047619048,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 14.8464285714286,
+						"legacy_selection_score": 16.8464285714286,
+						"selection_score": 14.8464285714286,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 25.775,
+						"legacy_selection_score": 31.775,
+						"selection_score": 25.775,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.3952380952381,
+						"legacy_selection_score": 25.5952380952381,
+						"selection_score": 22.8952380952381,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.6654761904762,
+						"legacy_selection_score": 21.6654761904762,
+						"selection_score": 17.6654761904762,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.225,
+						"legacy_selection_score": 21.225,
+						"selection_score": 17.225,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 14.0035714285714,
+						"legacy_selection_score": 17.2035714285714,
+						"selection_score": 16.5035714285714,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						3.0,
+						3.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						0.0,
+						5.0
+					],
+					[
+						3.0,
+						5.0
+					],
+					[
+						1.0,
+						1.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.0619047619048,
+						"legacy_selection_score": 23.0619047619048,
+						"selection_score": 21.0619047619048,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 16.1178571428571,
+						"legacy_selection_score": 19.3178571428571,
+						"selection_score": 18.6178571428571,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 14.0095238095238,
+						"legacy_selection_score": 14.0095238095238,
+						"selection_score": 14.0095238095238,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 23.6940476190476,
+						"legacy_selection_score": 30.8940476190476,
+						"selection_score": 26.1940476190476,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.947619047619,
+						"legacy_selection_score": 17.947619047619,
+						"selection_score": 15.947619047619,
+						"trump": 4
+					},
+					{
+						"control_value": 1.5,
+						"corrected_estimated_points": 25.9071428571429,
+						"legacy_selection_score": 33.9071428571429,
+						"selection_score": 27.4071428571429,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.1190476190476,
+						"legacy_selection_score": 23.1190476190476,
+						"selection_score": 19.1190476190476,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						4.0,
+						6.0
+					],
+					[
+						4.0,
+						5.0
+					],
+					[
+						2.0,
+						4.0
+					],
+					[
+						2.0,
+						5.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 4,
+				"old_chosen_suit": 4.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.8380952380952,
+						"legacy_selection_score": 18.8380952380952,
+						"selection_score": 18.8380952380952,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.9047619047619,
+						"legacy_selection_score": 24.1047619047619,
+						"selection_score": 23.4047619047619,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.552380952381,
+						"legacy_selection_score": 28.552380952381,
+						"selection_score": 24.552380952381,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.8380952380952,
+						"legacy_selection_score": 18.8380952380952,
+						"selection_score": 18.8380952380952,
+						"trump": 3
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 28.9714285714286,
+						"legacy_selection_score": 38.1714285714286,
+						"selection_score": 32.9714285714286,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.6380952380952,
+						"legacy_selection_score": 29.6380952380952,
+						"selection_score": 23.6380952380952,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 24.8095238095238,
+						"legacy_selection_score": 28.8095238095238,
+						"selection_score": 24.8095238095238,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						4.0,
+						5.0
+					],
+					[
+						1.0,
+						5.0
+					],
+					[
+						0.0,
+						2.0
+					],
+					[
+						5.0,
+						6.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						5.0,
+						5.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 5,
+				"old_chosen_suit": 5.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 23.5619047619048,
+						"legacy_selection_score": 27.5619047619048,
+						"selection_score": 23.5619047619048,
+						"trump": 0
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.2761904761905,
+						"legacy_selection_score": 23.2761904761905,
+						"selection_score": 21.2761904761905,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 19.3714285714286,
+						"legacy_selection_score": 21.3714285714286,
+						"selection_score": 19.3714285714286,
+						"trump": 2
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 17.7714285714286,
+						"legacy_selection_score": 17.7714285714286,
+						"selection_score": 17.7714285714286,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 20.9428571428571,
+						"legacy_selection_score": 26.1428571428571,
+						"selection_score": 23.4428571428571,
+						"trump": 4
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 27.4095238095238,
+						"legacy_selection_score": 36.6095238095238,
+						"selection_score": 31.4095238095238,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.047619047619,
+						"legacy_selection_score": 25.047619047619,
+						"selection_score": 21.047619047619,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						2.0,
+						3.0
+					],
+					[
+						3.0,
+						6.0
+					],
+					[
+						0.0,
+						4.0
+					],
+					[
+						0.0,
+						0.0
+					],
+					[
+						3.0,
+						4.0
+					],
+					[
+						3.0,
+						3.0
+					],
+					[
+						1.0,
+						1.0
+					]
+				],
+				"flipped": false,
+				"new_chosen_suit": 3,
+				"old_chosen_suit": 3.0,
+				"per_suit_scores": [
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 21.4142857142857,
+						"legacy_selection_score": 25.4142857142857,
+						"selection_score": 23.9142857142857,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 17.5821428571429,
+						"legacy_selection_score": 19.5821428571429,
+						"selection_score": 20.0821428571429,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 21.502380952381,
+						"legacy_selection_score": 23.502380952381,
+						"selection_score": 21.502380952381,
+						"trump": 2
+					},
+					{
+						"control_value": 4.0,
+						"corrected_estimated_points": 30.977380952381,
+						"legacy_selection_score": 38.977380952381,
+						"selection_score": 34.977380952381,
+						"trump": 3
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 20.352380952381,
+						"legacy_selection_score": 24.352380952381,
+						"selection_score": 20.352380952381,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 15.3309523809524,
+						"legacy_selection_score": 15.3309523809524,
+						"selection_score": 15.3309523809524,
+						"trump": 5
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 18.502380952381,
+						"legacy_selection_score": 20.502380952381,
+						"selection_score": 18.502380952381,
+						"trump": 6
+					}
+				]
+			},
+			{
+				"bidder_hand": [
+					[
+						1.0,
+						3.0
+					],
+					[
+						0.0,
+						6.0
+					],
+					[
+						0.0,
+						3.0
+					],
+					[
+						6.0,
+						6.0
+					],
+					[
+						1.0,
+						1.0
+					],
+					[
+						4.0,
+						4.0
+					],
+					[
+						3.0,
+						3.0
+					]
+				],
+				"flipped": true,
+				"new_chosen_suit": 3,
+				"old_chosen_suit": 0.0,
+				"per_suit_scores": [
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 35.6,
+						"legacy_selection_score": 39.6,
+						"selection_score": 35.6,
+						"trump": 0
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 32.65,
+						"legacy_selection_score": 35.45,
+						"selection_score": 35.15,
+						"trump": 1
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.9,
+						"legacy_selection_score": 26.9,
+						"selection_score": 26.9,
+						"trump": 2
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 33.25,
+						"legacy_selection_score": 38.05,
+						"selection_score": 35.75,
+						"trump": 3
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 27.1,
+						"legacy_selection_score": 27.9,
+						"selection_score": 29.6,
+						"trump": 4
+					},
+					{
+						"control_value": 0.0,
+						"corrected_estimated_points": 26.9,
+						"legacy_selection_score": 26.9,
+						"selection_score": 26.9,
+						"trump": 5
+					},
+					{
+						"control_value": 2.5,
+						"corrected_estimated_points": 28.7,
+						"legacy_selection_score": 31.5,
+						"selection_score": 31.2,
+						"trump": 6
+					}
+				]
+			}
+		]
+	}
+}

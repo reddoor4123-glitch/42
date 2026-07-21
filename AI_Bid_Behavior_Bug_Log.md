@@ -97,6 +97,29 @@ compounding cap is the likely remedy if it misbehaves).
 
 ---
 
+## Pattern D — ✓ Trump selection reused Finding #4's fixed-trump valuation for cross-candidate comparison (Fixed July 20, 2026)
+
+**File:** `ai_player.gd` — `best_trump()`, new `trump_selection_score()`, new `calculate_trump_control_value()`.
+
+Pattern C's Finding #4 (off-suit-doubles compounding bonus) is correct for its actual job — valuing a hand once trump is already fixed. `best_trump()` reused that same `evaluate_hand()` output to compare all 7 candidate trumps against each other, which Finding #4 was never built or benchmarked for. The compounding tier bonus is keyed to how many doubles remain off-suit under the specific candidate being scored, not to the hand's actual double count — so promoting any double to trump cost a flat tier-loss (up to 0.7, i.e. 4.2 points) regardless of which double or how strong the resulting trump suit was, systematically favoring whichever candidate happened to leave the most doubles off-suit rather than the strongest declarer choice.
+
+Evidence: two independently-found real hands reproduced the identical mechanism — the July 20, 2026 flagged hand (Player 2 called blanks holding only one non-double blank, itself a counter) and a second hand surfaced by a 40-hand classification harness pass (`1:3,0:6,0:3,6:6,1:1,4:4,3:3`, blanks chosen over threes). A grid search over the existing flat structural bonus (`trump_count`/`has_double_trump` weights) across a wide range could not fix the known regression without breaking a different, previously-correct hand — ruling out "the constants are too small" and confirming the fix belongs in the off-suit-doubles term itself.
+
+**Fix:** new `trump_selection_score()` reuses `evaluate_hand()`'s trump-tile and off-suit-non-double scoring unchanged, but recomputes the off-suit-doubles compounding bonus from the hand's fixed total double count instead of the count remaining off-suit per candidate. `evaluate_hand()` itself is untouched — this is a selection-layer fix, not a re-tune of Finding #4. `calculate_trump_control_value()` extracted as a shared primitive (verbatim, no new constants) from `decide_bid()`'s existing `control_score` tiers, closing a separate inconsistency where `best_trump()` and `control_score` had independently diverging answers to "how much does trump structure matter." `best_trump()` kept its `-> Dictionary` return contract (an earlier spec draft incorrectly assumed `-> int`; caught during implementation review before it reached `game_table.gd`'s live trump-announcement call sites).
+
+**Validated:** against all 40 hands from the classification harness — corrected formula: 38/40 correct vs. 37/40 for the flat/legacy formula, zero regressions, exactly one flip (the known regression hand, confirmed live in GDScript via `job6_trump_selection_score_validation.gd`, not just the Python cross-check that produced the same numbers first). The two other known disagreement hands in that same 40-hand set are confirmed still open post-fix (see Known limitations below) — not silently patched.
+
+**Status:** ✓ Fixed, July 20, 2026. See `Spec_trump_selection_score_July20_2026.md` for the full spec, and `scripts/job6_results.json` for the validation run.
+
+**Known limitations, logged not blockers:**
+- `realization_bias` not investigated for this same cross-candidate-instability pattern. One of the two other known disagreement hands (`realization_shift` tag — chosen suit 5, actual best 4) may trace to this term reacting to a candidate's counter-tile-is-trump-or-not status the same way Finding #4's doubles bonus did — not isolated, not touched by this fix.
+- One disagreement (`no_clear_pattern` tag) remains a genuine near-tie between two candidates with identical trump_count, identical has_double_trump, identical off_suit_doubles_count — looks like irreducible noise, not a missing signal.
+- The 4:4/6:6 "bracket bonus" (`ai_player.gd:141-144`) has the same off-suit-candidate-dependence problem this fix corrected for the compounding tier, and was not addressed here — out of scope for this pass, carried to backlog.
+- `decide_bid()`'s use of `best_trump()`'s output for bid sizing is unchanged — whether bid strength should reflect what would actually be declared (`selection_score`) rather than the original fixed-trump valuation (`estimated_points`) is a separate open question, not addressed here.
+- `legacy_selection_score` instrumentation field (old flat formula, computed alongside the new one for comparison, never used for any decision) should be removed once this fix has baked — tracked in backlog, not removed yet.
+
+---
+
 ## Notes logged but not bugs (○)
 
 **Entry 3 — "floor bid, not a confident bid."**
@@ -113,3 +136,7 @@ This was correctly scoped as "not a bug, future feature" at the time it was writ
 2. ~~**Spec Pattern A as one combined fix**, not two sequential ones — tighten the marks gate's off-suit condition and reorder it ahead of the points return in the same pass, so you don't temporarily widen exposure to Entry-7-style bad marks bids in between.~~ **✓ Fixed July 5, 2026** — see Pattern A above.
 3. ~~Leave the two ○ items logged for later — one belongs with bid-explanation string work, the other is already correctly scoped to Phase 2.~~ **One of the two ○ items is no longer ○** — see Entry 3 "counter value is visible but ignored," now ✓ Fixed July 12, 2026 (Pattern C). The other (Entry 3 "floor bid, not a confident bid") is still correctly parked for the bid-explanation strings pass.
 4. **Pattern C (four evaluator findings) — ✓ Fixed July 12, 2026.** See above. Its own logged limitations (fragile no-trump doubles hands, unmodeled opening-control value, extreme-double-count overbid risk) are candidates for a future capabilities-layer design pass, not a re-tune of this package's constants — do not adjust its constants without rerunning the 26-hand benchmark.
+5. **Pattern D (trump selection reused Finding #4's fixed-trump valuation
+   for cross-candidate comparison)** — ✓ Fixed July 20, 2026. See above.
+   Two logged limitations (realization_bias not checked for the same
+   pattern, 4:4/6:6 bracket bonus not addressed) carried to backlog.

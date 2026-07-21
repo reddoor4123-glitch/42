@@ -58,6 +58,11 @@ bucket is empty, not skipped.
 - **Extreme double-count overbidding risk** — logged as a watch item during
   playtesting, not a confirmed bug; a compounding cap is the likely remedy
   if it actually misbehaves at the table. → `AI_Bid_Behavior_Bug_Log.md`
+- **Remove `legacy_selection_score` instrumentation** — temporary old-vs-new
+  comparison field added during the `trump_selection_score()` validation
+  pass (July 20, 2026), never read by any decision. Safe, cheap removal
+  once the new formula has baked in playtesting. → `AI_Bid_Behavior_Bug_Log.md`
+  (Pattern D)
 
 ---
 
@@ -85,6 +90,17 @@ bucket is empty, not skipped.
   partner's already-winning trick under Marks) — deferred, waiting on more
   concrete example hands from Katy specifically, not a design gap on our
   end. → `Texas_42_Project_Onboarding.md`
+- **4:4/6:6 bracket bonus has the same off-suit-candidate-dependence defect**
+  `trump_selection_score()` just fixed for the compounding tier (Pattern D,
+  July 20, 2026) — not yet addressed, same root mechanism, likely same fix
+  shape (hand-level total-doubles basis instead of per-candidate off-suit
+  remainder). → `AI_Bid_Behavior_Bug_Log.md` (Pattern D)
+- **Should `decide_bid()`'s bid sizing use `trump_selection_score()`'s
+  corrected `selection_score` instead of `evaluate_hand()`'s original
+  fixed-trump `estimated_points`?** Bid strength currently doesn't
+  necessarily reflect what would actually be declared as trump. Open since
+  Pattern D shipped (July 20, 2026), not addressed. → `AI_Bid_Behavior_Bug_Log.md`
+  (Pattern D)
 
 ---
 

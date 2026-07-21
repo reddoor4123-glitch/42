@@ -1,0 +1,5299 @@
+{
+	"hands": [
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 33.468,
+					"stddev": 8.7519698354142
+				},
+				"1": {
+					"mean": 20.912,
+					"stddev": 13.7408972050591
+				},
+				"2": {
+					"mean": 17.182,
+					"stddev": 12.2060999504346
+				},
+				"3": {
+					"mean": 18.242,
+					"stddev": 12.5302608113319
+				},
+				"4": {
+					"mean": 18.358,
+					"stddev": 12.5802160553784
+				},
+				"5": {
+					"mean": 19.416,
+					"stddev": 11.7220708068157
+				},
+				"6": {
+					"mean": 16.286,
+					"stddev": 12.328511832334
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					1
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					2
+				],
+				[
+					0,
+					6
+				],
+				[
+					3,
+					3
+				],
+				[
+					1,
+					4
+				],
+				[
+					0,
+					5
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 28.4761904761905,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.02380952380952,
+					"score": 34.4761904761905,
+					"trump": 0,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 21.2,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.25,
+					"score": 28.2,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.4857142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.78571428571429,
+					"score": 26.4857142857143,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.3238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.52380952380952,
+					"score": 22.3238095238095,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.6952380952381,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.654761904761905,
+					"score": 19.6952380952381,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.3238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.47619047619048,
+					"score": 19.3238095238095,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.3238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.47619047619048,
+					"score": 19.3238095238095,
+					"trump": 6,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				0,
+				1,
+				4,
+				5,
+				3,
+				2,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"0": {
+					"mean": 24.72,
+					"stddev": 10.1983135860788
+				},
+				"1": {
+					"mean": 24.298,
+					"stddev": 10.3783041003817
+				},
+				"4": {
+					"mean": 36.456,
+					"stddev": 6.36742208432894
+				}
+			},
+			"bid_value": 31,
+			"bidder_hand": [
+				[
+					4,
+					6
+				],
+				[
+					0,
+					0
+				],
+				[
+					1,
+					2
+				],
+				[
+					0,
+					1
+				],
+				[
+					3,
+					3
+				],
+				[
+					5,
+					5
+				],
+				[
+					4,
+					4
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 29.4047619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.9047619047619,
+					"score": 36.4047619047619,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 26.247619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.952380952380953,
+					"score": 33.247619047619,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 28.552380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.04761904761905,
+					"score": 32.552380952381,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 30.3476190476191,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": 1.04761904761905,
+					"score": 32.347619047619,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 27.2309523809524,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 3.88095238095238,
+					"score": 32.2309523809524,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 24.4928571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.642857142857143,
+					"score": 29.4928571428571,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 27.1904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -1.80952380952381,
+					"score": 29.1904761904762,
+					"trump": 2,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				4,
+				0,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"1": {
+					"mean": 23.606,
+					"stddev": 10.2848803590513
+				},
+				"4": {
+					"mean": 36.36,
+					"stddev": 7.23010373369567
+				},
+				"5": {
+					"mean": 31.928,
+					"stddev": 9.12900958483449
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					5,
+					5
+				],
+				[
+					2,
+					6
+				],
+				[
+					4,
+					5
+				],
+				[
+					1,
+					4
+				],
+				[
+					3,
+					4
+				],
+				[
+					6,
+					6
+				],
+				[
+					4,
+					4
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 28.275,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.625,
+					"score": 39.275,
+					"trump": 4,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 24.5785714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.67857142857143,
+					"score": 31.5785714285714,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 27.3107142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.16071428571429,
+					"score": 29.3107142857143,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.5464285714286,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.303571428571429,
+					"score": 28.5464285714286,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.9535714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -2.19642857142857,
+					"score": 26.9535714285714,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 24.3107142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.83928571428571,
+					"score": 26.3107142857143,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.675,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.375000000000001,
+					"score": 21.675,
+					"trump": 0,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				4,
+				5,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"0": {
+					"mean": 14.146,
+					"stddev": 11.5365802558644
+				},
+				"1": {
+					"mean": 28.096,
+					"stddev": 8.55633005441001
+				},
+				"2": {
+					"mean": 15.124,
+					"stddev": 12.1273502464471
+				},
+				"3": {
+					"mean": 15.316,
+					"stddev": 12.2873977717009
+				},
+				"4": {
+					"mean": 17.756,
+					"stddev": 11.8802552161139
+				},
+				"5": {
+					"mean": 18.88,
+					"stddev": 10.4298418012931
+				},
+				"6": {
+					"mean": 18.202,
+					"stddev": 11.6939811869183
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					1
+				],
+				[
+					1,
+					3
+				],
+				[
+					4,
+					5
+				],
+				[
+					1,
+					6
+				],
+				[
+					5,
+					6
+				],
+				[
+					0,
+					2
+				],
+				[
+					1,
+					4
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.4404761904762,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 0,
+					"realization_bias": 1.94047619047619,
+					"score": 34.4404761904762,
+					"trump": 1,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 16.0845238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.93452380952381,
+					"score": 20.0845238095238,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 12.7321428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": -0.0178571428571428,
+					"score": 16.7321428571429,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 12.027380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0773809523809524,
+					"score": 16.027380952381,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 10.5297619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.279761904761905,
+					"score": 12.5297619047619,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 10.0892857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.339285714285714,
+					"score": 12.0892857142857,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 9.64880952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.398809523809524,
+					"score": 11.6488095238095,
+					"trump": 2,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				1,
+				4,
+				5,
+				6,
+				0,
+				3,
+				2
+			]
+		},
+		{
+			"actual_best_suit": 2,
+			"actual_performance": {
+				"2": {
+					"mean": 32.074,
+					"stddev": 8.03794277163006
+				},
+				"3": {
+					"mean": 24.614,
+					"stddev": 10.8320360043715
+				},
+				"4": {
+					"mean": 24.878,
+					"stddev": 10.1490450782327
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					3
+				],
+				[
+					0,
+					1
+				],
+				[
+					2,
+					3
+				],
+				[
+					2,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					2,
+					4
+				],
+				[
+					5,
+					5
+				]
+			],
+			"chosen_suit": 2,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.575,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.125,
+					"score": 31.575,
+					"trump": 2,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 20.6892857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.83928571428571,
+					"score": 24.6892857142857,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 16.0821428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.73214285714286,
+					"score": 23.0821428571429,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.3321428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.48214285714286,
+					"score": 22.3321428571429,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 16.9285714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 6.92857142857143,
+					"score": 21.9285714285714,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.3392857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.58928571428571,
+					"score": 18.3392857142857,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.6964285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.94642857142857,
+					"score": 17.6964285714286,
+					"trump": 1,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				2,
+				3,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 6,
+			"actual_performance": {
+				"2": {
+					"mean": 22.54,
+					"stddev": 10.7469251416394
+				},
+				"4": {
+					"mean": 24.426,
+					"stddev": 10.3726816204875
+				},
+				"6": {
+					"mean": 25.662,
+					"stddev": 10.1190788118287
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					6
+				],
+				[
+					2,
+					5
+				],
+				[
+					4,
+					5
+				],
+				[
+					1,
+					1
+				],
+				[
+					4,
+					6
+				],
+				[
+					1,
+					3
+				],
+				[
+					6,
+					6
+				]
+			],
+			"chosen_suit": 6,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.3619047619048,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.51190476190476,
+					"score": 32.3619047619048,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 24.1238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.27380952380952,
+					"score": 28.1238095238095,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.8666666666667,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.416666666666666,
+					"score": 27.8666666666667,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.4,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.5,
+					"score": 27.4,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.29761904761905,
+					"score": 25.047619047619,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.3714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.82142857142857,
+					"score": 21.3714285714286,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.3904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.44047619047619,
+					"score": 17.3904761904762,
+					"trump": 0,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				6,
+				4,
+				2
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 22.534,
+					"stddev": 10.9162651122076
+				},
+				"1": {
+					"mean": 22.424,
+					"stddev": 11.1842846887944
+				},
+				"2": {
+					"mean": 18.088,
+					"stddev": 11.6835035841138
+				},
+				"3": {
+					"mean": 16.194,
+					"stddev": 11.4727661878032
+				},
+				"4": {
+					"mean": 16.422,
+					"stddev": 11.3645024528133
+				},
+				"5": {
+					"mean": 34.808,
+					"stddev": 6.52925233085688
+				},
+				"6": {
+					"mean": 26.088,
+					"stddev": 10.8591093557437
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					0
+				],
+				[
+					0,
+					5
+				],
+				[
+					2,
+					6
+				],
+				[
+					1,
+					6
+				],
+				[
+					1,
+					5
+				],
+				[
+					5,
+					5
+				],
+				[
+					5,
+					6
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.5857142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 6.78571428571429,
+					"score": 36.5857142857143,
+					"trump": 5,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 21.5892857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.33928571428571,
+					"score": 28.5892857142857,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.325,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.375,
+					"score": 26.325,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 21.4821428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.267857142857142,
+					"score": 25.4821428571429,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.525,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.375,
+					"score": 20.525,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.2464285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.19642857142857,
+					"score": 15.2464285714286,
+					"trump": 3,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 15.2464285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.19642857142857,
+					"score": 15.2464285714286,
+					"trump": 4,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				5,
+				0,
+				6,
+				1,
+				2,
+				3,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"0": {
+					"mean": 21.58,
+					"stddev": 11.3461711603518
+				},
+				"4": {
+					"mean": 28.746,
+					"stddev": 9.74420258410096
+				},
+				"6": {
+					"mean": 22.876,
+					"stddev": 11.4551570918953
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					4
+				],
+				[
+					0,
+					5
+				],
+				[
+					3,
+					6
+				],
+				[
+					6,
+					6
+				],
+				[
+					4,
+					6
+				],
+				[
+					4,
+					5
+				],
+				[
+					0,
+					4
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.4857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 3.28571428571428,
+					"score": 31.4857142857143,
+					"trump": 4,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 20.6571428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 0,
+					"realization_bias": 4.85714285714286,
+					"score": 29.6571428571429,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 21.4928571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.39285714285714,
+					"score": 25.4928571428571,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.5857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.785714285714287,
+					"score": 23.5857142857143,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.1142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 5.71428571428571,
+					"score": 23.1142857142857,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 13.6714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.07142857142857,
+					"score": 13.6714285714286,
+					"trump": 1,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 13.6714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.07142857142857,
+					"score": 13.6714285714286,
+					"trump": 2,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				4,
+				6,
+				0
+			]
+		},
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 28.638,
+					"stddev": 11.3607638827677
+				},
+				"4": {
+					"mean": 26.572,
+					"stddev": 10.2627879253154
+				},
+				"6": {
+					"mean": 22.07,
+					"stddev": 11.2941179381127
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					6
+				],
+				[
+					0,
+					5
+				],
+				[
+					0,
+					0
+				],
+				[
+					4,
+					6
+				],
+				[
+					6,
+					6
+				],
+				[
+					1,
+					4
+				],
+				[
+					3,
+					4
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.8380952380952,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.23809523809524,
+					"score": 32.8380952380952,
+					"trump": 0,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 26.1047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.90476190476191,
+					"score": 32.1047619047619,
+					"trump": 4,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 19.9619047619048,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.76190476190476,
+					"score": 28.9619047619048,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 20.5904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.19047619047619,
+					"score": 22.5904761904762,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.5428571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 5.14285714285714,
+					"score": 21.5428571428571,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.5904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.19047619047619,
+					"score": 19.5904761904762,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.4428571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.14285714285714,
+					"score": 15.4428571428571,
+					"trump": 2,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				0,
+				4,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"0": {
+					"mean": 16.65,
+					"stddev": 12.3980442005987
+				},
+				"1": {
+					"mean": 29.166,
+					"stddev": 9.08088343719926
+				},
+				"2": {
+					"mean": 15.086,
+					"stddev": 11.9563624903229
+				},
+				"3": {
+					"mean": 17.086,
+					"stddev": 11.8823652527601
+				},
+				"4": {
+					"mean": 22.13,
+					"stddev": 10.6467412854826
+				},
+				"5": {
+					"mean": 17.428,
+					"stddev": 12.3304832022107
+				},
+				"6": {
+					"mean": 24.026,
+					"stddev": 10.6550140309621
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					6,
+					6
+				],
+				[
+					4,
+					6
+				],
+				[
+					1,
+					3
+				],
+				[
+					0,
+					0
+				],
+				[
+					1,
+					6
+				],
+				[
+					1,
+					5
+				],
+				[
+					2,
+					4
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.5047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.0952380952380949,
+					"score": 31.5047619047619,
+					"trump": 1,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 20.9619047619048,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 5.26190476190476,
+					"score": 29.9619047619048,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.7904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.69047619047619,
+					"score": 26.7904761904762,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 15.8285714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.92857142857143,
+					"score": 20.8285714285714,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 18.4952380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.09523809523809,
+					"score": 20.4952380952381,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.352380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.45238095238095,
+					"score": 19.352380952381,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.352380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.45238095238095,
+					"score": 19.352380952381,
+					"trump": 5,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				1,
+				6,
+				4,
+				0,
+				2,
+				3,
+				5
+			]
+		},
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 30.896,
+					"stddev": 9.50837441416778
+				},
+				"2": {
+					"mean": 19.57,
+					"stddev": 12.5971861937498
+				},
+				"3": {
+					"mean": 23.212,
+					"stddev": 11.0807515990568
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					0
+				],
+				[
+					0,
+					2
+				],
+				[
+					3,
+					3
+				],
+				[
+					2,
+					3
+				],
+				[
+					0,
+					5
+				],
+				[
+					1,
+					5
+				],
+				[
+					0,
+					3
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 22.0380952380952,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.988095238095237,
+					"score": 33.0380952380952,
+					"trump": 0,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 16.8190476190476,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.61904761904762,
+					"score": 25.8190476190476,
+					"trump": 3,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 17.3142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.46428571428571,
+					"score": 21.3142857142857,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 16.552380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.70238095238095,
+					"score": 20.552380952381,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 13.4761904761905,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.273809523809524,
+					"score": 15.4761904761905,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 9.97142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.821428571428571,
+					"score": 9.97142857142857,
+					"trump": 4,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 9.97142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.821428571428571,
+					"score": 9.97142857142857,
+					"trump": 6,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				0,
+				3,
+				2
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"1": {
+					"mean": 24.412,
+					"stddev": 10.8715342063574
+				},
+				"5": {
+					"mean": 36.28,
+					"stddev": 5.36633953454308
+				},
+				"6": {
+					"mean": 35.98,
+					"stddev": 5.11738214324473
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					2
+				],
+				[
+					5,
+					6
+				],
+				[
+					4,
+					6
+				],
+				[
+					1,
+					5
+				],
+				[
+					6,
+					6
+				],
+				[
+					0,
+					1
+				],
+				[
+					5,
+					5
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.7904761904762,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 5.19047619047619,
+					"score": 34.7904761904762,
+					"trump": 5,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 24.9261904761905,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 5.97619047619048,
+					"score": 33.9261904761905,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 23.8642857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.21428571428571,
+					"score": 27.8642857142857,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.3404761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.69047619047619,
+					"score": 27.3404761904762,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.7690476190476,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 6.11904761904762,
+					"score": 26.7690476190476,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.4547619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.40476190476191,
+					"score": 23.4547619047619,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.3547619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.40476190476191,
+					"score": 20.3547619047619,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				6,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 35.468,
+					"stddev": 6.31672193467467
+				},
+				"1": {
+					"mean": 20.612,
+					"stddev": 10.7624093956697
+				},
+				"2": {
+					"mean": 19.398,
+					"stddev": 10.5141616879331
+				},
+				"3": {
+					"mean": 18.76,
+					"stddev": 11.1816993341799
+				},
+				"4": {
+					"mean": 21.994,
+					"stddev": 10.6891516969309
+				},
+				"5": {
+					"mean": 27.57,
+					"stddev": 8.23827044955434
+				},
+				"6": {
+					"mean": 23.598,
+					"stddev": 10.0574547475989
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					5,
+					5
+				],
+				[
+					0,
+					1
+				],
+				[
+					2,
+					4
+				],
+				[
+					5,
+					6
+				],
+				[
+					0,
+					6
+				],
+				[
+					0,
+					0
+				],
+				[
+					0,
+					4
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 24.1714285714286,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.321428571428571,
+					"score": 35.1714285714286,
+					"trump": 0,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 19.7428571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 5.64285714285714,
+					"score": 26.7428571428571,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.1428571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.89285714285714,
+					"score": 23.1428571428571,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.4571428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.10714285714286,
+					"score": 22.4571428571429,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.3047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.15476190476191,
+					"score": 20.3047619047619,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.7809523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.63095238095238,
+					"score": 18.7809523809524,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.1809523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.13095238095238,
+					"score": 15.1809523809524,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				0,
+				5,
+				4,
+				6,
+				2,
+				1,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 25.096,
+					"stddev": 9.42267393047217
+				},
+				"3": {
+					"mean": 24.228,
+					"stddev": 10.6154611769814
+				},
+				"5": {
+					"mean": 31.368,
+					"stddev": 7.26364756854296
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					6
+				],
+				[
+					1,
+					3
+				],
+				[
+					5,
+					5
+				],
+				[
+					3,
+					5
+				],
+				[
+					0,
+					5
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					4
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.5928571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 7.89285714285714,
+					"score": 32.5928571428571,
+					"trump": 5,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.9392857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.58928571428571,
+					"score": 26.9392857142857,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.975,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.125,
+					"score": 22.975,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 15.4392857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 3.08928571428571,
+					"score": 22.4392857142857,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 17.625,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.875,
+					"score": 19.625,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.6607142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.41071428571429,
+					"score": 18.6607142857143,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.3392857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.58928571428571,
+					"score": 18.3392857142857,
+					"trump": 6,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				0,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 6,
+			"actual_performance": {
+				"3": {
+					"mean": 21.53,
+					"stddev": 12.2115150575185
+				},
+				"4": {
+					"mean": 25.292,
+					"stddev": 9.61388246235619
+				},
+				"6": {
+					"mean": 28.262,
+					"stddev": 9.70635647398137
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					6,
+					6
+				],
+				[
+					1,
+					5
+				],
+				[
+					2,
+					2
+				],
+				[
+					4,
+					6
+				],
+				[
+					3,
+					6
+				],
+				[
+					1,
+					1
+				],
+				[
+					3,
+					4
+				]
+			],
+			"chosen_suit": 6,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 26.1809523809524,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.63095238095238,
+					"score": 35.1809523809524,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 28.5428571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 2.89285714285714,
+					"score": 32.5428571428571,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 27.752380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.797619047619047,
+					"score": 31.752380952381,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.6,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.499999999999999,
+					"score": 30.6,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.9047619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.6547619047619,
+					"score": 24.9047619047619,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 22.7238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.773809523809523,
+					"score": 24.7238095238095,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.7428571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.39285714285714,
+					"score": 20.7428571428571,
+					"trump": 0,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				6,
+				4,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"0": {
+					"mean": 17.038,
+					"stddev": 10.5860547892026
+				},
+				"1": {
+					"mean": 34.218,
+					"stddev": 10.7583677200586
+				},
+				"2": {
+					"mean": 16.342,
+					"stddev": 10.3274893367168
+				},
+				"3": {
+					"mean": 17.14,
+					"stddev": 11.2292653366104
+				},
+				"4": {
+					"mean": 14.656,
+					"stddev": 11.3083006680933
+				},
+				"5": {
+					"mean": 17.28,
+					"stddev": 10.7731889429268
+				},
+				"6": {
+					"mean": 22.16,
+					"stddev": 9.98490861250117
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					6
+				],
+				[
+					1,
+					3
+				],
+				[
+					1,
+					1
+				],
+				[
+					0,
+					4
+				],
+				[
+					6,
+					6
+				],
+				[
+					2,
+					6
+				],
+				[
+					1,
+					5
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.8,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0,
+					"score": 34.8,
+					"trump": 1,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 14.95,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0,
+					"score": 23.95,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 15.25,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 17.25,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.25,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 16.25,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.75,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 14.75,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.75,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 14.75,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.25,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 14.25,
+					"trump": 4,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				1,
+				6,
+				2,
+				0,
+				3,
+				5,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 27.736,
+					"stddev": 9.01544807538705
+				},
+				"2": {
+					"mean": 23.094,
+					"stddev": 11.6327625265884
+				},
+				"3": {
+					"mean": 20.478,
+					"stddev": 11.3869010709675
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					5
+				],
+				[
+					2,
+					2
+				],
+				[
+					6,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					6
+				],
+				[
+					0,
+					1
+				],
+				[
+					0,
+					2
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 29.7,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 35.7,
+					"trump": 0,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 19.9,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 26.9,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.5,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 25.5,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.7,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 24.7,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.5,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 24.5,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.0,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 23.0,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.1,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 21.1,
+					"trump": 4,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				0,
+				2,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 3,
+			"actual_performance": {
+				"2": {
+					"mean": 24.548,
+					"stddev": 11.321647229975
+				},
+				"3": {
+					"mean": 29.482,
+					"stddev": 9.29525018490626
+				},
+				"6": {
+					"mean": 26.134,
+					"stddev": 8.91426070967189
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					3
+				],
+				[
+					3,
+					5
+				],
+				[
+					5,
+					6
+				],
+				[
+					1,
+					3
+				],
+				[
+					6,
+					6
+				],
+				[
+					2,
+					6
+				],
+				[
+					0,
+					0
+				]
+			],
+			"chosen_suit": 3,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 24.4095238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.80952380952381,
+					"score": 30.4095238095238,
+					"trump": 3,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 23.0,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.0,
+					"score": 27.0,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 16.2119047619048,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": -0.488095238095238,
+					"score": 25.2119047619048,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 17.8857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.714285714285714,
+					"score": 21.8857142857143,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 12.8642857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": -0.0357142857142861,
+					"score": 17.8642857142857,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.5071428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.392857142857143,
+					"score": 17.5071428571429,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.3357142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0357142857142856,
+					"score": 12.3357142857143,
+					"trump": 4,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				3,
+				2,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 21.22,
+					"stddev": 10.9174905541521
+				},
+				"1": {
+					"mean": 22.172,
+					"stddev": 11.891947527634
+				},
+				"2": {
+					"mean": 20.586,
+					"stddev": 10.5814273139308
+				},
+				"3": {
+					"mean": 25.128,
+					"stddev": 10.5778833421437
+				},
+				"4": {
+					"mean": 19.652,
+					"stddev": 11.5238403321115
+				},
+				"5": {
+					"mean": 34.072,
+					"stddev": 7.09216581870446
+				},
+				"6": {
+					"mean": 23.686,
+					"stddev": 12.4965356799395
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					5
+				],
+				[
+					5,
+					5
+				],
+				[
+					4,
+					5
+				],
+				[
+					1,
+					1
+				],
+				[
+					2,
+					3
+				],
+				[
+					3,
+					6
+				],
+				[
+					6,
+					6
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 26.55,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.5,
+					"score": 35.55,
+					"trump": 5,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 26.8238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.47619047619048,
+					"score": 30.8238095238095,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.3142857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -1.28571428571428,
+					"score": 27.3142857142857,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.9380952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.23809523809524,
+					"score": 26.9380952380952,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 24.4142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.714285714285714,
+					"score": 26.4142857142857,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.0833333333333,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.166666666666667,
+					"score": 24.0833333333333,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.6809523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.61904761904762,
+					"score": 22.6809523809524,
+					"trump": 4,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				5,
+				3,
+				6,
+				0,
+				2,
+				1,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 24.892,
+					"stddev": 9.43823797114695
+				},
+				"1": {
+					"mean": 20.896,
+					"stddev": 11.509004474758
+				},
+				"5": {
+					"mean": 35.68,
+					"stddev": 5.82491201650291
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					5
+				],
+				[
+					3,
+					3
+				],
+				[
+					1,
+					2
+				],
+				[
+					5,
+					6
+				],
+				[
+					0,
+					6
+				],
+				[
+					5,
+					5
+				],
+				[
+					1,
+					5
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 26.0678571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 6.51785714285714,
+					"score": 37.0678571428571,
+					"trump": 5,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 24.5785714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.67857142857143,
+					"score": 28.5785714285714,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.6785714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.178571428571429,
+					"score": 24.6785714285714,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.4928571428571,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.39285714285714,
+					"score": 22.4928571428571,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 15.6321428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.98214285714286,
+					"score": 20.6321428571429,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.4,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.0,
+					"score": 19.4,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.7285714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.92857142857143,
+					"score": 15.7285714285714,
+					"trump": 4,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				0,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"4": {
+					"mean": 33.678,
+					"stddev": 7.40772002710687
+				},
+				"5": {
+					"mean": 31.812,
+					"stddev": 7.15769907162909
+				},
+				"6": {
+					"mean": 26.242,
+					"stddev": 9.69739325798433
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					6
+				],
+				[
+					5,
+					5
+				],
+				[
+					2,
+					5
+				],
+				[
+					4,
+					4
+				],
+				[
+					3,
+					3
+				],
+				[
+					4,
+					6
+				],
+				[
+					0,
+					5
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [
+				"realization_shift"
+			],
+			"disagreement": true,
+			"disagreement_severity": {
+				"actual_best_predicted_rank": 2,
+				"actual_best_trump": 4,
+				"actual_points_gap": 1.866,
+				"chosen_predicted_rank": 1,
+				"chosen_trump": 5,
+				"predicted_score_gap": 5.91071428571428
+			},
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 28.9916666666667,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 5.54166666666667,
+					"score": 37.9916666666667,
+					"trump": 5,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 25.0809523809524,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.88095238095238,
+					"score": 32.0809523809524,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 26.3761904761905,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.97619047619048,
+					"score": 30.3761904761905,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 26.497619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.79761904761905,
+					"score": 28.497619047619,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.0892857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.33928571428571,
+					"score": 26.0892857142857,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 23.497619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.20238095238095,
+					"score": 25.497619047619,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 23.2142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.785714285714285,
+					"score": 25.2142857142857,
+					"trump": 1,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 2,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				4,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"0": {
+					"mean": 21.836,
+					"stddev": 10.3584315415028
+				},
+				"1": {
+					"mean": 20.624,
+					"stddev": 11.4718186875491
+				},
+				"2": {
+					"mean": 16.326,
+					"stddev": 11.4381696088142
+				},
+				"3": {
+					"mean": 16.358,
+					"stddev": 12.1415746919417
+				},
+				"4": {
+					"mean": 32.162,
+					"stddev": 6.84512644149106
+				},
+				"5": {
+					"mean": 18.174,
+					"stddev": 11.3405345553021
+				},
+				"6": {
+					"mean": 23.774,
+					"stddev": 9.83701804410259
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					6
+				],
+				[
+					1,
+					2
+				],
+				[
+					1,
+					6
+				],
+				[
+					4,
+					5
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					0
+				],
+				[
+					4,
+					6
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.247619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.54761904761905,
+					"score": 32.247619047619,
+					"trump": 4,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 23.7809523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.38095238095238,
+					"score": 29.7809523809524,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 20.247619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.54761904761905,
+					"score": 27.247619047619,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.152380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.952380952380952,
+					"score": 26.152380952381,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 18.1142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.21428571428571,
+					"score": 20.1142857142857,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.8857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.28571428571429,
+					"score": 19.8857142857143,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.9047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.9047619047619,
+					"score": 15.9047619047619,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				4,
+				6,
+				0,
+				1,
+				5,
+				2,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 3,
+			"actual_performance": {
+				"1": {
+					"mean": 23.25,
+					"stddev": 12.1835750090029
+				},
+				"3": {
+					"mean": 28.81,
+					"stddev": 8.87907089734056
+				},
+				"6": {
+					"mean": 25.412,
+					"stddev": 9.92281492319593
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					5
+				],
+				[
+					2,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					1
+				],
+				[
+					3,
+					6
+				],
+				[
+					1,
+					1
+				],
+				[
+					6,
+					6
+				]
+			],
+			"chosen_suit": 3,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 28.35,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 32.35,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.05,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 31.05,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 19.9,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 26.9,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.75,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 25.75,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 22.25,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 24.25,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.25,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 23.25,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.85,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 20.85,
+					"trump": 4,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				3,
+				6,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"3": {
+					"mean": 26.67,
+					"stddev": 11.4938722804806
+				},
+				"4": {
+					"mean": 32.852,
+					"stddev": 8.2509451579804
+				},
+				"6": {
+					"mean": 31.084,
+					"stddev": 8.57490198194708
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					4
+				],
+				[
+					4,
+					4
+				],
+				[
+					3,
+					3
+				],
+				[
+					4,
+					6
+				],
+				[
+					2,
+					6
+				],
+				[
+					3,
+					6
+				],
+				[
+					2,
+					3
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 24.1404761904762,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 6.69047619047619,
+					"score": 33.1404761904762,
+					"trump": 4,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.7904761904762,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.19047619047619,
+					"score": 31.7904761904762,
+					"trump": 3,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.9738095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.02380952380953,
+					"score": 28.9738095238095,
+					"trump": 6,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 23.1309523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.88095238095238,
+					"score": 27.1309523809524,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.7214285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.07142857142857,
+					"score": 22.7214285714286,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.5738095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.02380952380952,
+					"score": 15.5738095238095,
+					"trump": 0,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 15.5738095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.02380952380952,
+					"score": 15.5738095238095,
+					"trump": 5,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				4,
+				3,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 0,
+			"actual_performance": {
+				"0": {
+					"mean": 27.638,
+					"stddev": 8.59598487667353
+				},
+				"1": {
+					"mean": 15.532,
+					"stddev": 11.5594539663429
+				},
+				"2": {
+					"mean": 19.394,
+					"stddev": 12.0801806277886
+				},
+				"3": {
+					"mean": 16.544,
+					"stddev": 12.1431488502777
+				},
+				"4": {
+					"mean": 15.118,
+					"stddev": 12.487596886511
+				},
+				"5": {
+					"mean": 20.1,
+					"stddev": 11.7758226888825
+				},
+				"6": {
+					"mean": 18.668,
+					"stddev": 11.2583203010041
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					0,
+					2
+				],
+				[
+					6,
+					6
+				],
+				[
+					0,
+					4
+				],
+				[
+					3,
+					6
+				],
+				[
+					2,
+					5
+				],
+				[
+					0,
+					0
+				],
+				[
+					0,
+					5
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 24.1452380952381,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.8452380952381,
+					"score": 35.1452380952381,
+					"trump": 0,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 17.802380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.70238095238095,
+					"score": 21.802380952381,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 16.1238095238095,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.476190476190476,
+					"score": 20.1238095238095,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 12.6,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.000000000000000277555756156289,
+					"score": 19.6,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 14.7142857142857,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.285714285714286,
+					"score": 16.7142857142857,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.0714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0714285714285715,
+					"score": 14.0714285714286,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 10.2214285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.321428571428571,
+					"score": 10.2214285714286,
+					"trump": 1,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				0,
+				5,
+				2,
+				6,
+				3,
+				4,
+				1
+			]
+		},
+		{
+			"actual_best_suit": 2,
+			"actual_performance": {
+				"1": {
+					"mean": 25.016,
+					"stddev": 10.6325793672091
+				},
+				"2": {
+					"mean": 32.648,
+					"stddev": 6.70910545452969
+				},
+				"6": {
+					"mean": 20.58,
+					"stddev": 11.3690632859528
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					3
+				],
+				[
+					1,
+					2
+				],
+				[
+					0,
+					0
+				],
+				[
+					2,
+					5
+				],
+				[
+					1,
+					1
+				],
+				[
+					2,
+					6
+				],
+				[
+					6,
+					6
+				]
+			],
+			"chosen_suit": 2,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 28.75,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 34.75,
+					"trump": 2,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.3,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 31.3,
+					"trump": 1,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 17.45,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 24.45,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.55,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 21.55,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.05,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 21.05,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.85,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 20.85,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 16.45,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 16.45,
+					"trump": 4,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				2,
+				1,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"1": {
+					"mean": 27.908,
+					"stddev": 11.0829389604022
+				},
+				"2": {
+					"mean": 27.084,
+					"stddev": 11.143829862305
+				},
+				"3": {
+					"mean": 27.418,
+					"stddev": 10.1397867827682
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					3
+				],
+				[
+					5,
+					5
+				],
+				[
+					3,
+					5
+				],
+				[
+					1,
+					4
+				],
+				[
+					1,
+					1
+				],
+				[
+					0,
+					0
+				],
+				[
+					2,
+					2
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.75,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.5,
+					"score": 32.75,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 28.7095238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.19047619047619,
+					"score": 32.7095238095238,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 25.3571428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.142857142857142,
+					"score": 32.3571428571429,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.9642857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.214285714285714,
+					"score": 31.9642857142857,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 26.0380952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -0.761904761904759,
+					"score": 28.0380952380952,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.7333333333333,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.66666666666667,
+					"score": 25.7333333333333,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.6761904761905,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -2.52380952380952,
+					"score": 21.6761904761905,
+					"trump": 6,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				1,
+				3,
+				2
+			]
+		},
+		{
+			"actual_best_suit": 3,
+			"actual_performance": {
+				"0": {
+					"mean": 24.382,
+					"stddev": 11.147918011898
+				},
+				"1": {
+					"mean": 16.788,
+					"stddev": 11.4064480010212
+				},
+				"2": {
+					"mean": 18.096,
+					"stddev": 11.4167764276962
+				},
+				"3": {
+					"mean": 35.232,
+					"stddev": 6.87213038293074
+				},
+				"4": {
+					"mean": 27.452,
+					"stddev": 9.95649014462427
+				},
+				"5": {
+					"mean": 15.414,
+					"stddev": 11.3106411843008
+				},
+				"6": {
+					"mean": 17.146,
+					"stddev": 11.2212603570187
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					4
+				],
+				[
+					0,
+					0
+				],
+				[
+					0,
+					3
+				],
+				[
+					3,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					2,
+					4
+				],
+				[
+					1,
+					3
+				]
+			],
+			"chosen_suit": 3,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.3,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 31.3,
+					"trump": 3,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 15.7,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0,
+					"score": 24.7,
+					"trump": 4,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 13.6,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0,
+					"score": 20.6,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 13.5,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 15.5,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 13.0,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 15.0,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 13.0,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 15.0,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 9.4,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.0,
+					"score": 9.4,
+					"trump": 5,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				3,
+				4,
+				0,
+				2,
+				1,
+				6,
+				5
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"1": {
+					"mean": 38.22,
+					"stddev": 5.78581022848139
+				},
+				"4": {
+					"mean": 24.844,
+					"stddev": 11.7689279035943
+				},
+				"5": {
+					"mean": 29.096,
+					"stddev": 8.34786104340507
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					5
+				],
+				[
+					0,
+					1
+				],
+				[
+					5,
+					5
+				],
+				[
+					1,
+					2
+				],
+				[
+					3,
+					4
+				],
+				[
+					4,
+					4
+				],
+				[
+					1,
+					1
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.9238095238095,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.226190476190475,
+					"score": 36.9238095238095,
+					"trump": 1,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 22.6761904761905,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.72619047619048,
+					"score": 29.6761904761905,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.6285714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.42857142857143,
+					"score": 27.6285714285714,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.2285714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.928571428571427,
+					"score": 24.2285714285714,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.0857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.28571428571429,
+					"score": 23.0857142857143,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.0857142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.28571428571429,
+					"score": 23.0857142857143,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.1047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.9047619047619,
+					"score": 19.1047619047619,
+					"trump": 6,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				1,
+				5,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 22.334,
+					"stddev": 11.5799155437335
+				},
+				"2": {
+					"mean": 25.702,
+					"stddev": 10.8567580796479
+				},
+				"5": {
+					"mean": 28.318,
+					"stddev": 8.40457470667017
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					2,
+					5
+				],
+				[
+					0,
+					1
+				],
+				[
+					0,
+					2
+				],
+				[
+					1,
+					1
+				],
+				[
+					5,
+					5
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 23.0571428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.60714285714286,
+					"score": 30.0571428571429,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.2095238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.30952380952381,
+					"score": 28.2095238095238,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.447619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.547619047619048,
+					"score": 27.447619047619,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.0571428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.60714285714286,
+					"score": 27.0571428571429,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.9904761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.69047619047619,
+					"score": 24.9904761904762,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 21.847619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.04761904761905,
+					"score": 23.847619047619,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.8857142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.28571428571429,
+					"score": 22.8857142857143,
+					"trump": 4,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				2,
+				0
+			]
+		},
+		{
+			"actual_best_suit": 2,
+			"actual_performance": {
+				"0": {
+					"mean": 18.904,
+					"stddev": 11.4146740645539
+				},
+				"1": {
+					"mean": 20.858,
+					"stddev": 11.4555591744794
+				},
+				"2": {
+					"mean": 28.236,
+					"stddev": 8.16922909459638
+				},
+				"3": {
+					"mean": 24.584,
+					"stddev": 10.3507943656514
+				},
+				"4": {
+					"mean": 27.978,
+					"stddev": 9.15256881973579
+				},
+				"5": {
+					"mean": 24.276,
+					"stddev": 9.3468617193152
+				},
+				"6": {
+					"mean": 26.512,
+					"stddev": 10.3205550238347
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					4,
+					6
+				],
+				[
+					2,
+					2
+				],
+				[
+					5,
+					5
+				],
+				[
+					2,
+					3
+				],
+				[
+					3,
+					4
+				],
+				[
+					2,
+					4
+				],
+				[
+					1,
+					6
+				]
+			],
+			"chosen_suit": 2,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 24.7369047619048,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 4.38690476190476,
+					"score": 33.7369047619048,
+					"trump": 2,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 25.3845238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.43452380952381,
+					"score": 31.3845238095238,
+					"trump": 4,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 24.4940476190476,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.74404761904762,
+					"score": 28.4940476190476,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 23.3202380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 6.4702380952381,
+					"score": 27.3202380952381,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.3166666666667,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 9.41666666666667,
+					"score": 26.3166666666667,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.1583333333333,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 3.70833333333333,
+					"score": 22.1583333333333,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 18.5797619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 6.02976190476191,
+					"score": 18.5797619047619,
+					"trump": 0,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				2,
+				4,
+				3,
+				6,
+				5,
+				1,
+				0
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"1": {
+					"mean": 38.22,
+					"stddev": 5.96888599321515
+				},
+				"2": {
+					"mean": 29.438,
+					"stddev": 8.65344763663594
+				},
+				"5": {
+					"mean": 27.544,
+					"stddev": 9.48915507302943
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					1,
+					1
+				],
+				[
+					5,
+					5
+				],
+				[
+					2,
+					5
+				],
+				[
+					2,
+					2
+				],
+				[
+					1,
+					6
+				],
+				[
+					0,
+					2
+				],
+				[
+					1,
+					4
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 26.6035714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.55357142857143,
+					"score": 35.6035714285714,
+					"trump": 1,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 21.8357142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.464285714285715,
+					"score": 30.8357142857143,
+					"trump": 2,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 22.0392857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.08928571428572,
+					"score": 29.0392857142857,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.9071428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 3.60714285714286,
+					"score": 24.9071428571429,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 20.2285714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.428571428571428,
+					"score": 22.2285714285714,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.9071428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.607142857142857,
+					"score": 21.9071428571429,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 18.2357142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 1.53571428571428,
+					"score": 18.2357142857143,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				1,
+				2,
+				5
+			]
+		},
+		{
+			"actual_best_suit": 1,
+			"actual_performance": {
+				"0": {
+					"mean": 25.962,
+					"stddev": 11.4898457779032
+				},
+				"1": {
+					"mean": 28.344,
+					"stddev": 10.0020829830591
+				},
+				"5": {
+					"mean": 26.714,
+					"stddev": 9.90778501987197
+				}
+			},
+			"bid_value": 31,
+			"bidder_hand": [
+				[
+					6,
+					6
+				],
+				[
+					3,
+					3
+				],
+				[
+					1,
+					4
+				],
+				[
+					0,
+					0
+				],
+				[
+					0,
+					1
+				],
+				[
+					2,
+					2
+				],
+				[
+					5,
+					5
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 33.45,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 5,
+					"realization_bias": -2.25,
+					"score": 37.45,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 29.6785714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -4.82142857142857,
+					"score": 36.6785714285714,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 30.2035714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -0.446428571428571,
+					"score": 35.2035714285714,
+					"trump": 5,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 31.1357142857143,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 5,
+					"realization_bias": -0.964285714285715,
+					"score": 33.1357142857143,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 27.6857142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.71428571428571,
+					"score": 32.6857142857143,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 27.525,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.625,
+					"score": 32.525,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 27.0428571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.35714285714286,
+					"score": 32.0428571428571,
+					"trump": 6,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				1,
+				0,
+				5
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 21.772,
+					"stddev": 10.5597356027507
+				},
+				"1": {
+					"mean": 29.802,
+					"stddev": 10.3976341539795
+				},
+				"2": {
+					"mean": 30.342,
+					"stddev": 10.0405695057601
+				},
+				"3": {
+					"mean": 25.776,
+					"stddev": 10.9878944297804
+				},
+				"4": {
+					"mean": 28.104,
+					"stddev": 10.0616690464356
+				},
+				"5": {
+					"mean": 31.936,
+					"stddev": 8.74870870471751
+				},
+				"6": {
+					"mean": 21.572,
+					"stddev": 10.7143276037276
+				}
+			},
+			"bid_value": 31,
+			"bidder_hand": [
+				[
+					4,
+					4
+				],
+				[
+					5,
+					5
+				],
+				[
+					2,
+					2
+				],
+				[
+					1,
+					4
+				],
+				[
+					2,
+					5
+				],
+				[
+					3,
+					3
+				],
+				[
+					1,
+					1
+				]
+			],
+			"chosen_suit": 1,
+			"classification_tags": [
+				"no_clear_pattern"
+			],
+			"disagreement": true,
+			"disagreement_severity": {
+				"actual_best_predicted_rank": 2,
+				"actual_best_trump": 5,
+				"actual_points_gap": 2.134,
+				"chosen_predicted_rank": 1,
+				"chosen_trump": 1,
+				"predicted_score_gap": 1.28571428571428
+			},
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 33.3214285714286,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -2.17857142857143,
+					"score": 40.3214285714286,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 32.0357142857143,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -1.46428571428571,
+					"score": 39.0357142857143,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 31.875,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -1.375,
+					"score": 38.875,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 30.4821428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -5.26785714285714,
+					"score": 37.4821428571429,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 27.3642857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 4,
+					"realization_bias": -3.53571428571429,
+					"score": 32.3642857142857,
+					"trump": 3,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 26.3035714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 5,
+					"realization_bias": -2.94642857142857,
+					"score": 26.3035714285714,
+					"trump": 0,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 26.3035714285714,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 5,
+					"realization_bias": -2.94642857142857,
+					"score": 26.3035714285714,
+					"trump": 6,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 2,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				1,
+				5,
+				4,
+				2,
+				3,
+				0,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 2,
+			"actual_performance": {
+				"2": {
+					"mean": 28.446,
+					"stddev": 8.94310259361929
+				},
+				"3": {
+					"mean": 19.716,
+					"stddev": 11.6995446065221
+				},
+				"4": {
+					"mean": 19.26,
+					"stddev": 12.3719198186862
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					3
+				],
+				[
+					2,
+					5
+				],
+				[
+					2,
+					4
+				],
+				[
+					6,
+					6
+				],
+				[
+					0,
+					1
+				],
+				[
+					3,
+					3
+				],
+				[
+					4,
+					5
+				]
+			],
+			"chosen_suit": 2,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.775,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.625,
+					"score": 31.775,
+					"trump": 2,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 18.5952380952381,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 2.59523809523809,
+					"score": 25.5952380952381,
+					"trump": 3,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 17.6654761904762,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.684523809523809,
+					"score": 21.6654761904762,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 17.225,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.625,
+					"score": 21.225,
+					"trump": 5,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 15.2869047619048,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.363095238095238,
+					"score": 17.2869047619048,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 12.2035714285714,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 0.0535714285714284,
+					"score": 17.2035714285714,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.8464285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.303571428571429,
+					"score": 16.8464285714286,
+					"trump": 1,
+					"trump_count": 1
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				2,
+				3,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"3": {
+					"mean": 25.794,
+					"stddev": 9.95628263962008
+				},
+				"5": {
+					"mean": 28.446,
+					"stddev": 7.68421004397982
+				},
+				"6": {
+					"mean": 19.68,
+					"stddev": 11.3416753612506
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					3,
+					3
+				],
+				[
+					4,
+					5
+				],
+				[
+					3,
+					6
+				],
+				[
+					5,
+					6
+				],
+				[
+					0,
+					5
+				],
+				[
+					3,
+					5
+				],
+				[
+					1,
+					1
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.9071428571429,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.60714285714286,
+					"score": 33.9071428571429,
+					"trump": 5,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 21.8940476190476,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": -1.25595238095238,
+					"score": 30.8940476190476,
+					"trump": 3,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 19.1190476190476,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.880952380952381,
+					"score": 23.1190476190476,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.0619047619048,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.26190476190476,
+					"score": 23.0619047619048,
+					"trump": 0,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.3178571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": -0.232142857142857,
+					"score": 19.3178571428571,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.947619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.452380952380952,
+					"score": 17.947619047619,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.0095238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.190476190476191,
+					"score": 14.0095238095238,
+					"trump": 2,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				3,
+				6
+			]
+		},
+		{
+			"actual_best_suit": 4,
+			"actual_performance": {
+				"0": {
+					"mean": 16.582,
+					"stddev": 11.2998794683837
+				},
+				"1": {
+					"mean": 18.688,
+					"stddev": 11.8907802939925
+				},
+				"2": {
+					"mean": 21.56,
+					"stddev": 10.7546455078724
+				},
+				"3": {
+					"mean": 18.222,
+					"stddev": 12.2747185711119
+				},
+				"4": {
+					"mean": 32.82,
+					"stddev": 6.53020673485917
+				},
+				"5": {
+					"mean": 23.506,
+					"stddev": 9.72512025632589
+				},
+				"6": {
+					"mean": 25.446,
+					"stddev": 9.20755581031144
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					4,
+					6
+				],
+				[
+					4,
+					5
+				],
+				[
+					2,
+					4
+				],
+				[
+					2,
+					5
+				],
+				[
+					1,
+					1
+				],
+				[
+					5,
+					6
+				],
+				[
+					4,
+					4
+				]
+			],
+			"chosen_suit": 4,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 27.1714285714286,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 3.32142857142857,
+					"score": 38.1714285714286,
+					"trump": 4,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 23.6380952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.488095238095237,
+					"score": 29.6380952380952,
+					"trump": 5,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 24.8095238095238,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 4.05952380952381,
+					"score": 28.8095238095238,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.552380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.202380952380952,
+					"score": 28.552380952381,
+					"trump": 2,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.1047619047619,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.9047619047619,
+					"score": 24.1047619047619,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 18.8380952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.98809523809524,
+					"score": 18.8380952380952,
+					"trump": 0,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 18.8380952380952,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.98809523809524,
+					"score": 18.8380952380952,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				4,
+				5,
+				6,
+				2,
+				1,
+				0,
+				3
+			]
+		},
+		{
+			"actual_best_suit": 5,
+			"actual_performance": {
+				"0": {
+					"mean": 22.254,
+					"stddev": 9.94291124369517
+				},
+				"4": {
+					"mean": 25.702,
+					"stddev": 11.7632136765426
+				},
+				"5": {
+					"mean": 35.482,
+					"stddev": 6.27898686095138
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					4,
+					5
+				],
+				[
+					1,
+					5
+				],
+				[
+					0,
+					2
+				],
+				[
+					5,
+					6
+				],
+				[
+					4,
+					4
+				],
+				[
+					0,
+					6
+				],
+				[
+					5,
+					5
+				]
+			],
+			"chosen_suit": 5,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 25.6095238095238,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 3.80952380952381,
+					"score": 36.6095238095238,
+					"trump": 5,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 23.5619047619048,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 0.511904761904762,
+					"score": 27.5619047619048,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 19.1428571428571,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 1,
+					"realization_bias": 1.89285714285714,
+					"score": 26.1428571428571,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.047619047619,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.29761904761905,
+					"score": 25.047619047619,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.2761904761905,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.22619047619048,
+					"score": 23.2761904761905,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 19.3714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.82142857142857,
+					"score": 21.3714285714286,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 17.7714285714286,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 2.32142857142857,
+					"score": 17.7714285714286,
+					"trump": 3,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				5,
+				0,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 3,
+			"actual_performance": {
+				"0": {
+					"mean": 22.096,
+					"stddev": 11.5839019332866
+				},
+				"3": {
+					"mean": 34.886,
+					"stddev": 7.77052147542235
+				},
+				"4": {
+					"mean": 20.776,
+					"stddev": 11.9720434346021
+				}
+			},
+			"bid_value": 30,
+			"bidder_hand": [
+				[
+					2,
+					3
+				],
+				[
+					3,
+					6
+				],
+				[
+					0,
+					4
+				],
+				[
+					0,
+					0
+				],
+				[
+					3,
+					4
+				],
+				[
+					3,
+					3
+				],
+				[
+					1,
+					1
+				]
+			],
+			"chosen_suit": 3,
+			"classification_tags": [],
+			"disagreement": false,
+			"disagreement_severity": null,
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 27.977380952381,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": 1.32738095238095,
+					"score": 38.977380952381,
+					"trump": 3,
+					"trump_count": 4
+				},
+				{
+					"estimated_points": 18.4142857142857,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.785714285714286,
+					"score": 25.4142857142857,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 20.352380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -1.04761904761905,
+					"score": 24.352380952381,
+					"trump": 4,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 21.502380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 2.20238095238095,
+					"score": 23.502380952381,
+					"trump": 2,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 18.502380952381,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.797619047619048,
+					"score": 20.502380952381,
+					"trump": 6,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 14.5821428571429,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 2,
+					"realization_bias": -0.267857142857143,
+					"score": 19.5821428571429,
+					"trump": 1,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 15.3309523809524,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 3,
+					"realization_bias": -0.369047619047619,
+					"score": 15.3309523809524,
+					"trump": 5,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 1,
+			"sweep_scope": "top3",
+			"tested_suits": [
+				3,
+				0,
+				4
+			]
+		},
+		{
+			"actual_best_suit": 3,
+			"actual_performance": {
+				"0": {
+					"mean": 27.932,
+					"stddev": 9.81872578291092
+				},
+				"1": {
+					"mean": 25.834,
+					"stddev": 12.1879630783819
+				},
+				"2": {
+					"mean": 17.778,
+					"stddev": 10.7816842840068
+				},
+				"3": {
+					"mean": 33.202,
+					"stddev": 8.49665793121038
+				},
+				"4": {
+					"mean": 17.854,
+					"stddev": 11.5827753150961
+				},
+				"5": {
+					"mean": 19.536,
+					"stddev": 10.8429103104287
+				},
+				"6": {
+					"mean": 23.89,
+					"stddev": 11.8127854462866
+				}
+			},
+			"bid_value": 31,
+			"bidder_hand": [
+				[
+					1,
+					3
+				],
+				[
+					0,
+					6
+				],
+				[
+					0,
+					3
+				],
+				[
+					6,
+					6
+				],
+				[
+					1,
+					1
+				],
+				[
+					4,
+					4
+				],
+				[
+					3,
+					3
+				]
+			],
+			"chosen_suit": 0,
+			"classification_tags": [
+				"control_gap",
+				"off_suit_doubles_sacrifice"
+			],
+			"disagreement": true,
+			"disagreement_severity": {
+				"actual_best_predicted_rank": 2,
+				"actual_best_trump": 3,
+				"actual_points_gap": 5.27,
+				"chosen_predicted_rank": 1,
+				"chosen_trump": 0,
+				"predicted_score_gap": 1.55
+			},
+			"full_predicted_ranking": [
+				{
+					"estimated_points": 35.6,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": 0.0,
+					"score": 39.6,
+					"trump": 0,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 29.05,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 38.05,
+					"trump": 3,
+					"trump_count": 3
+				},
+				{
+					"estimated_points": 28.45,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 35.45,
+					"trump": 1,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 24.5,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 31.5,
+					"trump": 6,
+					"trump_count": 2
+				},
+				{
+					"estimated_points": 22.9,
+					"has_double_trump": true,
+					"off_suit_doubles_count": 3,
+					"realization_bias": 0.0,
+					"score": 27.9,
+					"trump": 4,
+					"trump_count": 1
+				},
+				{
+					"estimated_points": 26.9,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": 0.0,
+					"score": 26.9,
+					"trump": 2,
+					"trump_count": 0
+				},
+				{
+					"estimated_points": 26.9,
+					"has_double_trump": false,
+					"off_suit_doubles_count": 4,
+					"realization_bias": 0.0,
+					"score": 26.9,
+					"trump": 5,
+					"trump_count": 0
+				}
+			],
+			"predicted_rank_of_actual_best": 2,
+			"sweep_scope": "full7",
+			"tested_suits": [
+				0,
+				3,
+				1,
+				6,
+				4,
+				2,
+				5
+			]
+		}
+	],
+	"params": {
+		"n_full_sweep_target": 15,
+		"n_qualifying_hands_target": 40,
+		"realization_shift_threshold": 1.0,
+		"trials_per_candidate": 500
+	},
+	"summary": {
+		"disagreement_rate": 0.075,
+		"mean_actual_points_gap_on_disagreement": 3.09,
+		"mean_predicted_score_gap_on_disagreement": 2.91547619047619,
+		"n_disagreements": 3,
+		"n_full_sweep_hands": 14,
+		"n_outside_top3_detected": 0,
+		"n_qualifying_hands": 40,
+		"n_top3_hands": 26,
+		"note": "outside_top3 can only be detected on full7-scope hands; top3-scope hands cannot show rank>3 by construction. Compare mean_predicted_score_gap vs mean_actual_points_gap: small/comparable gaps suggest calibration error, large predicted gap with the AI confidently wrong suggests a wrong-objective error.",
+		"predicted_rank_of_actual_best_histogram": {
+			"1": 37,
+			"2": 3
+		},
+		"tag_counts": {
+			"control_gap": 1,
+			"no_clear_pattern": 1,
+			"off_suit_doubles_sacrifice": 1,
+			"realization_shift": 1
+		}
+	}
+}

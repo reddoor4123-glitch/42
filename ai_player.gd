@@ -188,19 +188,109 @@ static func evaluate_hand(hand: Array[Domino], trump: int) -> Dictionary:
 		"estimated_points": estimated_points,   # used by best_trump / logging / bidding
 	}
 
-# Find the best trump suit for this hand
+# Shared structural-strength primitive: how much does holding this many
+# trump tiles, including or excluding the trump double, matter — used
+# identically by trump_selection_score() (below) and decide_bid()'s
+# control_score (and its debug-print duplicate). Values match the
+# pre-existing control_score tiers exactly; this is an extraction, not a
+# retune. Spec: trump_selection_score()/calculate_trump_control_value(),
+# July 20 2026.
+static func calculate_trump_control_value(trump_count: int, has_double_trump: bool) -> float:
+	var value := 0.0
+	if has_double_trump:
+		value += 2.5
+	if trump_count >= 4:
+		value += 1.5
+	if trump_count >= 5:
+		value += 3.0
+	if trump_count >= 6:
+		value += 2.0
+	return value
+
+# Cumulative off-suit-doubles compounding bonus for n doubles, matching the
+# tier shape already in evaluate_hand()'s off-suit-doubles scoring above:
+# the 1st off-suit double earns no bonus, then +0.3 / +0.5 / +0.7 for the
+# 2nd/3rd/4th (cumulative: 0, 0, 0.3, 0.8, 1.5).
+# NOTE: evaluate_hand()'s match statement only defines tiers for i=1,2,3
+# (i.e. up to 4 doubles total). This hits the same ceiling — 5+ doubles in
+# one hand is rare but not impossible; flatten at the 4-double value rather
+# than extrapolating an untested curve. If this ceiling is hit often in
+# practice, that's a sign evaluate_hand()'s own tier definition needs
+# extending first, in its own pass — not silently guessed at here.
+static func _doubles_tier(n: int) -> float:
+	var capped = min(n, 4)
+	match capped:
+		0, 1: return 0.0
+		2: return 0.3
+		3: return 0.8
+		4: return 1.5
+	return 1.5
+
+# Answers "which trump would I choose to declare" — NOT "how good is this
+# hand" (that's evaluate_hand()'s job). Reuses evaluate_hand()'s trump-tile
+# and off-suit-non-double scoring unchanged, but recomputes the off-suit-
+# doubles compounding bonus on the hand's FIXED total double count instead
+# of the count remaining off-suit under this specific candidate — the
+# compounding bonus should reward "this hand is doubles-rich," not "this
+# particular candidate happens to leave more doubles off-suit than that
+# one." See AI_Play_Behavior_Bug_Log.md, Finding #4.
+#
+# EXPERIMENTAL INSTRUMENTATION (temporary, remove once the Job 5 rerun
+# confirms the live 38/40 result and this has baked for a while): also
+# reports "legacy_selection_score", the OLD flat formula
+# (estimated_points + trump_count*2.0 + has_double_trump?3.0:0.0), purely
+# for side-by-side comparison. best_trump() below selects on
+# "selection_score" only — legacy_selection_score is never used for any
+# decision, just logged so old vs. new can be compared without needing a
+# mode-switching flag (and the risk of it being left in the wrong position).
+static func trump_selection_score(hand: Array[Domino], trump: int) -> Dictionary:
+	var eval = evaluate_hand(hand, trump)
+
+	# Total doubles in the hand — invariant across all 7 candidate suits.
+	var total_doubles := 0
+	for d in hand:
+		if d.is_double():
+			total_doubles += 1
+
+	# Doubles left off-suit under THIS candidate (what evaluate_hand()
+	# already computed its tier bonus from).
+	var off_suit_doubles := 0
+	for d in hand:
+		if d.is_double() and not d.is_trump(trump):
+			off_suit_doubles += 1
+
+	var corrected_points = eval["estimated_points"] \
+		+ 6.0 * (_doubles_tier(total_doubles) - _doubles_tier(off_suit_doubles))
+
+	var control_value = calculate_trump_control_value(
+		eval["trump_count"], eval.get("has_double_trump", false)
+	)
+
+	var legacy_score = eval["estimated_points"] + eval["trump_count"] * 2.0 \
+		+ (3.0 if eval.get("has_double_trump", false) else 0.0)
+
+	var result = eval.duplicate()
+	result["corrected_estimated_points"] = corrected_points
+	result["control_value"] = control_value
+	result["selection_score"] = corrected_points + control_value
+	result["legacy_selection_score"] = legacy_score  # experimental instrumentation — see note above
+	return result
+
+# Find the best trump suit for this hand. Returns the winning suit's full
+# trump_selection_score() result dict (not just the suit index) — callers
+# read "trump", "estimated_points", "trump_count", "has_double_trump" off
+# this exactly as before; those keys are untouched, inherited via
+# eval.duplicate() inside trump_selection_score(). Selection uses
+# "selection_score" (the corrected formula), never "legacy_selection_score".
 static func best_trump(hand: Array[Domino]) -> Dictionary:
-	var best_eval := {}
-	var best_score := -1.0
+	var best_result := {}
+	var best_score := -INF
 	for suit in range(7):
-		var eval = evaluate_hand(hand, suit)
-		var score = eval["estimated_points"] + eval["trump_count"] * 2.0
-		if eval.get("has_double_trump", false):
-			score += 3.0
-		if score > best_score:
-			best_score = score
-			best_eval = eval
-	return best_eval
+		var result = trump_selection_score(hand, suit)
+		if result["selection_score"] > best_score:
+			best_score = result["selection_score"]
+			best_result = result
+	return best_result
 
 # ─── BID DECISION ────────────────────────────────────────────────────────────
 
@@ -248,15 +338,8 @@ static func decide_bid(
 	#     Scales trick expectation lightly, then adds structure bonuses.
 	#     Does not replace EV; only nudges confidence upward.
 	var est_tricks: float = eval.get("estimated_tricks", 0.0)
-	var control_score := est_tricks * 6.0 * 0.12
-	if eval.get("has_double_trump", false):
-		control_score += 2.5
-	if eval.get("trump_count", 0) >= 4:
-		control_score += 1.5
-	if eval.get("trump_count", 0) >= 5:
-		control_score += 3.0
-	if eval.get("trump_count", 0) >= 6:
-		control_score += 2.0
+	var control_score := est_tricks * 6.0 * 0.12 \
+		+ calculate_trump_control_value(eval.get("trump_count", 0), eval.get("has_double_trump", false))
 
 	# (C) Auction stance — classifies bid intent before finalizing target
 	# This is a shape modifier on decision pressure, not a replacement of EV.
@@ -459,11 +542,8 @@ static func _log_bid_decision(
 	])
 	var ev_score_log := est_pts + risk_bias * 4.0
 	var est_tricks_log: float = eval.get("estimated_tricks", 0.0)
-	var control_score_log := est_tricks_log * 6.0 * 0.12
-	if eval.get("has_double_trump", false): control_score_log += 2.5
-	if eval.get("trump_count", 0) >= 4:    control_score_log += 1.5
-	if eval.get("trump_count", 0) >= 5:    control_score_log += 3.0
-	if eval.get("trump_count", 0) >= 6:    control_score_log += 2.0
+	var control_score_log := est_tricks_log * 6.0 * 0.12 \
+		+ calculate_trump_control_value(eval.get("trump_count", 0), eval.get("has_double_trump", false))
 	var stance_bias_log: float = eval.get("stance_bias", 0.0)
 	var final_score_log := ev_score_log + control_score_log + stance_bias_log
 	print("  Layer 2:       ev=%.1f  control=%.1f  stance=%.1f  final=%.1f  threshold=28.0  should_bid=%s  target=%d" % [
