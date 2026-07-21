@@ -1,6 +1,15 @@
 class_name GameSettings
 extends RefCounted
 
+# Which preset this session's settings originated from (e.g. "teel",
+# "standard", "tournament", "lechner", or "custom:<name>") — set once in
+# game_table.gd's _on_preset_chosen(), not by any individual setting field.
+# Persists through settings-screen tweaks (see _copy_settings()) until a
+# different preset is chosen from the main menu. Used today to gate the
+# Teel Rules custom domino back; "" means no preset has been chosen yet
+# (fresh GameSettings.new()).
+var preset_id: String = ""
+
 # ─────────────────────────────────────────────
 #  BIDDING RULES
 # ─────────────────────────────────────────────
@@ -155,12 +164,12 @@ static func teel_rules() -> GameSettings:
 	s.allow_forced_bid = true
 	s.forced_bid_minimum = 30
 	s.minimum_bid = 30
-	s.allow_jump_bids = true                # "any amount up to one mark higher" per family rule
+	s.allow_jump_bids = false                # confirmed off, July 21 2026
 
 	s.allow_plunge = true
 	s.plunge_minimum_doubles = 4
 	s.plunge_minimum_bid_marks = 4
-	s.allow_splash = false                  # not mentioned by family; default off until confirmed
+	s.allow_splash = true                   # confirmed on, July 21 2026
 
 	s.allow_nello = true
 	s.allow_nello_exchange = true

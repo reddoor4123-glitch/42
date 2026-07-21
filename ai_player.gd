@@ -1607,3 +1607,70 @@ static func _beats(challenger: Domino, current: Domino, trump: int, lead_suit: i
 	if c_suit != b_suit:
 		return false  # Different non-trump suits — can't beat
 	return c_rank > b_rank
+
+# ─── NELLO BLIND EXCHANGE ────────────────────────────────────────────────────
+# Family house rule (Katy, July 20-21 2026): when the human bids and declares
+# Nello, they may blindly exchange exactly one domino with their sitting-out
+# partner. This selects which domino a seat should GIVE, per that family
+# strategy. Seat-agnostic — usable by any AI-controlled seat sitting out a
+# Nello hand, not hardcoded to a specific player_id, per Katy's request for
+# whenever AI Nello bidding exists (it doesn't today — decide_bid() never
+# constructs a Bid.Type.NELLO). Needs no trick context (no trump/lead_suit) —
+# pure pip-pattern matching, evaluated once before play starts.
+static func select_nello_exchange_give(hand: Array[Domino], doubles_mode: String, doubles_reversed: bool) -> Domino:
+	var is_reversed_own_suit = (doubles_mode == "own_suit" and doubles_reversed)
+
+	# Tier 1 — universal, all modes: 0:1
+	for d in hand:
+		if d.left == 0 and d.right == 1:
+			return d
+
+	if is_reversed_own_suit:
+		# Tier 2: 6:6 (the safe double under reversed own_suit — 0:0 flips
+		# to dangerous/highest here, 6:6 flips to safe/lowest)
+		for d in hand:
+			if d.left == 6 and d.right == 6:
+				return d
+		# Tier 3: non-double blanks + non-double ones, one combined pool
+		var pool: Array[Domino] = hand.filter(func(d):
+			return (d.left == 0 and d.right != 0) or (d.left == 1 and d.right != 1))
+		if pool.size() > 0:
+			return _lowest_pip_sum(pool)
+	else:
+		# Tier 2 — high/low/own_suit (non-reversed) all share this: 0:0
+		for d in hand:
+			if d.left == 0 and d.right == 0:
+				return d
+
+		if doubles_mode == "high":
+			# Every double is highest-of-suit here, so 0:0 already being
+			# gone means non-doubles are the next-safest gives.
+			var blanks: Array[Domino] = hand.filter(func(d): return d.left == 0 and d.right != 0)
+			if blanks.size() > 0:
+				return _lowest_pip_sum(blanks)
+			var ones: Array[Domino] = hand.filter(func(d): return d.left == 1 or d.right == 1)
+			if ones.size() > 0:
+				return _lowest_pip_sum(ones)
+		else:
+			# low / own_suit (non-reversed): doubles are safe here, so
+			# giving away another double (1:1) is cheaper than a non-double.
+			for d in hand:
+				if d.left == 1 and d.right == 1:
+					return d
+			var blanks: Array[Domino] = hand.filter(func(d): return d.left == 0 and d.right != 0)
+			if blanks.size() > 0:
+				return _lowest_pip_sum(blanks)
+			var ones: Array[Domino] = hand.filter(func(d):
+				return (d.left == 1 or d.right == 1) and d.left != d.right)
+			if ones.size() > 0:
+				return _lowest_pip_sum(ones)
+
+	# Universal fallback — reached only if the hand has no 0s or 1s at all.
+	return _lowest_pip_sum(hand)
+
+static func _lowest_pip_sum(pool: Array[Domino]) -> Domino:
+	var best = pool[0]
+	for d in pool:
+		if d.pip_sum() < best.pip_sum():
+			best = d
+	return best

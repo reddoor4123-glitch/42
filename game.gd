@@ -170,6 +170,17 @@ func apply_bid_result(trump_suit: int = -1):
 		BidScript.Type.SEVENS:
 			trump = -1
 
+# Applies a blind 1-for-1 Nello exchange between the bidder and their
+# sitting-out partner. Both dominoes must already be independently decided
+# (blind) before this is called — this only performs the swap.
+func apply_nello_exchange(bidder_give: Domino, partner_give: Domino):
+	var bidder_id = current_bid.player_id
+	var partner_id = (bidder_id + 2) % 4
+	players[bidder_id].hand.erase(bidder_give)
+	players[bidder_id].hand.append(partner_give)
+	players[partner_id].hand.erase(partner_give)
+	players[partner_id].hand.append(bidder_give)
+
 # --- TRICK PLAY ---
 
 func start_trick(leading_player: int):

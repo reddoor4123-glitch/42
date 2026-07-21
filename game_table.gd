@@ -17,6 +17,7 @@ var opponent_left_container: VBoxContainer
 var opponent_right_container: VBoxContainer
 var info_label: Label
 var trump_indicator_label: Label
+var bid_reminder_label: Label
 var play_vbox: VBoxContainer
 var _hand_result_banner: Label = null
 var bid_panel: PanelContainer
@@ -41,6 +42,10 @@ var _doubles_trump_reversed_btn: Button = null
 var _follow_me_btn: Button = null
 var nello_panel: PanelContainer
 var _nello_reversed_btn: Button = null
+var nello_exchange_panel: PanelContainer
+var nello_exchange_hand_container: HBoxContainer
+var _nello_exchange_partner_tile: DominoTile = null
+var _pending_partner_give: Domino = null
 var _small_end_active: bool = false
 var _small_end_toggle_btn: Button = null
 var preset_panel: PanelContainer
@@ -144,6 +149,21 @@ func _build_ui():
 	bg.color = Color(0.13, 0.30, 0.18)  # Felt green
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(bg)
+
+	# Bottom-left current-bid reminder — a floating overlay, independent of
+	# the main vbox layout below, so it stays put regardless of what's
+	# happening in the play area. Hidden (empty text) until a bid is won;
+	# see _update_bid_reminder().
+	bid_reminder_label = Label.new()
+	bid_reminder_label.text = ""
+	bid_reminder_label.add_theme_color_override("font_color", Color(0.90, 0.90, 0.85))
+	bid_reminder_label.add_theme_constant_override("line_spacing", -10)
+	bid_reminder_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bid_reminder_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	bid_reminder_label.position = Vector2(85, -36)
+	root.add_child(bid_reminder_label)
+	# Font size is set below, once status_label exists — matched to it
+	# exactly (not a guessed literal) so the two always read as the same size.
 
 	# Main vertical layout
 	var vbox = VBoxContainer.new()
@@ -446,6 +466,7 @@ func _build_ui():
 	status_label.add_theme_color_override("font_color", Color.YELLOW)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	play_vbox.add_child(status_label)
+	bid_reminder_label.add_theme_font_size_override("font_size", status_label.get_theme_font_size("font_size"))
 
 	# --- Bid panel lives inside the play area ---
 	bid_panel = PanelContainer.new()
@@ -579,6 +600,39 @@ func _build_ui():
 	_nello_reversed_btn.visible = false
 	_nello_reversed_btn.pressed.connect(_on_nello_mode_selected.bind("own_suit_reversed"))
 	nello_row.add_child(_nello_reversed_btn)
+
+	# --- Nello blind-exchange panel ---
+	nello_exchange_panel = PanelContainer.new()
+	nello_exchange_panel.visible = false
+	play_vbox.add_child(nello_exchange_panel)
+
+	var exchange_vbox = VBoxContainer.new()
+	exchange_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	exchange_vbox.add_theme_constant_override("separation", 6)
+	nello_exchange_panel.add_child(exchange_vbox)
+
+	var exchange_label = Label.new()
+	exchange_label.text = "Exchange a domino with your partner — tap one to send, or decline."
+	exchange_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(exchange_label, 14)
+	exchange_vbox.add_child(exchange_label)
+
+	# Partner's already-committed blind pick — face-down, cosmetic only.
+	# Any placeholder Domino works since the face never shows; not wired to
+	# _pending_partner_give so the value can never leak visually.
+	var partner_pick_row = HBoxContainer.new()
+	partner_pick_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	exchange_vbox.add_child(partner_pick_row)
+	_nello_exchange_partner_tile = DominoTile.new()
+	_nello_exchange_partner_tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_nello_exchange_partner_tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	partner_pick_row.add_child(_nello_exchange_partner_tile)
+	_nello_exchange_partner_tile.setup(Domino.new(0, 0), false)
+	_nello_exchange_partner_tile.custom_minimum_size = TILE_FULL
+
+	nello_exchange_hand_container = HBoxContainer.new()
+	nello_exchange_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	exchange_vbox.add_child(nello_exchange_hand_container)
 
 	# --- Human player hand ---
 	player_hand_container = HBoxContainer.new()
@@ -937,6 +991,18 @@ func _start_game():
 	_show_game_board(false)
 	main_menu_panel.visible = true
 
+# Table-wide domino back — currently just Teel Rules' custom tile art;
+# every other preset (including custom rulesets saved from any base) falls
+# back to DominoTile's default procedural pattern. Called whenever a preset
+# is actually applied (_on_preset_chosen, _restart_game_with_settings) —
+# not on every settings-screen keystroke, since dominoes only render once
+# a game is showing.
+func _update_domino_back_texture(preset_id: String):
+	if preset_id == "teel":
+		DominoTile.custom_back_texture = load("res://art/domino_back_teel.png")
+	else:
+		DominoTile.custom_back_texture = null
+
 func _on_preset_chosen(key: String):
 	preset_panel.visible = false
 	_save_last_used(key)
@@ -957,6 +1023,8 @@ func _on_preset_chosen(key: String):
 			"tournament": s = GameSettingsScript.tournament_rules()
 			"lechner":    s = GameSettingsScript.lechner_hall()
 			_:            s = GameSettingsScript.standard_42()
+	s.preset_id = key
+	_update_domino_back_texture(s.preset_id)
 	game = Game.new(s)
 	game.setup_players(human_seat)
 	_start_hand()
@@ -990,6 +1058,7 @@ func _start_hand():
 func _start_bidding():
 	_set_info("Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 	trump_indicator_label.text = ""
+	bid_reminder_label.text = ""
 	if is_instance_valid(_hand_result_banner):
 		_hand_result_banner.queue_free()
 		_hand_result_banner = null
@@ -1296,6 +1365,7 @@ func _finish_bidding(_unused: Array):
 			game.apply_bid_result(-1)
 			_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 			trump_indicator_label.text = ""
+			_update_bid_reminder()
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
 			_begin_play(winning.player_id)
@@ -1305,6 +1375,7 @@ func _finish_bidding(_unused: Array):
 		game.apply_bid_result(-1)
 		_set_info("Sevens | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 		trump_indicator_label.text = ""
+		_update_bid_reminder()
 		_refresh_all_hands()
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
 		_begin_play(winning.player_id)
@@ -1324,6 +1395,7 @@ func _finish_bidding(_unused: Array):
 			game.apply_bid_result(best_suit)
 			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
 			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
+			_update_bid_reminder()
 			_show_trump_announcement(best_suit)
 			_refresh_all_hands()
 			_set_status("%s called %s" % [_seat_label(partner_id), suit_names[best_suit]])
@@ -1344,6 +1416,7 @@ func _finish_bidding(_unused: Array):
 			game.apply_bid_result(best_suit)
 			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
 			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
+			_update_bid_reminder()
 			_show_trump_announcement(best_suit)
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
@@ -1366,6 +1439,7 @@ func _on_trump_selected(suit: int):
 	game.apply_bid_result(suit)
 	_set_info("Trump: %ds | Marks: You %d | Them %d" % [suit, game.team_marks[0], game.team_marks[1]])
 	trump_indicator_label.text = "Trump: %s" % _trump_display_name(suit)
+	_update_bid_reminder()
 	_show_trump_announcement(suit)
 	_refresh_all_hands()
 	# Derive the correct leader from game state set by apply_bid_result():
@@ -1392,7 +1466,60 @@ func _on_nello_mode_selected(mode: String):
 	game.apply_bid_result(-1)
 	_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
 	trump_indicator_label.text = ""
+	_update_bid_reminder()
 	_refresh_all_hands()
+	if game.settings.allow_nello_exchange:
+		_start_nello_exchange()
+	else:
+		_begin_play()
+
+func _start_nello_exchange():
+	var partner_id = game.nello_solo_player  # set by apply_bid_result() just above
+	_pending_partner_give = AIPlayer.select_nello_exchange_give(
+		game.players[partner_id].hand,
+		game.active_nello_doubles_mode,
+		game.active_nello_doubles_reversed
+	)
+	_show_nello_exchange_panel()
+
+func _show_nello_exchange_panel():
+	_populate_nello_exchange_hand()
+	nello_exchange_panel.visible = true
+	_set_status("Exchange a domino with your partner, or decline.")
+
+func _populate_nello_exchange_hand():
+	for child in nello_exchange_hand_container.get_children():
+		child.queue_free()
+	for d in game.players[human_seat].hand:
+		var tile = DominoTile.new()
+		tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		nello_exchange_hand_container.add_child(tile)
+		tile.setup(d, true)
+		tile.custom_minimum_size = TILE_FULL
+		tile.domino_pressed.connect(func(t: DominoTile): _on_nello_exchange_domino_selected(t.domino))
+
+	# "Don't Trade" — a domino-tile-shaped control in a distinct visual
+	# state, appended to the end of the hand row. Implemented as a plain
+	# Button (not a DominoTile draw-state extension) to keep the shared
+	# DominoTile component untouched; reskin freely once this can be seen
+	# in the editor.
+	var decline_btn = Button.new()
+	decline_btn.text = "Don't\nTrade"
+	decline_btn.custom_minimum_size = TILE_FULL
+	decline_btn.pressed.connect(_on_nello_exchange_declined)
+	nello_exchange_hand_container.add_child(decline_btn)
+
+func _on_nello_exchange_domino_selected(chosen: Domino):
+	nello_exchange_panel.visible = false
+	game.apply_nello_exchange(chosen, _pending_partner_give)
+	_pending_partner_give = null
+	_refresh_all_hands()
+	_begin_play()
+
+func _on_nello_exchange_declined():
+	nello_exchange_panel.visible = false
+	_pending_partner_give = null
 	_begin_play()
 
 func _on_small_end_toggle_pressed(pressed: bool):
@@ -1626,7 +1753,7 @@ func _execute_play(player: Player, domino: Domino, declared_suit: int = -1):
 	print("  [Trick %d] [%s] %s" % [game.tricks_played + 1, _player_label(player.id), reason])
 	_last_play_reason = ""
 	_add_to_play_area(player.id, domino)
-	_refresh_hand(player)
+	_refresh_all_hands()
 
 	game.current_player = (game.current_player + 3) % 4
 	_update_armable_highlights()
@@ -1834,6 +1961,45 @@ func _trump_display_name(suit: int) -> String:
 		return "Doubles"
 	return suit_names[suit]
 
+# Bottom-left bid reminder — three lines: who bid + which team, the
+# contract's trump/mode, and the bid's value. Call after every point where
+# a contract's trump suit or Nello doubles mode is finalized (both the
+# human panels' handlers and the inline AI branches in _finish_bidding()),
+# so it never goes stale mid-hand. Cleared (empty text) at the start of a
+# new auction in _start_bidding(), before any bid exists yet.
+func _update_bid_reminder():
+	var bid = game.current_bid
+	if bid == null or bid.type == BidScript.Type.PASS:
+		bid_reminder_label.text = ""
+		return
+
+	var team_label = "Us" if bid.player_id % 2 == human_seat % 2 else "Them"
+	var line1 = "P%d - %s" % [bid.player_id, team_label]
+
+	var line2: String
+	if bid.type == BidScript.Type.NELLO:
+		var mode_names = {"high": "high", "low": "low", "own_suit": "own suit"}
+		var mode_label = mode_names.get(game.active_nello_doubles_mode, game.active_nello_doubles_mode)
+		if game.active_nello_doubles_mode == "own_suit" and game.active_nello_doubles_reversed:
+			mode_label = "own suit (reversed)"
+		line2 = "Nello doubles %s" % mode_label
+	elif bid.type == BidScript.Type.SEVENS:
+		line2 = "Sevens"
+	elif game.trump == -1:
+		line2 = "No Trump (Follow Me)"
+	elif game.trump == Domino.DOUBLES_TRUMP:
+		line2 = "Doubles are trump"
+	else:
+		line2 = "trump suit %d" % game.trump
+
+	var line3: String
+	if bid.type == BidScript.Type.POINTS:
+		line3 = "%d Points" % bid.value
+	else:
+		line3 = "%d mark%s" % [bid.value, "" if bid.value == 1 else "s"]
+
+	bid_reminder_label.text = "%s\n%s\n%s" % [line1, line2, line3]
+
 # Large, temporary center-screen banner announcing the chosen trump —
 # fire-and-forget (callers don't await this) so it doesn't block the
 # transition into the first trick; it just overlays on top of it briefly.
@@ -1993,13 +2159,19 @@ func _build_settings_content(from_create: bool = false):
 	var nello_cb = _add_checkbox_row(sc_body, "Allow Nello", _pending_settings.allow_nello,
 		func(v): _pending_settings.allow_nello = v)
 	var nello_sub = _add_sub_container(sc_body, nello_cb)
-	_add_option_row(nello_sub, "Doubles Mode", [
-		["High (standard)", "high"], ["Low", "low"], ["Own Suit", "own_suit"]
-	], _pending_settings.nello_doubles_mode, func(v): _pending_settings.nello_doubles_mode = v)
+	# "Doubles Mode" dropdown hidden (July 21, 2026) — the bidder picks this
+	# live in-game via nello_panel's buttons (High/Low/Own Suit) every hand,
+	# so this settings-screen default was redundant and confusing. The
+	# underlying nello_doubles_mode field is untouched — it's still read as
+	# the AI-Nello fallback default (currently dead code; see
+	# game_table.gd's _finish_bidding() Nello branch), just no longer
+	# exposed here.
 	_add_checkbox_row(nello_sub, "Allow Own Suit (Reversed)", _pending_settings.nello_doubles_reversed,
 		func(v): _pending_settings.nello_doubles_reversed = v)
 	_add_checkbox_row(nello_sub, "Only on Forced Bid", _pending_settings.nello_only_on_forced_bid,
 		func(v): _pending_settings.nello_only_on_forced_bid = v)
+	_add_checkbox_row(nello_sub, "Allow Blind Domino Exchange", _pending_settings.allow_nello_exchange,
+		func(v): _pending_settings.allow_nello_exchange = v)
 
 	var plunge_cb = _add_checkbox_row(sc_body, "Allow Plunge", _pending_settings.allow_plunge,
 		func(v): _pending_settings.allow_plunge = v)
@@ -2199,11 +2371,13 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.force_trump_opening_lead = src.force_trump_opening_lead
 	dst.marks_to_win = src.marks_to_win
 	dst.ai_difficulty = src.ai_difficulty
+	dst.preset_id = src.preset_id
 	return dst
 
 func _restart_game_with_settings(new_settings: GameSettings):
 	settings_panel.visible = false
 	preset_panel.visible = false
+	_update_domino_back_texture(new_settings.preset_id)
 	game = Game.new(new_settings)
 	game.setup_players(human_seat)
 	_us_marks.set_marks(0)

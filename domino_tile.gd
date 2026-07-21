@@ -15,6 +15,14 @@ var face_up: bool = true
 var is_playable: bool = false   # Highlighted as a legal move
 var is_selected: bool = false
 
+# Optional ruleset-specific domino back (e.g. Teel Rules' custom tile art).
+# Shared across every DominoTile instance rather than set per-tile, since
+# it's a table-wide choice, not a per-domino one — game_table.gd sets this
+# once, in _update_domino_back_texture(), whenever the active preset
+# changes. null (default) falls back to the procedural striped pattern
+# below via _draw_back_pattern().
+static var custom_back_texture: Texture2D = null
+
 var _press_pos: Vector2 = Vector2.ZERO
 var _dragging: bool = false
 
@@ -30,7 +38,7 @@ const COLOR_FACE      := Color(0.95, 0.93, 0.88)   # Ivory
 const COLOR_BACK      := Color(0.18, 0.38, 0.22)   # Dark green
 const COLOR_PIP       := Color(0.10, 0.10, 0.10)   # Near-black
 const COLOR_BORDER    := Color(0.25, 0.22, 0.18)   # Dark brown
-const COLOR_PLAYABLE  := Color(0.25, 0.75, 0.35)   # Green highlight
+const COLOR_PLAYABLE  := Color(0.95, 0.50, 0.10)   # Orange highlight — was green, blended into the felt background
 const COLOR_SELECTED  := Color(0.95, 0.80, 0.15)   # Gold highlight
 const COLOR_TRUMP_PIP := Color(0.75, 0.15, 0.15)   # Red for trump pips
 
@@ -97,6 +105,8 @@ func _draw():
 		draw_rect(inner, COLOR_FACE)
 		_draw_pips(inner, s)
 		_draw_divider(inner, s)
+	elif custom_back_texture != null:
+		draw_texture_rect(custom_back_texture, inner, false)
 	else:
 		draw_rect(inner, COLOR_BACK)
 		_draw_back_pattern(inner, s)
