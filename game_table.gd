@@ -7,6 +7,7 @@ const AIPlayer = preload("res://ai_player.gd")
 const MarksDisplayScript = preload("res://marks_display.gd")
 const TrickPileScript = preload("res://trick_pile.gd")
 const LaydownCheckScript = preload("res://laydown_check.gd")
+const PlayerProfileScript = preload("res://player_profile.gd")
 
 # The four built-in rulesets that ship with the game (as opposed to a
 # user-created "custom:<name>" ruleset) — used to gate the "Reset to
@@ -69,6 +70,8 @@ var _preset_status_label: Label = null
 var main_menu_panel: PanelContainer = null
 var difficulty_panel: PanelContainer = null
 var _difficulty_btn_container: VBoxContainer = null
+var profile_panel: PanelContainer = null
+var _profile_content_vbox: VBoxContainer = null
 var _game_top_row: HBoxContainer = null
 var _game_mid_row: HBoxContainer = null
 
@@ -79,6 +82,7 @@ const DEBUG_FAST_MODE: bool = false
 # Game state
 var selected_tile: DominoTile = null
 var human_seat: int = 0
+var seat_profiles: Dictionary = {}  # seat_id (int, 0-3) -> profile_id (String); never contains human_seat
 var waiting_for_human: bool = false
 var _armed_domino: Domino = null   # human's pre-selected play for later this trick, if any
 var _current_trick_reasons: Array = []  # accumulates {player, domino, reason} during a trick
@@ -120,6 +124,7 @@ var _font_registry: Array = []
 
 func _ready():
 	_build_ui()
+	seat_profiles = _load_seat_assignments()
 	_start_game()
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
@@ -309,6 +314,12 @@ func _build_ui():
 	diff_menu_btn.pressed.connect(_on_menu_difficulty_pressed)
 	menu_vbox.add_child(diff_menu_btn)
 
+	var profiles_menu_btn = Button.new()
+	profiles_menu_btn.text = "Profiles"
+	profiles_menu_btn.custom_minimum_size = Vector2(220, 64)
+	profiles_menu_btn.pressed.connect(_on_menu_profiles_pressed)
+	menu_vbox.add_child(profiles_menu_btn)
+
 	# --- Preset picker panel ---
 	preset_panel = PanelContainer.new()
 	preset_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -430,6 +441,64 @@ func _build_ui():
 		main_menu_panel.visible = true
 	)
 	diff_vbox.add_child(diff_back_btn)
+
+	# --- Profiles panel — create profiles, assign to non-human seats ---
+	profile_panel = PanelContainer.new()
+	profile_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	profile_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	profile_panel.custom_minimum_size = Vector2(480, 0)
+	profile_panel.visible = false
+	var profile_style = StyleBoxFlat.new()
+	profile_style.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+	profile_style.corner_radius_top_left = 10
+	profile_style.corner_radius_top_right = 10
+	profile_style.corner_radius_bottom_left = 10
+	profile_style.corner_radius_bottom_right = 10
+	profile_style.content_margin_left = 32
+	profile_style.content_margin_right = 32
+	profile_style.content_margin_top = 32
+	profile_style.content_margin_bottom = 32
+	profile_panel.add_theme_stylebox_override("panel", profile_style)
+	vbox.add_child(profile_panel)
+
+	var profile_outer_vbox = VBoxContainer.new()
+	profile_outer_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	profile_outer_vbox.add_theme_constant_override("separation", 16)
+	profile_panel.add_child(profile_outer_vbox)
+
+	var profile_title = Label.new()
+	profile_title.text = "Profiles"
+	profile_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(profile_title, 22)
+	profile_title.add_theme_color_override("font_color", Color.WHITE)
+	profile_outer_vbox.add_child(profile_title)
+
+	var profile_subtitle = Label.new()
+	profile_subtitle.text = "Name your AI opponents and partner"
+	profile_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(profile_subtitle, 13)
+	profile_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
+	profile_outer_vbox.add_child(profile_subtitle)
+
+	var profile_scroll = ScrollContainer.new()
+	profile_scroll.custom_minimum_size = Vector2(280, 300)
+	profile_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	profile_outer_vbox.add_child(profile_scroll)
+
+	_profile_content_vbox = VBoxContainer.new()
+	_profile_content_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	_profile_content_vbox.add_theme_constant_override("separation", 12)
+	_profile_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	profile_scroll.add_child(_profile_content_vbox)
+
+	var profile_back_btn = Button.new()
+	profile_back_btn.text = "← Menu"
+	profile_back_btn.custom_minimum_size = Vector2(100, 40)
+	profile_back_btn.pressed.connect(func():
+		profile_panel.visible = false
+		main_menu_panel.visible = true
+	)
+	profile_outer_vbox.add_child(profile_back_btn)
 
 	# --- Middle row: left opponent | play area | right opponent ---
 	_game_mid_row = HBoxContainer.new()
@@ -2181,7 +2250,13 @@ func _clear_bid_bubbles():
 func _seat_label(pid: int) -> String:
 	if pid == human_seat:
 		return "You"
-	elif pid == (human_seat + 2) % 4:
+	if seat_profiles.has(pid):
+		var profile = PlayerProfileScript.load(seat_profiles[pid])
+		if profile != null and not profile.display_name.is_empty():
+			return profile.display_name
+	# Falls through here on: no assignment, missing file, or empty name —
+	# never crashes, always resolves to something displayable.
+	if pid == (human_seat + 2) % 4:
 		return "Partner"
 	elif pid == (human_seat + 1) % 4:
 		return "Right Opponent"
@@ -2640,6 +2715,35 @@ func _save_last_used(key: String):
 		fw.store_string(JSON.stringify(data))
 		fw.close()
 
+func _load_seat_assignments() -> Dictionary:
+	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+	if f == null:
+		return {}
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	if data is Dictionary and data.get("seat_assignments") is Dictionary:
+		# JSON keys are always strings; normalize back to int seat ids.
+		var raw: Dictionary = data["seat_assignments"]
+		var result := {}
+		for k in raw.keys():
+			result[int(k)] = str(raw[k])
+		return result
+	return {}
+
+func _save_seat_assignments() -> void:
+	var data := {}
+	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+	if f:
+		var existing = JSON.parse_string(f.get_as_text())
+		f.close()
+		if existing is Dictionary:
+			data = existing
+	data["seat_assignments"] = seat_profiles
+	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	if fw:
+		fw.store_string(JSON.stringify(data))
+		fw.close()
+
 func _show_save_preset_popup():
 	var popup = Control.new()
 	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -3054,6 +3158,148 @@ func _rebuild_difficulty_buttons():
 			btn.modulate = Color(0.95, 0.80, 0.15)
 		btn.pressed.connect(_on_difficulty_chosen.bind(opt[2]))
 		_difficulty_btn_container.add_child(btn)
+
+func _on_menu_profiles_pressed():
+	main_menu_panel.visible = false
+	_rebuild_profile_panel()
+	profile_panel.visible = true
+
+# The three non-human seats, in display order, paired with the same
+# relational fallback name _seat_label() would show if nothing is
+# assigned — used as the row label so you can always tell which seat
+# you're assigning regardless of what's currently on it.
+func _assignable_seats() -> Array:
+	return [
+		[(human_seat + 2) % 4, "Partner"],
+		[(human_seat + 1) % 4, "Right Opponent"],
+		[(human_seat + 3) % 4, "Left Opponent"],
+	]
+
+func _rebuild_profile_panel():
+	for c in _profile_content_vbox.get_children():
+		c.queue_free()
+
+	var new_profile_btn = Button.new()
+	new_profile_btn.text = "+ New Profile"
+	new_profile_btn.custom_minimum_size = Vector2(220, 44)
+	new_profile_btn.pressed.connect(_show_new_profile_popup)
+	_profile_content_vbox.add_child(new_profile_btn)
+
+	_profile_content_vbox.add_child(HSeparator.new())
+
+	var ids = PlayerProfileScript.list_all()
+	var profiles_by_id := {}
+	for pid in ids:
+		var profile = PlayerProfileScript.load(pid)
+		if profile != null:
+			profiles_by_id[pid] = profile
+
+	for seat_info in _assignable_seats():
+		var seat_id: int = seat_info[0]
+		var seat_name: String = seat_info[1]
+
+		var row = VBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+		_profile_content_vbox.add_child(row)
+
+		var lbl = Label.new()
+		lbl.text = seat_name
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.add_theme_color_override("font_color", Color.WHITE)
+		_scaled_font(lbl, 14)
+		row.add_child(lbl)
+
+		var opt = OptionButton.new()
+		opt.custom_minimum_size = Vector2(240, 40)
+		var option_ids: Array[String] = [""]
+		opt.add_item("None")
+		var current_id: String = str(seat_profiles.get(seat_id, ""))
+		var sel_idx = 0
+		for pid in ids:
+			option_ids.append(pid)
+			var display = profiles_by_id[pid].display_name if profiles_by_id.has(pid) else pid
+			opt.add_item(display)
+			if pid == current_id:
+				sel_idx = option_ids.size() - 1
+		opt.select(sel_idx)
+		opt.item_selected.connect(func(idx):
+			var chosen_id = option_ids[idx]
+			if chosen_id == "":
+				seat_profiles.erase(seat_id)
+			else:
+				seat_profiles[seat_id] = chosen_id
+			_save_seat_assignments()
+		)
+		row.add_child(opt)
+
+func _show_new_profile_popup():
+	var popup = Control.new()
+	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	profile_panel.add_child(popup)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.5)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(dim)
+
+	var center = CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(center)
+
+	var box = PanelContainer.new()
+	box.custom_minimum_size = Vector2(320, 0)
+	var box_style = StyleBoxFlat.new()
+	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
+	box_style.corner_radius_top_left = 8
+	box_style.corner_radius_top_right = 8
+	box_style.corner_radius_bottom_left = 8
+	box_style.corner_radius_bottom_right = 8
+	box.add_theme_stylebox_override("panel", box_style)
+	center.add_child(box)
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+	box.add_child(vb)
+
+	var prompt_lbl = Label.new()
+	prompt_lbl.text = "Name the profile:"
+	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	_scaled_font(prompt_lbl, 16)
+	vb.add_child(prompt_lbl)
+
+	var line_edit = LineEdit.new()
+	line_edit.placeholder_text = "e.g. Pop"
+	line_edit.custom_minimum_size = Vector2(280, 40)
+	vb.add_child(line_edit)
+
+	var btn_row = HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 12)
+	vb.add_child(btn_row)
+
+	var cancel_p = Button.new()
+	cancel_p.text = "Cancel"
+	cancel_p.custom_minimum_size = Vector2(100, 40)
+	cancel_p.pressed.connect(func(): popup.queue_free())
+	btn_row.add_child(cancel_p)
+
+	var ok_btn = Button.new()
+	ok_btn.text = "Create"
+	ok_btn.custom_minimum_size = Vector2(100, 40)
+	btn_row.add_child(ok_btn)
+
+	var do_create = func():
+		var pname = line_edit.text.strip_edges()
+		if pname.is_empty():
+			return
+		popup.queue_free()
+		PlayerProfileScript.create(pname)
+		_rebuild_profile_panel()
+
+	ok_btn.pressed.connect(do_create)
+	line_edit.text_submitted.connect(func(_t): do_create.call())
+	line_edit.grab_focus()
 
 func _input(_event: InputEvent):
 	pass  # tap-anywhere-to-continue replaced by explicit Next Hand button

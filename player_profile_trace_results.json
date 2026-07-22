@@ -1,0 +1,30 @@
+{
+	"failures": [],
+	"full_log": [
+		"═══════════════════════════════════════════════════════════",
+		"PlayerProfile — create / save / load / delete / list_all",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: create_returns_nonnull — create() returned a PlayerProfile instance",
+		"  PASS: create_sets_display_name — got 'trace_test_Pop'",
+		"  PASS: create_generates_nonempty_id — profile_id='profile_1784761952_4089358241'",
+		"  PASS: id_is_not_name_derived — profile_id='profile_1784761952_4089358241' contains no trace of the display name",
+		"  PASS: file_exists_after_create — file written to disk immediately by create()->save()",
+		"  PASS: second_create_gets_different_id — p1=profile_1784761952_4089358241 p2=profile_1784761952_107311705",
+		"  PASS: load_returns_nonnull_for_real_id — load() found the file just created",
+		"  PASS: load_round_trips_display_name — got 'trace_test_Pop'",
+		"  PASS: load_round_trips_profile_id — got 'profile_1784761952_4089358241'",
+		"  PASS: load_missing_file_returns_null — nonexistent profile_id -> null, no crash",
+		"  PASS: load_empty_id_returns_null — empty profile_id -> null, no crash",
+		"  PASS: load_malformed_json_returns_null — malformed file on disk -> null, no crash",
+		"  PASS: list_all_includes_p1 — roster includes the first created profile",
+		"  PASS: list_all_includes_p2 — roster includes the second created profile",
+		"  PASS: list_all_is_sorted — ids come back in sorted order, matching the directory-scan pattern's files.sort()",
+		"  PASS: file_gone_after_delete — delete() actually removed the file",
+		"  PASS: load_after_delete_returns_null — a since-deleted profile_id resolves to null, not a crash — the exact scenario _seat_label()'s fallback depends on",
+		"  PASS: list_all_excludes_deleted — deleted profile no longer appears in the roster",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"ALL CHECKS PASSED",
+		"═══════════════════════════════════════════════════════════"
+	]
+}
