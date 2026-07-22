@@ -82,6 +82,27 @@ var win_by_two: bool = false
 var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
 
 # ─────────────────────────────────────────────
+#  LAY DOWN ("Can't Be Caught")
+# ─────────────────────────────────────────────
+var allow_laydown: bool = false
+var laydown_mode: String = "assisted"       # "assisted" (button only appears once
+											 # provably correct) | "authentic" (self-judged,
+                                             # verified silently, wrong claim forfeits)
+
+# ─────────────────────────────────────────────
+#  HAND-ENDS-EARLY
+# ─────────────────────────────────────────────
+var hand_ends_early_set: bool = true     # All-tricks contracts (Marks/Sevens/
+                                          # Nello/Plunge/Splash): stop the moment
+                                          # the contract is mathematically
+                                          # unrecoverable. Defaults true — matches
+                                          # current (previously toggle-less) behavior.
+var hand_ends_early_points: bool = false # Points bids (incl. Follow Me): stop
+                                          # the moment the bid is either already
+                                          # achieved or already unreachable.
+                                          # New behavior — defaults off.
+
+# ─────────────────────────────────────────────
 #  PRESET HELPERS
 # ─────────────────────────────────────────────
 static func standard_42() -> GameSettings:
@@ -222,6 +243,10 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"marks_to_win": s.marks_to_win,
 		"win_by_two": s.win_by_two,
 		"ai_difficulty": s.ai_difficulty,
+		"allow_laydown": s.allow_laydown,
+		"laydown_mode": s.laydown_mode,
+		"hand_ends_early_set": s.hand_ends_early_set,
+		"hand_ends_early_points": s.hand_ends_early_points,
 	}
 
 static func from_dict(d: Dictionary) -> GameSettings:
@@ -256,4 +281,8 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.marks_to_win = d.get("marks_to_win", 7)
 	s.win_by_two = d.get("win_by_two", false)
 	s.ai_difficulty = d.get("ai_difficulty", "standard")
+	s.allow_laydown = d.get("allow_laydown", false)
+	s.laydown_mode = d.get("laydown_mode", "assisted")
+	s.hand_ends_early_set = d.get("hand_ends_early_set", true)
+	s.hand_ends_early_points = d.get("hand_ends_early_points", false)
 	return s

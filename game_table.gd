@@ -6,6 +6,7 @@ const DominoTileScript = preload("res://domino_tile.gd")
 const AIPlayer = preload("res://ai_player.gd")
 const MarksDisplayScript = preload("res://marks_display.gd")
 const TrickPileScript = preload("res://trick_pile.gd")
+const LaydownCheckScript = preload("res://laydown_check.gd")
 
 var game: Game
 
@@ -46,6 +47,7 @@ var nello_exchange_panel: PanelContainer
 var nello_exchange_hand_container: HBoxContainer
 var _nello_exchange_partner_tile: DominoTile = null
 var _pending_partner_give: Domino = null
+var laydown_btn: Button = null
 var _small_end_active: bool = false
 var _small_end_toggle_btn: Button = null
 var preset_panel: PanelContainer
@@ -672,6 +674,22 @@ func _build_ui():
 	gear_btn.pressed.connect(_show_settings_panel)
 	root.add_child(gear_btn)
 
+	# --- Lay Down button (bottom-right, near the player's own hand) —
+	# placeholder positioning, refine once visible in the editor, same
+	# treatment as the Nello exchange panel's "Don't Trade" button.
+	# Visibility is driven entirely by _update_laydown_button_visibility(),
+	# called whenever it becomes the human's turn (_play_next_in_trick()).
+	laydown_btn = Button.new()
+	laydown_btn.text = "Lay Down"
+	laydown_btn.custom_minimum_size = Vector2(120, 44)
+	laydown_btn.visible = false
+	laydown_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	laydown_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	laydown_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	laydown_btn.position = Vector2(-132, -60)
+	laydown_btn.pressed.connect(_on_laydown_button_pressed)
+	root.add_child(laydown_btn)
+
 	# --- Settings overlay (shell built once; content rebuilt on open) ---
 	settings_panel = Control.new()
 	settings_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1035,6 +1053,8 @@ func _start_hand():
 	if _small_end_toggle_btn:
 		_small_end_toggle_btn.visible = false
 		_small_end_toggle_btn.button_pressed = false
+	if laydown_btn:
+		laydown_btn.visible = false
 	main_menu_panel.visible = false
 	preset_panel.visible = false
 	if _replay_btn and is_instance_valid(_replay_btn):
@@ -1538,6 +1558,39 @@ func _update_small_end_button_visibility():
 		_small_end_toggle_btn.button_pressed = false
 		_update_small_end_button_style()
 
+# Lead-only, per Laydown_Session_Handoff_July21_2026.md — the proof is only
+# valid when it's the claimant's turn to lead (see laydown_check.gd's own
+# header comment). Assisted mode additionally requires the claim to already
+# be provably correct before the button appears at all — no risk, nothing
+# to get wrong. Authentic mode shows it any time it's the human's lead,
+# self-judged; _on_laydown_button_pressed() re-verifies on press regardless.
+func _update_laydown_button_visibility():
+	var eligible = game.settings.allow_laydown and game.current_trick.plays.size() == 0
+	if eligible and game.settings.laydown_mode == "assisted":
+		eligible = _laydown_currently_provable() and not game.is_contract_already_lost(human_seat)
+	laydown_btn.visible = eligible
+
+func _laydown_currently_provable() -> bool:
+	var knowledge = PublicKnowledge.from_state(PublicFrame.new(game.hand_history, game.current_trick))
+	var doubles_mode = game.active_nello_doubles_mode if game.variant == BidScript.Type.NELLO and game.active_nello_doubles_mode != "" else "high"
+	return LaydownCheckScript.is_provable_laydown(
+		game.players[human_seat].hand, game.trump, knowledge,
+		doubles_mode, game.active_doubles_trump_reversed, game.active_nello_doubles_reversed
+	)
+
+func _on_laydown_button_pressed():
+	laydown_btn.visible = false
+	var provable = _laydown_currently_provable()
+	var correct = provable and not game.is_contract_already_lost(human_seat)
+	_reveal_all_hands_face_up()
+	var result = game.resolve_hand_via_laydown(human_seat, correct)
+	_show_hand_result(result)
+
+func _reveal_all_hands_face_up():
+	_populate_hand_container(opponent_top_container, game.players[2].hand, true, true)
+	_populate_hand_container(opponent_left_container, game.players[3].hand, true, true)
+	_populate_hand_container(opponent_right_container, game.players[1].hand, true, true)
+
 func _begin_play(leader_override: int = -1):
 	_clear_bid_bubbles()
 	var leader: int
@@ -1588,6 +1641,7 @@ func _play_next_in_trick():
 		_highlight_legal_moves()
 		waiting_for_human = true
 		_update_small_end_button_visibility()
+		_update_laydown_button_visibility()
 		_set_status("Your turn — tap a domino to play")
 	else:
 		status_label.text = "%s is thinking..." % _seat_label(player.id)
@@ -1786,8 +1840,17 @@ func _resolve_trick():
 	_clear_play_area()
 	_clear_highlights()
 
-	# Check if the bid is already mathematically lost
-	if _is_bid_mathematically_set(winner_id):
+	# Hand-Ends-Early: two independent checks, two independent toggles.
+	# All-tricks contracts (Marks/Sevens/Nello/Plunge/Splash) only ever
+	# check "set" — "achieved early" isn't possible for these by
+	# definition, since winning requires literally every trick, only
+	# confirmable at the actual 7th. Points bids (including Follow Me —
+	# see is_points_bid_decided()'s own comment) check both directions,
+	# since points accumulate rather than needing every trick.
+	if game.settings.hand_ends_early_set and game.is_contract_already_lost(game.current_bid.player_id):
+		_resolve_hand()
+		return
+	if game.settings.hand_ends_early_points and game.is_points_bid_decided():
 		_resolve_hand()
 		return
 
@@ -1796,22 +1859,33 @@ func _resolve_trick():
 	else:
 		_resolve_hand()
 
-# Returns true if the bid is already mathematically unwinnable and play can stop early.
-# Nello: bidder catching any trick fails immediately (partner winning is fine).
-# Marks/Sevens: any trick won by the non-bidding team ends it.
-func _is_bid_mathematically_set(winner_id: int) -> bool:
-	if game.current_bid == null:
-		return false
-	if game.variant == BidScript.Type.NELLO:
-		return winner_id == game.current_bid.player_id
-	var needs_all_tricks = game.current_bid.type == BidScript.Type.MARKS or game.current_bid.type == BidScript.Type.SEVENS
-	if not needs_all_tricks:
-		return false
-	var bid_team = game.current_bid.player_id % 2
-	return (winner_id % 2) != bid_team
+# Retired July 22, 2026 — superseded by game.is_contract_already_lost(),
+# which covers the same Marks/Sevens/Nello cases plus Plunge/Splash (a
+# real, pre-existing gap this function never covered). Commented out
+# rather than deleted: traced to a single call site (removed below)
+# across the whole visible codebase, but kept here pending one literal
+# repo-wide grep confirmation before actual deletion.
+#
+# func _is_bid_mathematically_set(winner_id: int) -> bool:
+# 	if game.current_bid == null:
+# 		return false
+# 	if game.variant == BidScript.Type.NELLO:
+# 		return winner_id == game.current_bid.player_id
+# 	var needs_all_tricks = game.current_bid.type == BidScript.Type.MARKS or game.current_bid.type == BidScript.Type.SEVENS
+# 	if not needs_all_tricks:
+# 		return false
+# 	var bid_team = game.current_bid.player_id % 2
+# 	return (winner_id % 2) != bid_team
 
 func _resolve_hand():
-	var result = game.resolve_hand()
+	_show_hand_result(game.resolve_hand())
+
+# Shared by both the normal end-of-hand path (_resolve_hand()) and the
+# lay-down claim path (_on_laydown_button_pressed()) — same result-dict
+# shape either way (winner/reason/team_marks/team_points), so the same
+# banner/marks-update/Replay-and-Next-Hand UI applies regardless of how
+# the hand actually ended.
+func _show_hand_result(result: Dictionary):
 	var winner_team = result.get("winner", 0)
 	var team_str = "Your team" if winner_team == 0 else "Their team"
 	var marks = result.get("team_marks", [0,0])
@@ -2200,6 +2274,25 @@ func _build_settings_content(from_create: bool = false):
 	_add_checkbox_row(sc_body, "Allow Follow Me / No Trump", _pending_settings.allow_follow_me,
 		func(v): _pending_settings.allow_follow_me = v)
 
+	# ── LAY DOWN ("Can't Be Caught") ──
+	var laydown_body = _make_section(_settings_content_vbox, "LAY DOWN")
+	var laydown_cb = _add_checkbox_row(laydown_body, "Allow Lay Down", _pending_settings.allow_laydown,
+		func(v): _pending_settings.allow_laydown = v)
+	var laydown_sub = _add_sub_container(laydown_body, laydown_cb)
+	_add_option_row(laydown_sub, "Mode", [
+		["Assisted (button only appears when correct)", "assisted"],
+		["Authentic (self-judged, wrong claim forfeits)", "authentic"],
+	], _pending_settings.laydown_mode, func(v): _pending_settings.laydown_mode = v)
+
+	# ── HAND FLOW ──
+	var flow_body = _make_section(_settings_content_vbox, "HAND FLOW")
+	_add_checkbox_row(flow_body, "End Hand Early When Set (Marks/Sevens/Nello/Plunge/Splash)",
+		_pending_settings.hand_ends_early_set,
+		func(v): _pending_settings.hand_ends_early_set = v)
+	_add_checkbox_row(flow_body, "End Hand Early When Points Bid Is Decided",
+		_pending_settings.hand_ends_early_points,
+		func(v): _pending_settings.hand_ends_early_points = v)
+
 	# ── TRUMP & DOUBLES ──
 	var trump_body = _make_section(_settings_content_vbox, "TRUMP & DOUBLES")
 	_add_checkbox_row(trump_body, "Doubles Are a Trump Suit", _pending_settings.doubles_are_trump,
@@ -2297,10 +2390,15 @@ func _add_sub_container(parent: VBoxContainer, toggle_cb: CheckBox) -> VBoxConta
 	sub.visible = toggle_cb.button_pressed
 	var margin = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 20)
-	margin.visible = sub.visible
 	parent.add_child(margin)
 	margin.add_child(sub)
-	toggle_cb.toggled.connect(func(v): margin.visible = v)
+	# Toggle the actual content holder (sub), not the margin wrapper around
+	# it — margin.visible was a second, separate copy of the same on/off
+	# state that only ever got set once at construction time and never
+	# updated again, so sub stayed permanently hidden until the whole panel
+	# was rebuilt from scratch (closing and reopening Settings). One
+	# variable tracking visibility instead of two that can drift apart.
+	toggle_cb.toggled.connect(func(v): sub.visible = v)
 	return sub
 
 func _add_option_row(parent: VBoxContainer, label: String, options: Array, current: String, setter: Callable):
@@ -2372,6 +2470,10 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 	dst.marks_to_win = src.marks_to_win
 	dst.ai_difficulty = src.ai_difficulty
 	dst.preset_id = src.preset_id
+	dst.allow_laydown = src.allow_laydown
+	dst.laydown_mode = src.laydown_mode
+	dst.hand_ends_early_set = src.hand_ends_early_set
+	dst.hand_ends_early_points = src.hand_ends_early_points
 	return dst
 
 func _restart_game_with_settings(new_settings: GameSettings):

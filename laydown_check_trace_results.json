@@ -1,0 +1,21 @@
+{
+	"failures": [],
+	"full_log": [
+		"═══════════════════════════════════════════════════════════",
+		"LaydownCheck.is_provable_laydown() — accounting rule coverage",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: own_hand_excludes_6_6_makes_6_5_safe — hand=[[6, 6], [6, 5]] trump=2 played=[] -> expected true, got true",
+		"  PASS: without_6_6_held_or_played_6_5_is_unsafe — hand=[[6, 5]] trump=2 played=[] -> expected false, got false",
+		"  PASS: 6_5_safe_if_6_6_already_played_instead — hand=[[6, 5]] trump=2 played=[[6, 6]] -> expected true, got true",
+		"  PASS: top_three_trump_all_safe_self_held_double_does_the_work — hand=[[6, 6], [6, 5], [6, 4]] trump=6 played=[[6, 3], [6, 2]] -> expected true, got true",
+		"  PASS: genuine_played_dependency_both_threats_played — hand=[[6, 4]] trump=6 played=[[6, 5], [6, 6]] -> expected true, got true",
+		"  PASS: genuine_played_dependency_negative_contrast — hand=[[6, 4]] trump=6 played=[] -> expected false, got false",
+		"  PASS: false_claim_top_trump_unaccounted_for — hand=[[6, 5], [6, 4]] trump=6 played=[] -> expected false, got false",
+		"  PASS: one_unsafe_tile_fails_the_whole_claim — hand=[[6, 6], [3, 2]] trump=6 played=[] -> expected false, got false",
+		"  PASS: independent_suits_double_plus_own_hand_exclusion — hand=[[2, 2], [1, 2], [3, 3]] trump=5 played=[] -> expected true, got true",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"ALL CHECKS PASSED",
+		"═══════════════════════════════════════════════════════════"
+	]
+}

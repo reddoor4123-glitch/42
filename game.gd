@@ -290,6 +290,82 @@ func resolve_hand() -> Dictionary:
 	hand_result = result.duplicate(true)
 	return result
 
+# True if the claimant's team has already, definitively lost the ability
+# to fulfill the contract due to a trick already played earlier this
+# hand — independent of whether their current remaining hand is a
+# genuine lay-down. A claim on a hand where this returns true is false
+# regardless of how safe the remaining tiles are, because the contract
+# itself is already unrecoverable.
+#
+# Also the primary Hand-Ends-Early check for all-tricks contracts
+# (Marks/Sevens/Nello/Plunge/Splash) as of July 22, 2026 — called from
+# game_table.gd's _resolve_trick(), gated by settings.hand_ends_early_set.
+# Note: with that toggle available, Marks/Sevens/Nello are no longer
+# guaranteed false here "by construction" the way they were when the
+# early-stop fired unconditionally — turning the toggle off means a
+# later trick genuinely can be reached in an already-lost hand. The
+# loop below still returns the correct answer regardless of the toggle;
+# this just corrects an assumption the original version of this comment
+# made.
+func is_contract_already_lost(claimant_id: int) -> bool:
+	if current_bid == null:
+		return false
+	var needs_all_tricks = variant == BidScript.Type.MARKS \
+		or variant == BidScript.Type.SEVENS \
+		or variant == BidScript.Type.PLUNGE \
+		or variant == BidScript.Type.SPLASH
+	if needs_all_tricks:
+		var claimant_team = claimant_id % 2
+		for record in hand_history:
+			if record["winner_id"] % 2 != claimant_team:
+				return true
+		return false
+	if variant == BidScript.Type.NELLO:
+		for record in hand_history:
+			if record["winner_id"] == current_bid.player_id:
+				return true
+		return false
+	return false  # Points — no equivalent concept exists here yet
+
+# For POINTS bids only (including one played Follow Me/no-trump — still
+# current_bid.type == POINTS under the hood; see spec note on Bid.Type.FOLLOW_ME
+# being dead code, never actually constructed by the live bidding flow).
+# Total points across a whole hand are always exactly 42 — seven 1-point
+# tricks plus three 5-count and two 10-count dominoes, a fixed property
+# of the domino set (confirmed against Trick.calculate_points()),
+# independent of trump/contract/doubles mode — so "points remaining"
+# needs no per-tile inspection, just this subtraction.
+func is_points_bid_decided() -> bool:
+	if current_bid == null or current_bid.type != BidScript.Type.POINTS:
+		return false
+	var bid_team = current_bid.player_id % 2
+	if team_points[bid_team] >= current_bid.value:
+		return true  # already achieved — points can't be taken back
+	var points_remaining = 42 - team_points[0] - team_points[1]
+	return team_points[bid_team] + points_remaining < current_bid.value  # already set
+
+# Resolves the hand via a lay-down claim instead of normal trick play.
+# Deliberately skips trick/point simulation — per Katy's ruling, a
+# correct claim just flatly wins the contract at its stated value, same
+# shape as how a "set" already awards marks elsewhere. team_points is
+# left untouched; the marks award doesn't depend on it.
+func resolve_hand_via_laydown(claimant_id: int, claim_correct: bool) -> Dictionary:
+	if current_bid == null:
+		return {}
+	var claimant_team = claimant_id % 2
+	var other_team = 1 - claimant_team
+	var winner_team = claimant_team if claim_correct else other_team
+	var mark_value = 1 if current_bid.type == BidScript.Type.POINTS else current_bid.value
+	team_marks[winner_team] += mark_value
+	var result = {
+		"winner": winner_team,
+		"reason": "Lay-down confirmed" if claim_correct else "Lay-down claim was wrong — forfeited",
+	}
+	result["team_marks"] = team_marks.duplicate()
+	result["team_points"] = team_points.duplicate()
+	hand_result = result.duplicate(true)
+	return result
+
 func check_game_over() -> int:
 	var target = settings.marks_to_win
 	for t in [0, 1]:
