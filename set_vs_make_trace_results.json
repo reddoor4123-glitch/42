@@ -1,0 +1,42 @@
+{
+	"full_log": [
+		"",
+		"â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=",
+		"SCENARIO MAKE (bidder=P0, our own team) â€” bidder_seat=P0",
+		"â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=",
+		"  P0 leads: 4:4",
+		"  P3 plays: 2:4",
+		"  Partner (P2) hand: 2:6, 3:6, 4:6, 5:6, 6:6, 5:5, 2:2",
+		"  Partner legal moves: 2:6, 3:6, 4:6, 5:6, 6:6, 5:5, 2:2",
+		"  bid_value=30  bidder_seat=P0  our_team(P2)=0  bidder_team=0  is_defending=false",
+		"  >>> Partner CHOSE: 2:6",
+		"  >>> reason_log: \"I've got this one.\"",
+		"",
+		"â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=",
+		"SCENARIO SET (bidder=P1, opposing team) â€” bidder_seat=P1",
+		"â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=â•=",
+		"  P0 leads: 4:4",
+		"  P3 plays: 2:4",
+		"  Partner (P2) hand: 2:6, 3:6, 4:6, 5:6, 6:6, 5:5, 2:2",
+		"  Partner legal moves: 2:6, 3:6, 4:6, 5:6, 6:6, 5:5, 2:2",
+		"  bid_value=30  bidder_seat=P1  our_team(P2)=0  bidder_team=1  is_defending=true",
+		"  >>> Partner CHOSE: 5:5",
+		"  >>> reason_log: \"We're defending — taking the chance to add these points.\""
+	],
+	"make_bidder_team0": {
+		"bidder_seat": 0,
+		"dumped_5_5": false,
+		"is_defending": false,
+		"partner_chosen": "2:6",
+		"partner_reason": "I've got this one.",
+		"scenario": "MAKE (bidder=P0, our own team)"
+	},
+	"set_bidder_team1": {
+		"bidder_seat": 1,
+		"dumped_5_5": true,
+		"is_defending": true,
+		"partner_chosen": "5:5",
+		"partner_reason": "We're defending — taking the chance to add these points.",
+		"scenario": "SET (bidder=P1, opposing team)"
+	}
+}

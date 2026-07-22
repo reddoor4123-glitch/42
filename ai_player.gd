@@ -698,6 +698,13 @@ static func decide_play(
 
 	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
 
+	# ── CONTRACT OBJECTIVE (Set vs. Make) ──────────────────────────────────
+	# A context fact, not an evaluation — mirrors how `mode` is established
+	# once here and threaded through both Partner and Opponent blocks below.
+	var our_team = player_id % 2
+	var bidder_team = bidder_id % 2 if bidder_id >= 0 else our_team
+	var is_defending = bidder_id >= 0 and our_team != bidder_team
+
 	# ── PARTNER BEHAVIOR ──────────────────────────────────────────────────────
 	# When is_partner == true, partner_id == human_seat.
 	# Every decision passes this test: "Does this increase our team's chance
@@ -866,19 +873,39 @@ static func decide_play(
 			var guaranteed_via_double = winning_domino.is_double()
 			var guaranteed_win = _is_guaranteed_win(winning_domino, hand, trump, lead_suit, public_knowledge, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 
-			if guaranteed_win:
+			# Set-vs-Make policy: when defending, we don't require the strict
+			# global proof _is_guaranteed_win() demands — a narrower evaluation
+			# fact (is this win safe against everyone still left to act THIS
+			# trick) is enough to accept the risk. The threshold moves; the
+			# question is still answered by evaluation, not skipped. When
+			# making, that weaker fact isn't consulted at all — only
+			# guaranteed_win gates the dump, exactly as before.
+			var win_safe_against_remaining = is_defending and not guaranteed_win and _is_win_safe_against_remaining_actors(winning_domino, trump, lead_suit, public_knowledge, plays, player_id, partner_id, trick.nello_doubles)
+
+			if guaranteed_win or win_safe_against_remaining:
 				# Double is an unbeatable lead, OR the winning tile is provably
-				# the highest remaining in its suit with no trump threat left.
-				# Dump counters into the trick to secure the points — but only tiles
-				# that actually stay a dump. If we're void in the lead suit and
-				# holding trump, a trump counter doesn't yield to a non-trump winning
-				# tile, it captures it outright — trump beats non-trump regardless of
-				# rank. That's not a dump, it's an accidental, unplanned win with no
-				# lead prepared for it.
+				# the highest remaining in its suit with no trump threat left,
+				# OR (defending only) it's merely safe against whoever's left
+				# to act this trick specifically. Dump counters into the trick
+				# to secure the points — but only tiles that actually stay a
+				# dump. If we're void in the lead suit and holding trump, a
+				# trump counter doesn't yield to a non-trump winning tile, it
+				# captures it outright — trump beats non-trump regardless of
+				# rank. That's not a dump, it's an accidental, unplanned win
+				# with no lead prepared for it.
 				var counters_to_dump = legal.filter(func(d): return (d.pip_sum() == 5 or d.pip_sum() == 10) and not _beats(d, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed))
 				if counters_to_dump.size() > 0:
 					var chosen = _highest_in(counters_to_dump, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
-					reason_log.append("Good double — putting my points on your trick." if guaranteed_via_double else "Good play — putting my points on your trick.")
+					# guaranteed_via_double only means anything as a
+					# sub-classification of an actual guarantee — check
+					# guaranteed_win first, or a defending-only win
+					# (guaranteed_win false) involving a double would
+					# misreport as certain instead of as the accepted risk
+					# it actually is.
+					if guaranteed_win:
+						reason_log.append("Good double — putting my points on your trick." if guaranteed_via_double else "Good play — putting my points on your trick.")
+					else:
+						reason_log.append("We're defending — taking the chance to add these points.")
 					return chosen
 				var lowest = _lowest_in(legal, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				if _beats(lowest, winning_domino, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed):
@@ -970,8 +997,8 @@ static func decide_play(
 			# pool check evaluated from each side's own target.
 			var margin_survivable = true  # default when bid_value == 0 (no margin data)
 			if bid_value > 0:
-				var our_team = player_id % 2
-				var bidder_team = bidder_id % 2 if bidder_id >= 0 else our_team
+				# our_team/bidder_team reused from the shared declaration above
+				# (Set vs. Make, Edit 1) — no longer recomputed here.
 				var our_target = bid_value if our_team == bidder_team else (43 - bid_value)
 
 				var other_team = 1 - our_team
@@ -1318,6 +1345,18 @@ static func _is_lead_fully_safe(tile: Domino, suit: int, opposing_team: Array,
 		if not _is_lead_safe_against_opponent(tile, suit, opp, trump, public_knowledge, nello_doubles):
 			return false
 	return true
+
+static func _is_win_safe_against_remaining_actors(tile: Domino, trump: int, lead_suit: int,
+		public_knowledge: PublicKnowledge, plays: Array, player_id: int, partner_id: int,
+		nello_doubles: String = "high") -> bool:
+	if public_knowledge == null:
+		return false
+	var suit = tile.get_suit(trump, nello_doubles, lead_suit)
+	var acted_ids: Array = plays.map(func(p): return p["player"])
+	acted_ids.append(player_id)
+	var remaining_ids = [0, 1, 2, 3].filter(func(i): return not acted_ids.has(i))
+	var remaining_opponents = remaining_ids.filter(func(i): return i != partner_id)
+	return _is_lead_fully_safe(tile, suit, remaining_opponents, trump, public_knowledge, nello_doubles)
 
 # Is there still a live threat in `target_suit` that a remaining-to-act
 # player could produce this trick? Returns the specific domino if so,
