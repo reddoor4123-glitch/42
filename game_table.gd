@@ -8,6 +8,13 @@ const MarksDisplayScript = preload("res://marks_display.gd")
 const TrickPileScript = preload("res://trick_pile.gd")
 const LaydownCheckScript = preload("res://laydown_check.gd")
 
+# The four built-in rulesets that ship with the game (as opposed to a
+# user-created "custom:<name>" ruleset) — used to gate the "Reset to
+# Default" button and to decide whether a preset key should be looked up
+# under user://preset_overrides/ before falling back to its hardcoded
+# GameSettings.* function.
+const BUILTIN_PRESET_KEYS: Array[String] = ["teel", "standard", "tournament", "lechner"]
+
 var game: Game
 
 # UI node references (assigned in _ready)
@@ -1035,12 +1042,19 @@ func _on_preset_chosen(key: String):
 		else:
 			s = GameSettingsScript.standard_42()
 	else:
-		match key:
-			"teel":       s = GameSettingsScript.teel_rules()
-			"standard":   s = GameSettingsScript.standard_42()
-			"tournament": s = GameSettingsScript.tournament_rules()
-			"lechner":    s = GameSettingsScript.lechner_hall()
-			_:            s = GameSettingsScript.standard_42()
+		var override_path = "user://preset_overrides/%s.json" % key
+		var of = FileAccess.open(override_path, FileAccess.READ)
+		if of:
+			var data = JSON.parse_string(of.get_as_text())
+			of.close()
+			s = GameSettingsScript.from_dict(data)
+		else:
+			match key:
+				"teel":       s = GameSettingsScript.teel_rules()
+				"standard":   s = GameSettingsScript.standard_42()
+				"tournament": s = GameSettingsScript.tournament_rules()
+				"lechner":    s = GameSettingsScript.lechner_hall()
+				_:            s = GameSettingsScript.standard_42()
 	s.preset_id = key
 	_update_domino_back_texture(s.preset_id)
 	game = Game.new(s)
@@ -2312,6 +2326,16 @@ func _build_settings_content(from_create: bool = false):
 	save_btn.pressed.connect(_show_save_preset_popup)
 	_settings_content_vbox.add_child(save_btn)
 
+	# Only the four built-in rulesets have a hardcoded "default" to reset
+	# to — a custom ruleset's saved file IS its default, so resetting it
+	# would be a no-op at best and confusing at worst.
+	if not from_create and BUILTIN_PRESET_KEYS.has(_pending_settings.preset_id):
+		var reset_btn = Button.new()
+		reset_btn.text = "Reset to Default"
+		reset_btn.custom_minimum_size = Vector2(220, 44)
+		reset_btn.pressed.connect(_on_reset_to_default_pressed)
+		_settings_content_vbox.add_child(reset_btn)
+
 	# ── Bottom buttons ──
 	var sep = HSeparator.new()
 	_settings_content_vbox.add_child(sep)
@@ -2354,7 +2378,10 @@ func _build_settings_content(from_create: bool = false):
 		var confirm_btn = Button.new()
 		confirm_btn.text = "Confirm & Restart"
 		confirm_btn.custom_minimum_size = Vector2(180, 44)
-		confirm_btn.pressed.connect(func(): _restart_game_with_settings(_pending_settings))
+		confirm_btn.pressed.connect(func():
+			_persist_preset_tweaks(_pending_settings)
+			_restart_game_with_settings(_pending_settings)
+		)
 		btn_row.add_child(confirm_btn)
 
 func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
@@ -2680,6 +2707,52 @@ func _show_save_preset_popup():
 	ok_btn.pressed.connect(do_save)
 	line_edit.text_submitted.connect(func(_t): do_save.call())
 	line_edit.grab_focus()
+
+func _on_reset_to_default_pressed():
+	var key = _pending_settings.preset_id
+	var confirm = ConfirmationDialog.new()
+	confirm.title = "Reset to Default?"
+	confirm.dialog_text = "This discards your saved changes to this ruleset and restores its original rules."
+	confirm.ok_button_text = "Reset"
+	confirm.cancel_button_text = "Cancel"
+	confirm.confirmed.connect(func():
+		var path = "user://preset_overrides/%s.json" % key
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+		match key:
+			"teel":       _pending_settings = GameSettingsScript.teel_rules()
+			"standard":   _pending_settings = GameSettingsScript.standard_42()
+			"tournament": _pending_settings = GameSettingsScript.tournament_rules()
+			"lechner":    _pending_settings = GameSettingsScript.lechner_hall()
+		_pending_settings.preset_id = key
+		confirm.queue_free()
+		_build_settings_content(false)
+	)
+	confirm.canceled.connect(func(): confirm.queue_free())
+	add_child(confirm)
+	confirm.popup_centered()
+
+# Writes a preset's current settings back to its own identity on disk —
+# a built-in key (e.g. "teel") to user://preset_overrides/, a "custom:<name>"
+# key to its existing user://custom_rulesets/ file. Called on "Confirm &
+# Restart" so tweaks to whichever ruleset you're playing stick around next
+# time you pick that same ruleset, instead of resetting to its hardcoded
+# defaults. No-op if no preset has been chosen yet (preset_id == "").
+func _persist_preset_tweaks(s: GameSettings):
+	if s.preset_id == "":
+		return
+	var path: String
+	if s.preset_id.begins_with("custom:"):
+		path = "user://custom_rulesets/%s.json" % s.preset_id.substr(7)
+	else:
+		var d = DirAccess.open("user://")
+		if d:
+			d.make_dir("preset_overrides")
+		path = "user://preset_overrides/%s.json" % s.preset_id
+	var f = FileAccess.open(path, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(GameSettingsScript.to_dict(s), "\t"))
+		f.close()
 
 func _save_custom_preset(cname: String):
 	var d = DirAccess.open("user://")

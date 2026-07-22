@@ -1,0 +1,21 @@
+{
+	"failures": [],
+	"full_log": [
+		"═══════════════════════════════════════════════════════════",
+		"Preset persistence — file I/O round-trip",
+		"═══════════════════════════════════════════════════════════",
+		"  PASS: write_override_file — FileAccess.open for WRITE succeeded at user://preset_overrides/test_preset_do_not_use.json",
+		"  PASS: override_file_exists_after_write — file present on disk immediately after _persist_preset_tweaks-equivalent write",
+		"  PASS: read_override_file — FileAccess.open for READ succeeded",
+		"  PASS: tweak_survived_round_trip — allow_laydown=true (the tweak) survived write->read, got true",
+		"  PASS: second_tweak_survived — laydown_mode='authentic' survived write->read, got authentic",
+		"  PASS: untouched_field_still_matches_base_preset — a field the test never touched (nello_doubles_mode) still matches teel_rules()'s own default, got own_suit",
+		"  PASS: preset_id_set_by_caller_not_by_dict — preset_id isn't part of to_dict()'s payload at all — confirms the caller (not the file) must set it",
+		"  PASS: override_file_gone_after_reset — file actually removed from disk after the reset-equivalent delete",
+		"  PASS: fresh_load_has_original_value_again — a fresh teel_rules() load (no override file present) has the original allow_laydown=false, not the tweak",
+		"",
+		"═══════════════════════════════════════════════════════════",
+		"ALL CHECKS PASSED",
+		"═══════════════════════════════════════════════════════════"
+	]
+}
