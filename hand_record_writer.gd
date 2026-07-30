@@ -46,9 +46,17 @@ static func on_flag(record: Dictionary) -> void:
 
 # ─── Filename ────────────────────────────────────────────────────────────
 
+# Second resolution is not enough on its own: two hands flagged inside the same
+# second produce the same name and the second silently overwrites the first.
+# Unlikely by hand, entirely reachable in a DEBUG_FAST_MODE replay session —
+# and flagged hands are the primary AI-research input, so a silent loss here
+# costs more than its probability suggests. The millisecond tail is taken from
+# get_ticks_msec(), which is monotonic within a run and only needs to
+# disambiguate within the second the timestamp already fixes.
 static func _make_filename() -> String:
 	var ts = Time.get_datetime_string_from_system(false, true).replace(":", "-")
-	return "flagged_hand_%s.json" % ts
+	var ms = Time.get_ticks_msec() % 1000
+	return "flagged_hand_%s_%03d.json" % [ts, ms]
 
 # ─── Platform-specific persistence ───────────────────────────────────────
 

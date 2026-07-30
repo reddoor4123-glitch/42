@@ -29,8 +29,6 @@ var flags: Array = []                # Tester-added annotations for the current 
 var team_marks: Array[int] = [0, 0]
 var team_points: Array[int] = [0, 0]
 
-const MARKS_TO_WIN = 7
-
 func _init(game_settings: RefCounted = null):
 	settings = game_settings if game_settings else GameSettingsScript.new()
 

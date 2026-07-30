@@ -116,7 +116,7 @@ Evidence: two independently-found real hands reproduced the identical mechanism 
 - One disagreement (`no_clear_pattern` tag) remains a genuine near-tie between two candidates with identical trump_count, identical has_double_trump, identical off_suit_doubles_count — looks like irreducible noise, not a missing signal.
 - The 4:4/6:6 "bracket bonus" (`ai_player.gd:141-144`) has the same off-suit-candidate-dependence problem this fix corrected for the compounding tier, and was not addressed here — out of scope for this pass, carried to backlog.
 - `decide_bid()`'s use of `best_trump()`'s output for bid sizing is unchanged — whether bid strength should reflect what would actually be declared (`selection_score`) rather than the original fixed-trump valuation (`estimated_points`) is a separate open question, not addressed here.
-- `legacy_selection_score` instrumentation field (old flat formula, computed alongside the new one for comparison, never used for any decision) should be removed once this fix has baked — tracked in backlog, not removed yet.
+- `legacy_selection_score` instrumentation field (old flat formula, computed alongside the new one for comparison, never used for any decision) — **removed.** The fix has baked; `trump_selection_score()` no longer carries the field. `headless/job6_trump_selection_score_validation.gd` was still reading it and errored on the missing key until it was cleaned up (July 30, 2026). The comparison it produced is preserved in `headless/job6_results.json`.
 
 ---
 

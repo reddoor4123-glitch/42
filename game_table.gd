@@ -2158,10 +2158,15 @@ func _nello_laydown_provable() -> bool:
 
 func _laydown_currently_provable() -> bool:
 	var knowledge = PublicKnowledge.from_state(PublicFrame.new(game.hand_history, game.current_trick))
-	var doubles_mode = game.active_nello_doubles_mode if game.variant == BidScript.Type.NELLO and game.active_nello_doubles_mode != "" else "high"
+	# Always "high": Nello never reaches this proof. Both callers route it to
+	# _nello_laydown_provable() instead (the take-tricks question this one asks
+	# is the losing hand under Nello — see the Nello lay-down commit), so the
+	# doubles mode here is only ever the non-Nello default. This used to read
+	# `game.active_nello_doubles_mode if game.variant == NELLO ...`, a branch
+	# that could not be taken and implied a routing that does not exist.
 	return LaydownCheckScript.is_provable_laydown(
 		game.players[human_seat].hand, game.trump, knowledge,
-		doubles_mode, game.active_doubles_trump_reversed, game.active_nello_doubles_reversed
+		"high", game.active_doubles_trump_reversed, game.active_nello_doubles_reversed
 	)
 
 func _on_laydown_button_pressed():

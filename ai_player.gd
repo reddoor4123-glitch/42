@@ -19,6 +19,13 @@ extends RefCounted
 # avoid branch-level detail that would go stale.
 # ═══════════════════════════════════════════════════════════════════
 
+# File-scope preload, matching game.gd/trick.gd/public_knowledge.gd/
+# laydown_check.gd. This file used to call load("res://bid.gd") inside
+# decide_bid(), decide_play(), and _log_bid_decision() — the two hottest
+# functions in the codebase plus their logger — for no benefit over resolving
+# it once here.
+const BidScript = preload("res://bid.gd")
+
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
 # Single source of truth for all AI behavioral parameters.
 # Add new modes here; decide_bid() and decide_play() read from this dict.
@@ -299,8 +306,6 @@ static func decide_bid(
 	human_seat: int = -1
 ) -> RefCounted:
 
-	var BidScript = load("res://bid.gd")
-
 	# ── LAYER 1: EVALUATION (truth — do not modify) ───────────────────────────
 	var eval = best_trump(hand)
 	var est_pts: float = eval["estimated_points"]
@@ -537,11 +542,10 @@ static func _log_bid_decision(
 		ev_score_log, control_score_log, stance_bias_log, final_score_log, str(should_bid), target_bid
 	])
 	print("  Current high:  %s" % current_high_str)
-	var BidScript2 = load("res://bid.gd")
 	var result_str = "PASS"
-	if result.type == BidScript2.Type.POINTS:
+	if result.type == BidScript.Type.POINTS:
 		result_str = "%d pts" % result.value
-	elif result.type == BidScript2.Type.MARKS:
+	elif result.type == BidScript.Type.MARKS:
 		result_str = "%d marks" % result.value
 	print("  Result:        %s" % result_str)
 	print("")
@@ -602,8 +606,6 @@ static func decide_play(
 	var plays = trick.plays
 	var is_leading = plays.size() == 0
 	var lead_suit = trick.lead_suit
-
-	var BidScript = load("res://bid.gd")
 
 	# ── SEVENS ────────────────────────────────────────────────────────────────────
 	# Sevens is not a variation of standard trick play — it is a different game.
@@ -768,7 +770,7 @@ static func decide_play(
 					if d.is_trump(trump):
 						return false
 					var suit = d.get_suit(trump, trick.nello_doubles, -1)
-					return _is_lead_fully_safe(d, suit, opposing_team, trump, public_knowledge, trick.nello_doubles))
+					return _is_lead_fully_safe(d, suit, opposing_team, trump, public_knowledge))
 				if safe_tier.size() > 0:
 					var chosen = _highest_in(safe_tier, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 					if chosen.is_double():
@@ -970,11 +972,15 @@ static func decide_play(
 			# Deterministic worst-case addition: the one specific counter (if any)
 			# that could still land on THIS trick, capped at its own pip value —
 			# not a probability, a bound on a single already-identified domino.
-			var live_counter = null
-			if is_partner or mode["vigilance"] == "full":
-				live_counter = _live_counter_for_suit(lead_suit, hand, public_knowledge, trump, lead_suit, remaining_ids)
+			# Unconditional: this whole block is inside `if is_partner`, and
+			# partner is difficulty-invariant by doctrine — it never skips a
+			# check an opponent would run. The condition here used to read
+			# `is_partner or mode["vigilance"] == "full"`, whose left operand is
+			# always true at this depth, so the vigilance half never decided
+			# anything.
+			var live_counter = _live_counter_for_suit(lead_suit, hand, public_knowledge, trump, lead_suit, remaining_ids)
 			var worst_case_addition = live_counter.pip_sum() if live_counter != null else _worst_case_counter_pip_estimate(lead_suit, hand, trump)
-			var trick_value_worst_case = _estimate_trick_value(plays, trump) + worst_case_addition
+			var trick_value_worst_case = _estimate_trick_value(plays) + worst_case_addition
 
 			# Contract margin: can the side that needs bid_value still reach it, even
 			# after conceding this trick at its worst case? Symmetric for both roles —
@@ -1107,7 +1113,7 @@ static func decide_play(
 				if d.is_trump(trump):
 					return false
 				var suit = d.get_suit(trump, trick.nello_doubles, -1)
-				return _is_lead_fully_safe(d, suit, opponents, trump, public_knowledge, trick.nello_doubles))
+				return _is_lead_fully_safe(d, suit, opponents, trump, public_knowledge))
 			if void_leads.size() > 0:
 				var best = _highest_in(void_leads, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
 				reason_log.append("Leading a suit you can't beat.")
@@ -1307,8 +1313,13 @@ static func _is_guaranteed_win(candidate: Domino, hand: Array[Domino], trump: in
 #     nothing they hold can follow suit OR trump in.
 # A void-in-suit-only opponent (trump live or unknown) clears neither path —
 # that's the GAMBLE tier, handled by callers, not by this function.
+#
+# Takes no nello_doubles: every mode-sensitive question here is asked of
+# PublicKnowledge (best_remaining_card_for_suit), which carries the frame's own
+# _nello_doubles and is the authoritative copy. Passing a second one in could
+# only ever disagree with it. Same reasoning for _is_lead_fully_safe() below.
 static func _is_lead_safe_against_opponent(tile: Domino, suit: int, opponent: int,
-		trump: int, public_knowledge: PublicKnowledge, nello_doubles: String = "high") -> bool:
+		trump: int, public_knowledge: PublicKnowledge) -> bool:
 	if public_knowledge == null:
 		return false
 	var opponent_void_in_suit = public_knowledge.void_suits(opponent).has(suit)
@@ -1327,9 +1338,9 @@ static func _is_lead_safe_against_opponent(tile: Domino, suit: int, opponent: in
 # independently — each opponent may clear either path, they don't need to
 # clear the same one.
 static func _is_lead_fully_safe(tile: Domino, suit: int, opposing_team: Array,
-		trump: int, public_knowledge: PublicKnowledge, nello_doubles: String = "high") -> bool:
+		trump: int, public_knowledge: PublicKnowledge) -> bool:
 	for opp in opposing_team:
-		if not _is_lead_safe_against_opponent(tile, suit, opp, trump, public_knowledge, nello_doubles):
+		if not _is_lead_safe_against_opponent(tile, suit, opp, trump, public_knowledge):
 			return false
 	return true
 
@@ -1343,7 +1354,7 @@ static func _is_win_safe_against_remaining_actors(tile: Domino, trump: int, lead
 	acted_ids.append(player_id)
 	var remaining_ids = [0, 1, 2, 3].filter(func(i): return not acted_ids.has(i))
 	var remaining_opponents = remaining_ids.filter(func(i): return i != partner_id)
-	return _is_lead_fully_safe(tile, suit, remaining_opponents, trump, public_knowledge, nello_doubles)
+	return _is_lead_fully_safe(tile, suit, remaining_opponents, trump, public_knowledge)
 
 # Is there still a live threat in `target_suit` that a remaining-to-act
 # player could produce this trick? Returns the specific domino if so,
@@ -1432,7 +1443,9 @@ static func _control_trump_lead(
 	var double_accounted_for = holds_double_trump or (public_knowledge != null and public_knowledge.has_been_played(double_tile))
 	if double_accounted_for:
 		reason_log.append("I have trump control — drawing out the opponents.")
-		return _highest_in(trumps, trump, lead_suit, trick.nello_doubles, trick.doubles_trump_reversed, trick.own_suit_reversed)
+		# Same call, same inputs as the rank-safety test above — reuse rather
+		# than recompute.
+		return best_trump_candidate
 
 	# BUG-010: prefer a non-counter trump for the low lead if one exists —
 	# it draws the double out just as well without risking 5 or 10 points
@@ -1608,7 +1621,8 @@ static func _is_last_to_act(plays: Array) -> bool:
 # Estimate the point value already on the table in a trick.
 # Returns 1 (base trick point) plus any counter pip values played so far.
 # Used by casual opponents to decide whether the trick is worth contesting.
-static func _estimate_trick_value(plays: Array, trump: int) -> int:
+# Takes no trump: counters are pip_sum 5 or 10 whatever the trump suit is.
+static func _estimate_trick_value(plays: Array) -> int:
 	var pts = 1  # base 1 point for the trick itself
 	for play in plays:
 		var d: Domino = play["domino"]

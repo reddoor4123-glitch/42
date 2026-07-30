@@ -58,11 +58,12 @@ bucket is empty, not skipped.
 - **Extreme double-count overbidding risk** — logged as a watch item during
   playtesting, not a confirmed bug; a compounding cap is the likely remedy
   if it actually misbehaves at the table. → `AI_Bid_Behavior_Bug_Log.md`
-- **Remove `legacy_selection_score` instrumentation** — temporary old-vs-new
-  comparison field added during the `trump_selection_score()` validation
-  pass (July 20, 2026), never read by any decision. Safe, cheap removal
-  once the new formula has baked in playtesting. → `AI_Bid_Behavior_Bug_Log.md`
-  (Pattern D)
+- ~~**Remove `legacy_selection_score` instrumentation**~~ — **DONE.** Temporary
+  old-vs-new comparison field added during the `trump_selection_score()`
+  validation pass (July 20, 2026), never read by any decision. Removed from
+  `ai_player.gd`; the stale reads in
+  `headless/job6_trump_selection_score_validation.gd` were cleaned up
+  July 30, 2026. → `AI_Bid_Behavior_Bug_Log.md` (Pattern D)
 
 ---
 

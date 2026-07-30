@@ -143,4 +143,8 @@ This works cleanly with no further changes needed at any call site, because `tru
 
 ## Experimental instrumentation
 
-Per an explicit request to treat this as an experiment rather than final architecture: `trump_selection_score()`'s result also carries `legacy_selection_score` (the old flat formula), computed alongside the corrected `selection_score` purely for side-by-side comparison. `best_trump()` selects on `selection_score` only — `legacy_selection_score` is never used for any decision. This lets old-vs-new be compared without a mode-switching debug flag (and the risk of it being left in the wrong position). Tracked for removal in `Backlog_Triage_Combined_July15_2026.md` (Quality bucket) once the fix has baked in playtesting.
+**Removed July 30, 2026 — this section is historical.** The field described below is no longer present in `trump_selection_score()`.
+
+Per an explicit request to treat this as an experiment rather than final architecture: `trump_selection_score()`'s result also carried `legacy_selection_score` (the old flat formula), computed alongside the corrected `selection_score` purely for side-by-side comparison. `best_trump()` selected on `selection_score` only — `legacy_selection_score` was never used for any decision. This let old-vs-new be compared without a mode-switching debug flag (and the risk of it being left in the wrong position).
+
+The formula baked, so the field came out. Its output is preserved in `headless/job6_results.json`; `headless/job6_trump_selection_score_validation.gd` still read the key after the removal and errored until it was cleaned up alongside.
