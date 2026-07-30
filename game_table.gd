@@ -1600,6 +1600,24 @@ func _run_bidding_sequence():
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
 
+# Highest marks value the human may legally pick right now — the drum's ceiling,
+# deliberately mirroring Bid.is_valid()'s. The drum used to run to 7 unconditionally,
+# which meant "Allow Jump Bids" and max_open_bid_marks changed nothing a player
+# could see: every value was on the wheel, and nothing rejected the bid afterwards.
+#
+# Plunge and Splash are exempt and return the full range: they carry their own
+# fixed minimums, which can legitimately sit ABOVE the cap — a 4-mark Plunge over
+# a 1-mark auction would otherwise be filtered out of its own drum.
+func _marks_ceiling(contract_type: int, current_high) -> int:
+	if contract_type != BidScript.Type.MARKS or game.settings.allow_jump_bids:
+		return 7
+	var standing := 0.0 if current_high == null else BidScript.to_mark_equivalent(current_high)
+	if standing < 1.0:
+		# Nothing standing, or only a points bid — still the auction's first marks
+		# bid, so the opening cap applies.
+		return mini(7, game.settings.max_open_bid_marks)
+	return mini(7, int(standing) + 1)
+
 func _contract_floor(contract_type: int, auction_floor: int) -> int:
 	match contract_type:
 		BidScript.Type.PLUNGE:
@@ -1712,8 +1730,10 @@ func _show_bid_panel():
 		pts_col.add_child(pts_bid_btn)
 
 	# --- Marks drum — same drum/slot in both states; re-floored when expanded ---
-	var marks_floor = _contract_floor(_selected_contract_type, auction_floor) if _bid_panel_expanded else auction_floor
-	if marks_floor <= 7:
+	var marks_type = _selected_contract_type if _bid_panel_expanded else BidScript.Type.MARKS
+	var marks_floor = _contract_floor(marks_type, auction_floor)
+	var marks_ceiling = _marks_ceiling(marks_type, current_high)
+	if marks_floor <= marks_ceiling:
 		var sep2 = VSeparator.new()
 		sep2.custom_minimum_size = Vector2(2, 76)
 		row.add_child(sep2)
@@ -1734,7 +1754,7 @@ func _show_bid_panel():
 		_marks_picker.font_scale = font_scale
 		_contract_marks_picker = _marks_picker
 		var mark_vals: Array[int] = []
-		for v in range(marks_floor, 8):
+		for v in range(marks_floor, marks_ceiling + 1):
 			mark_vals.append(v)
 		_marks_picker.setup(mark_vals, 0)
 		marks_col.add_child(_marks_picker)
@@ -1813,6 +1833,18 @@ func _update_contract_button_visuals(contract_buttons: Dictionary):
 func _on_bid_submitted(bid: RefCounted):
 	if human_is_forced and bid.type == BidScript.Type.PASS:
 		_set_status("You must bid — everyone passed and you're the shaker!")
+		return
+	# Validate before accepting. The drum above only offers legal values, so this
+	# should never fire — but the UI being the ONLY gate is exactly how
+	# allow_jump_bids came to do nothing: Bid.is_valid() was written correctly and
+	# then never reached, because every bid site assigned game.current_bid
+	# directly. Keep the rule on the path, not just in the widget.
+	if not BidScript.is_valid(bid, game.current_bid, game.settings,
+			game.bid_context(human_seat, _human_bid_position)):
+		_set_status("That bid isn't legal here.")
+		push_error("Rejected an illegal human bid that the panel offered: %s (high: %s)"
+			% [bid.debug_string(),
+			   "none" if game.current_bid == null else game.current_bid.debug_string()])
 		return
 	bid_panel.visible = false
 	waiting_for_bid = false

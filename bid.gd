@@ -85,18 +85,25 @@ static func is_valid(new_bid: Bid, current_high: Bid, settings: GameSettings, co
 		if new_bid.value < settings.minimum_bid or new_bid.value > 42:
 			return false
 
-	# Opening-bid mark cap: e.g. you normally can't open at 5 marks unless
-	# you're going for Plunge (which already passed its own check above) or
-	# the table allows jump bids.
-	if new_bid.type == Type.MARKS and current_high == null:
-		if new_bid.value > settings.max_open_bid_marks and not settings.allow_jump_bids:
-			return false
-
-	# General raise cap: without allow_jump_bids, a MARKS bid can only step
-	# up by one mark at a time over the previous MARKS bid (Plunge/Splash are
-	# exempt since they have their own fixed-value rules above).
-	if new_bid.type == Type.MARKS and current_high != null and current_high.type == Type.MARKS:
-		if not settings.allow_jump_bids and new_bid.value > current_high.value + 1:
+	# Marks ceiling. Without allow_jump_bids a marks bid may either OPEN the
+	# auction at up to max_open_bid_marks, or step exactly one mark above what is
+	# already standing — never more. With jump bids on there is no ceiling at all
+	# and a player may go straight to seven.
+	#
+	# Plunge and Splash are exempt and never reach here: this is gated on
+	# Type.MARKS, and each carries its own fixed minimum checked above. That is
+	# what lets a 4-mark Plunge land on top of a 1-mark auction.
+	if new_bid.type == Type.MARKS and not settings.allow_jump_bids:
+		var standing := 0.0 if current_high == null else to_mark_equivalent(current_high)
+		if standing < 1.0:
+			# Nothing bid yet, or only a points bid — points are worth a fraction
+			# of a mark, so this is still the auction's FIRST marks bid and the
+			# opening cap applies. This used to test `current_high == null`, which
+			# let a jump straight to seven marks through unchallenged as long as
+			# somebody had bid points first.
+			if new_bid.value > settings.max_open_bid_marks:
+				return false
+		elif new_bid.value > int(standing) + 1:
 			return false
 
 	return is_higher(new_bid, current_high)
