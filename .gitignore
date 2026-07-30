@@ -9,3 +9,9 @@ export_presets.cfg
 *.tmp
 *.import
 __pycache__/
+
+# Headless harness output. Every .json under headless/ is written by a script
+# that lives beside it, so it is regenerable and only ever shows up as noise in
+# a diff when a harness is re-run. Add an exception here if a hand-authored
+# fixture ever needs to live in that folder.
+headless/*.json

@@ -30,7 +30,7 @@ Five, fixed. `game_table.gd`'s `SLOT_KEYS`.
 
 The first four are also `BUILTIN_PRESET_KEYS`, which is what gates the Reset
 button. GDScript won't let one const be derived from the other (no array
-concatenation in a const expression), so `scripts/menu_merge_verify.gd` asserts
+concatenation in a const expression), so `headless/menu_merge_verify.gd` asserts
 `SLOT_KEYS == BUILTIN_PRESET_KEYS + [CUSTOM_SLOT_KEY]` instead. If you add a
 slot, that test tells you which companion dictionaries you forgot.
 
@@ -197,10 +197,10 @@ Migration is deliberately two independent mechanisms, because one wasn't enough:
 
 | Script | Covers |
 |---|---|
-| `scripts/menu_merge_verify.gd` | Assertion suite: normalization, `AI_MODES` shape, slot isolation and re-stamping, file ownership, name independence, routing, plus a 12-cycle UI leak check. Exits non-zero on failure. |
-| `scripts/menu_merge_ui_probe.gd` | Smoke-drives every screen including the "…" menu and the reset popup's real layout; treat non-empty stderr as failure. |
-| `scripts/node_leak_probe.gd` | Per-class node census across rebuild cycles, for when a leak number needs attributing. |
-| `scripts/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs. Must run **without** `--headless`. |
+| `headless/menu_merge_verify.gd` | Assertion suite: normalization, `AI_MODES` shape, slot isolation and re-stamping, file ownership, name independence, routing, plus a 12-cycle UI leak check. Exits non-zero on failure. |
+| `headless/menu_merge_ui_probe.gd` | Smoke-drives every screen including the "…" menu and the reset popup's real layout; treat non-empty stderr as failure. |
+| `headless/node_leak_probe.gd` | Per-class node census across rebuild cycles, for when a leak number needs attributing. |
+| `headless/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs. Must run **without** `--headless`. |
 
 Two of these need frame-boundary discipline: anything asking "where is this
 control" or "did that get freed" must wait a frame or two, because Godot lays

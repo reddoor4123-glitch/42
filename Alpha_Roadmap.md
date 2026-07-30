@@ -105,8 +105,8 @@ objective correctly stood down — confirming the stopping mechanism
 directly, not by label alone. A new top-2-trump hand (both old `>=3`
 and `>=4` thresholds false) confirmed the fix adds real capability, not
 just reordering — `rank_safe` alone made it fire. Regression scripts:
-`trump_control_trace.gd`, `trump_control_trace_v2.gd`,
-`trump_control_trace_v3.gd` (kept in-repo as living tests for this
+`headless/trump_control_trace.gd`, `headless/trump_control_trace_v2.gd`,
+`headless/trump_control_trace_v3.gd` (kept in-repo as living tests for this
 mechanism).
 
 **On the deliberate-asymmetry question:**
@@ -224,11 +224,11 @@ functions:
 Wired into `game_table.gd`'s `_on_nello_mode_selected()`, between
 `apply_bid_result()` and `_begin_play()`.
 
-**Verified, not just labeled.** `nello_exchange_trace.gd` (headless,
+**Verified, not just labeled.** `headless/nello_exchange_trace.gd` (headless,
 `--script`) covers all four doubles-mode variants with hands engineered
 to force each tier of the priority stack in turn, plus swap correctness
 (both hands stay at 7 tiles, correct tile moves each direction).
-`nello_exchange_trace_results.json`: **0 failures across 23 checks.**
+`headless/nello_exchange_trace_results.json`: **0 failures across 23 checks.**
 Does not cover the UI panel itself or the `allow_nello_exchange = false`
 skip path — those need an interactive session, not a headless
 `SceneTree`, and weren't re-verified against the trace.
@@ -286,14 +286,14 @@ means either already played, or currently sitting in the claimant's own
 hand (a tile you hold can't simultaneously be with an opponent — directly
 from Katy's own table example: holding 6:6 makes 6:5 provably safe even
 before 6:6 is officially played). Static per-tile check, no trick-by-trick
-simulation needed. Verified via `laydown_check_trace.gd`: **9/9 passing**
-(`laydown_check_trace_results.json`), including a genuine played-tile-
+simulation needed. Verified via `headless/laydown_check_trace.gd`: **9/9 passing**
+(`headless/laydown_check_trace_results.json`), including a genuine played-tile-
 dependency case Claude Code caught was missing on the first pass, plus its
 negative contrast.
 
 **Two supporting `game.gd` functions, verified via
-`laydown_game_functions_trace.gd`: 21/21 passing**
-(`laydown_game_functions_trace_results.json`):
+`headless/laydown_game_functions_trace.gd`: 21/21 passing**
+(`headless/laydown_game_functions_trace_results.json`):
 - `resolve_hand_via_laydown(claimant_id, claim_correct)` — flat mark
   award (1 for Points, `current_bid.value` otherwise) to whichever team
   the claimant belongs to, matching how a "set" already awards marks
@@ -392,12 +392,12 @@ could actually equal `FOLLOW_ME` in reachable play. It can't. Katy's
 pushback was correct; the dead-code note above was already sitting in
 the docs and should have been checked first.
 
-**Verified two ways, not just one.** `hand_ends_early_points_trace.gd`:
+**Verified two ways, not just one.** `headless/hand_ends_early_points_trace.gd`:
 11/11 passing, including both exact-boundary cases (hitting the target
 exactly counts as achieved via `>=`; landing exactly on the remaining-
 points threshold does *not* count as set, via strict `<`) and a bidder-
 on-team-1 case confirming the team math isn't hardcoded. Re-ran the
-existing `laydown_game_functions_trace.gd` as a regression check since
+existing `headless/laydown_game_functions_trace.gd` as a regression check since
 its neighboring function's comment was edited — still 21/21, unchanged.
 Playtested live (July 22, 2026) — Katy confirmed satisfied, including
 the toggle-off paths and the actual Plunge/Splash early-stop the whole
@@ -454,8 +454,8 @@ defending-only win now correctly logs "We're defending — taking the
 chance to add these points." instead.
 
 **Verified four ways, all run against live `decide_play()`, not
-inferred** (`set_vs_make_trace.gd`, `set_vs_make_path_b_trace.gd`,
-`set_vs_make_path_a_negative_trace.gd`, plus their `*_results.json`):
+inferred** (`headless/set_vs_make_trace.gd`, `headless/set_vs_make_path_b_trace.gd`,
+`headless/set_vs_make_path_a_negative_trace.gd`, plus their `*_results.json`):
 - **Path A positive** (double lead, opponent not void in suit) — SET
   dumps the counter with the corrected reason string; MAKE is
   unaffected, identical to pre-change behavior.
@@ -513,11 +513,11 @@ session; not introduced by it; not touched.
    its own mechanism if ever extended to cover partner-courtesy. Scope
    deliberately narrow: P1/P3 overbidding each other untouched, per the
    "only the human feels this" reasoning. Verified via
-   `partner_overbid_gate_trace.gd`, 6 cases including a deliberate
+   `headless/partner_overbid_gate_trace.gd`, 6 cases including a deliberate
    two-condition-necessity test (Case 4) and a statelessness check
    (Case 6, confirming a conservative announcement doesn't cap a later
    re-evaluation of the same hand). All passing; sibling
-   `bid_filter_trace.gd` regression-checked afterward with no changes.
+   `headless/bid_filter_trace.gd` regression-checked afterward with no changes.
 2. **Lowest-legal-bid filter (a.k.a. Announced-Bid Filter) — done,
    verified (July 20, 2026).** Two-part rule, both unconditional, no
    personality/difficulty gating, applies to opens, raises, and forced
@@ -542,7 +542,7 @@ session; not introduced by it; not touched.
    Custom-AI case where `max_overbid` could be independently tuned
    below 1, which would otherwise let the two-tier margin silently
    violate a hyper-conservative custom AI's own setting. Verified via
-   `bid_filter_trace.gd`: 5 spec cases plus a forced-bid check, all
+   `headless/bid_filter_trace.gd`: 5 spec cases plus a forced-bid check, all
    passing against the real `decide_bid()`, including a direct isolated
    call to the safety clamp with a synthetic `max_overbid=0` to prove
    it engages even though no current preset can reach that value.

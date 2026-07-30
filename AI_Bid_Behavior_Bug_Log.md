@@ -109,7 +109,7 @@ Evidence: two independently-found real hands reproduced the identical mechanism 
 
 **Validated:** against all 40 hands from the classification harness — corrected formula: 38/40 correct vs. 37/40 for the flat/legacy formula, zero regressions, exactly one flip (the known regression hand, confirmed live in GDScript via `job6_trump_selection_score_validation.gd`, not just the Python cross-check that produced the same numbers first). The two other known disagreement hands in that same 40-hand set are confirmed still open post-fix (see Known limitations below) — not silently patched.
 
-**Status:** ✓ Fixed, July 20, 2026. See `Spec_trump_selection_score_July20_2026.md` for the full spec, and `scripts/job6_results.json` for the validation run.
+**Status:** ✓ Fixed, July 20, 2026. See `Spec_trump_selection_score_July20_2026.md` for the full spec, and `headless/job6_results.json` for the validation run.
 
 **Known limitations, logged not blockers:**
 - `realization_bias` not investigated for this same cross-candidate-instability pattern. One of the two other known disagreement hands (`realization_shift` tag — chosen suit 5, actual best 4) may trace to this term reacting to a candidate's counter-tile-is-trump-or-not status the same way Finding #4's doubles bonus did — not isolated, not touched by this fix.

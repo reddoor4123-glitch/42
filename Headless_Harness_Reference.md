@@ -14,12 +14,32 @@ docs in this project have needed correction passes for.
 
 ---
 
+## Where things live
+
+Everything headless is under `headless/`, and nothing else is. If a file
+`extends SceneTree` it belongs there; if it declares a `class_name` and the
+game loads it, it belongs at the repo root. That split is the whole rule.
+
+Consolidated July 30, 2026 — the `*_trace.gd` harnesses used to sit at the
+repo root mixed in with the game's own scripts, while everything newer lived
+in a folder called `scripts/`. Both were headless-only, so they became one
+folder with a name that says what it holds.
+
+`headless/*.json` is **gitignored**. Every JSON in there is written by a
+script sitting beside it, so it is regenerable, and tracking it only produced
+diff noise whenever a harness was re-run. Findings worth keeping go in a
+session doc, not in a committed result file — the same rule this doc already
+follows about not growing a results section. Add a `.gitignore` exception if
+a hand-authored fixture ever needs to live there.
+
+---
+
 ## Quickstart — copy/paste this first
 
 ```bash
 GODOT="/c/Users/reddo/Downloads/Godot_v4.6.3-stable_win64.exe/Godot_v4.6.3-stable_win64_console.exe"
 cd "/c/Users/reddo/Godot/42"
-"$GODOT" --headless --path . --script res://scripts/<your_script>.gd > /dev/null 2>/tmp/stderr.txt
+"$GODOT" --headless --path . --script res://headless/<your_script>.gd > /dev/null 2>/tmp/stderr.txt
 echo "exit code: $?"
 cat /tmp/stderr.txt
 ```
@@ -44,8 +64,8 @@ N=1000, not N=100-then-maybe-more — it's cheap.
 
 ## Reusable template
 
-Every job so far (`scripts/headless_test_job1.gd`,
-`scripts/job2_ceiling_vs_quantity.gd`, `scripts/job3_experiment.gd`) is a
+Every job so far (`headless/headless_test_job1.gd`,
+`headless/job2_ceiling_vs_quantity.gd`, `headless/job3_experiment.gd`) is a
 variation on this skeleton. Start from this, not from a blank file.
 
 ```gdscript
@@ -124,7 +144,7 @@ func _init():
 		var r = _play_trial()
 		# accumulate...
 	# write results to a JSON file, NOT stdout — SEE GOTCHA #4
-	var f = FileAccess.open("res://scripts/results.json", FileAccess.WRITE)
+	var f = FileAccess.open("res://headless/results.json", FileAccess.WRITE)
 	f.store_string(JSON.stringify({}, "\t"))
 	f.close()
 	quit(0)
@@ -214,8 +234,8 @@ the script's header comment, the same way this one is.
 `casual`/`expert`. `casual` is the former `beginner` with identical numbers;
 the former middle tier `standard` is retired. Anything written before that
 date that names `"standard"` or `"beginner"` as a difficulty is stale —
-`bid_filter_trace.gd`, `partner_overbid_gate_trace.gd`, and
-`trump_control_trace_v2.gd` were all updated in that pass.
+`headless/bid_filter_trace.gd`, `headless/partner_overbid_gate_trace.gd`, and
+`headless/trump_control_trace_v2.gd` were all updated in that pass.
 
 - A retired name won't crash a *call* — `GameSettings.normalize_difficulty()`
   maps `"standard"` → `"expert"` at every persisted read site, and
@@ -355,19 +375,19 @@ evaluator's raw number — see Job 3 Step 1.
 
 | Script | What it does |
 |---|---|
-| `scripts/headless_test_job1.gd` | Single hand, verbose — the original viability check. Good template for a one-off debug rerun with full trick-by-trick output. |
-| `scripts/headless_timing_test.gd` | Batch timing probe, N configurable — use to re-benchmark if engine/hardware changes. |
-| `scripts/job2_ceiling_vs_quantity.gd` | Fixed-archetype Partner hand vs. random reshuffle of the other three seats; writes `job2_results.json`. |
-| `scripts/job2_hand_eval_probe.gd` | Throwaway iteration tool for testing candidate hands against `evaluate_hand()` before committing them to a batch — not itself a batch script. |
-| `scripts/job3_find_bidworthy_hand.gd` | Random-deal-until-clears-threshold search using `decide_bid()`; writes `job3_fixed_hand.json`. |
-| `scripts/job3_experiment.gd` | Fixed bidder hand vs. random reshuffle of the other three seats, with per-tile `hand_history` stats; writes `job3_results.json`. First script to use the Gotcha #3 fix. |
-| `scripts/menu_merge_verify.gd` | Assertion suite for the Menu/Rules/Settings merge: difficulty normalization at every read shape, `AI_MODES` shape, slot resolution isolation, slot-name independence, domino-back independence, `last_used.json` routing. Writes `menu_merge_verify_results.json` with a `failures` count; exits non-zero on any failure. First script to use the Gotcha #7 pattern. |
-| `scripts/menu_merge_ui_probe.gd` | Smoke-drives every screen that merge restructured (settings rebuild per slot, reset popup, rename popups, the Choose Rules "…" menu, difficulty screen, first-launch vs. returning routing) and reports node counts. Treat non-empty stderr as failure. |
-| `scripts/nello_laydown_verify.gd` | Assertion suite for `LaydownCheck.is_provable_nello_laydown()` — all four doubles modes, void discards, both ends of mixed tiles, the strand shape, and a full seven-trick position for cost (~450 ms). Pure logic, no scene, no `user://`. Exits non-zero on failure. |
-| `scripts/laydown_ends_hand_verify.gd` | Regression suite for "a decided hand stays playable underneath the result banner". Drives the real handlers — claims a lay-down mid-hand, then taps a tile the way a player would. Verified to fail without the fix. Expect the gotcha #10 stderr warning; judge the exit code. |
-| `scripts/tricks_expand_persist_verify.gd` | Regression suite for the trick lists keeping their expanded/collapsed state across hands, including that an open panel snaps back to the emptied pile's height instead of reopening at last hand's. Phased across layout frames — see the note in gotcha #8 about why `.size` needs one. Expect the gotcha #10 stderr warning. |
-| `scripts/node_leak_probe.gd` | Per-class node census before/after N rebuild cycles. Use when a leak *number* needs attributing to an actual class — a bare `OBJECT_NODE_COUNT` delta says "something grew", this says what. |
-| `scripts/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs for eyeball review. Must run **without** `--headless`, same as `font_screenshot.gd`. |
+| `headless/headless_test_job1.gd` | Single hand, verbose — the original viability check. Good template for a one-off debug rerun with full trick-by-trick output. |
+| `headless/headless_timing_test.gd` | Batch timing probe, N configurable — use to re-benchmark if engine/hardware changes. |
+| `headless/job2_ceiling_vs_quantity.gd` | Fixed-archetype Partner hand vs. random reshuffle of the other three seats; writes `job2_results.json`. |
+| `headless/job2_hand_eval_probe.gd` | Throwaway iteration tool for testing candidate hands against `evaluate_hand()` before committing them to a batch — not itself a batch script. |
+| `headless/job3_find_bidworthy_hand.gd` | Random-deal-until-clears-threshold search using `decide_bid()`; writes `job3_fixed_hand.json`. |
+| `headless/job3_experiment.gd` | Fixed bidder hand vs. random reshuffle of the other three seats, with per-tile `hand_history` stats; writes `job3_results.json`. First script to use the Gotcha #3 fix. |
+| `headless/menu_merge_verify.gd` | Assertion suite for the Menu/Rules/Settings merge: difficulty normalization at every read shape, `AI_MODES` shape, slot resolution isolation, slot-name independence, domino-back independence, `last_used.json` routing. Writes `menu_merge_verify_results.json` with a `failures` count; exits non-zero on any failure. First script to use the Gotcha #7 pattern. |
+| `headless/menu_merge_ui_probe.gd` | Smoke-drives every screen that merge restructured (settings rebuild per slot, reset popup, rename popups, the Choose Rules "…" menu, difficulty screen, first-launch vs. returning routing) and reports node counts. Treat non-empty stderr as failure. |
+| `headless/nello_laydown_verify.gd` | Assertion suite for `LaydownCheck.is_provable_nello_laydown()` — all four doubles modes, void discards, both ends of mixed tiles, the strand shape, and a full seven-trick position for cost (~450 ms). Pure logic, no scene, no `user://`. Exits non-zero on failure. |
+| `headless/laydown_ends_hand_verify.gd` | Regression suite for "a decided hand stays playable underneath the result banner". Drives the real handlers — claims a lay-down mid-hand, then taps a tile the way a player would. Verified to fail without the fix. Expect the gotcha #10 stderr warning; judge the exit code. |
+| `headless/tricks_expand_persist_verify.gd` | Regression suite for the trick lists keeping their expanded/collapsed state across hands, including that an open panel snaps back to the emptied pile's height instead of reopening at last hand's. Phased across layout frames — see the note in gotcha #8 about why `.size` needs one. Expect the gotcha #10 stderr warning. |
+| `headless/node_leak_probe.gd` | Per-class node census before/after N rebuild cycles. Use when a leak *number* needs attributing to an actual class — a bare `OBJECT_NODE_COUNT` delta says "something grew", this says what. |
+| `headless/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs for eyeball review. Must run **without** `--headless`, same as `font_screenshot.gd`. |
 
 None of these modify `ai_player.gd`, `game.gd`, or any other live game
 file — every job so far has been read-only instrumentation on top of
