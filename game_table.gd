@@ -1541,10 +1541,18 @@ func _start_hand():
 	_refresh_all_hands()
 	_us_tricks.clear_tricks()
 	_them_tricks.clear_tricks()
-	# Both piles are empty now, so an expanded list would be a panel of nothing
-	# sitting over the new hand's bidding. Fold them back into their boxes.
-	_set_tricks_expanded(0, false)
-	_set_tricks_expanded(1, false)
+	# Carry each list's expanded/collapsed state into the new hand instead of
+	# folding both back. This used to force them shut on the grounds that an
+	# expanded empty list is a panel of nothing — true, but it's the player's
+	# call: anyone who wants the trick lists open wants them open every hand, and
+	# having to re-open them after every deal is the worse annoyance.
+	#
+	# Re-applying the current state rather than simply leaving it alone is what
+	# keeps the geometry honest: _set_tricks_expanded() snaps an open panel back
+	# to its content's minimum, so a list left open at the end of a seven-trick
+	# hand doesn't reopen at that height over a pile that's just been cleared.
+	_set_tricks_expanded(0, _tricks_expanded[0])
+	_set_tricks_expanded(1, _tricks_expanded[1])
 	_start_bidding()
 
 func _start_bidding():

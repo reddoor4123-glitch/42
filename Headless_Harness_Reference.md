@@ -284,6 +284,17 @@ double. It's genuinely visible (one frame of doubled content) on any panel
 that rebuilds in response to a button press rather than only on open.
 `game_table.gd`'s `_clear_children()` detaches first, then frees.
 
+The same frame-boundary rule bites when *measuring*. A Control's `size` only
+catches up after a layout pass, so reading it in the frame you changed
+something reports the old value. That can silently invalidate an assertion
+rather than fail it: a before/after size comparison taken in one frame reads
+the same stale number on both sides and passes no matter what the code does.
+`get_combined_minimum_size()` is computed on demand and doesn't need the
+wait — but it also won't catch a container that failed to *shrink*, since a
+container tracks its child's minimum while leaving an already-larger `size`
+alone. If the thing under test is whether something resized, put a frame
+either side and assert on `size`.
+
 ### Gotcha #10 — `return true` from `_process()` always exits 0
 
 In the `_initialize()`/`_process()` shape from gotcha #7, ending the loop by
@@ -354,6 +365,7 @@ evaluator's raw number — see Job 3 Step 1.
 | `scripts/menu_merge_ui_probe.gd` | Smoke-drives every screen that merge restructured (settings rebuild per slot, reset popup, rename popups, the Choose Rules "…" menu, difficulty screen, first-launch vs. returning routing) and reports node counts. Treat non-empty stderr as failure. |
 | `scripts/nello_laydown_verify.gd` | Assertion suite for `LaydownCheck.is_provable_nello_laydown()` — all four doubles modes, void discards, both ends of mixed tiles, the strand shape, and a full seven-trick position for cost (~450 ms). Pure logic, no scene, no `user://`. Exits non-zero on failure. |
 | `scripts/laydown_ends_hand_verify.gd` | Regression suite for "a decided hand stays playable underneath the result banner". Drives the real handlers — claims a lay-down mid-hand, then taps a tile the way a player would. Verified to fail without the fix. Expect the gotcha #10 stderr warning; judge the exit code. |
+| `scripts/tricks_expand_persist_verify.gd` | Regression suite for the trick lists keeping their expanded/collapsed state across hands, including that an open panel snaps back to the emptied pile's height instead of reopening at last hand's. Phased across layout frames — see the note in gotcha #8 about why `.size` needs one. Expect the gotcha #10 stderr warning. |
 | `scripts/node_leak_probe.gd` | Per-class node census before/after N rebuild cycles. Use when a leak *number* needs attributing to an actual class — a bare `OBJECT_NODE_COUNT` delta says "something grew", this says what. |
 | `scripts/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs for eyeball review. Must run **without** `--headless`, same as `font_screenshot.gd`. |
 
