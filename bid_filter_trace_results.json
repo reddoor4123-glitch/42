@@ -9,16 +9,16 @@
 		"═══════════════════════════════════════════════════════════",
 		"PROBE SWEEP (current_high=null, min_points=30, standard difficulty)",
 		"═══════════════════════════════════════════════════════════",
-		"  probe weak_spread              should_bid=false target_bid=19   result=PASS",
-		"  probe trump2                   should_bid=false target_bid=16   result=PASS",
-		"  probe trump3                   should_bid=false target_bid=20   result=PASS",
-		"  probe trump4                   should_bid=false target_bid=23   result=PASS",
+		"  probe weak_spread              should_bid=false target_bid=21   result=PASS",
+		"  probe trump2                   should_bid=false target_bid=18   result=PASS",
+		"  probe trump3                   should_bid=false target_bid=22   result=PASS",
+		"  probe trump4                   should_bid=false target_bid=25   result=PASS",
 		"  probe trump5_dbl_weak_off      should_bid=true  target_bid=30   result=POINTS(30)",
 		"  probe trump4_dbl_1_off_dbl     should_bid=true  target_bid=30   result=POINTS(30)",
-		"  probe trump4_dbl_3_off_dbl     should_bid=true  target_bid=34   result=POINTS(31)",
-		"  probe trump4_dbl_3_off_dbl_top should_bid=true  target_bid=36   result=POINTS(31)",
-		"  probe trump3_dbl_1_off_dbl     should_bid=false target_bid=27   result=PASS",
-		"  probe trump2_dbl_weak          should_bid=false target_bid=20   result=PASS",
+		"  probe trump4_dbl_3_off_dbl     should_bid=true  target_bid=35   result=POINTS(31)",
+		"  probe trump4_dbl_3_off_dbl_top should_bid=true  target_bid=37   result=POINTS(31)",
+		"  probe trump3_dbl_1_off_dbl     should_bid=false target_bid=28   result=PASS",
+		"  probe trump2_dbl_weak          should_bid=false target_bid=22   result=PASS",
 		"  probe trump4real_dbl_1_off_dbl should_bid=true  target_bid=30   result=POINTS(30)",
 		"  probe trump4real_dbl_2_off_dbl should_bid=true  target_bid=30   result=POINTS(30)",
 		"  probe trump3_dbl_2_off_dbl     should_bid=true  target_bid=30   result=POINTS(30)",
@@ -37,13 +37,13 @@
 		"═══════════════════════════════════════════════════════════",
 		"CASE 2 — strong open, not shaker (min_points=30)",
 		"═══════════════════════════════════════════════════════════",
-		"  using hand: trump4_dbl_3_off_dbl (target_bid=34)",
-		"  PASS: case2_final_bid_31_not_target — expected POINTS(31) — ceiling withheld from target_bid=34 — got 31 points",
+		"  using hand: trump4_dbl_3_off_dbl (target_bid=35)",
+		"  PASS: case2_final_bid_31_not_target — expected POINTS(31) — ceiling withheld from target_bid=35 — got 31 points",
 		"",
 		"═══════════════════════════════════════════════════════════",
 		"CASE 3 — shaker with the same strong hand as case 2 (min_points=30)",
 		"═══════════════════════════════════════════════════════════",
-		"  using hand: trump4_dbl_3_off_dbl (target_bid=34), player_id == shaker == 0",
+		"  using hand: trump4_dbl_3_off_dbl (target_bid=35), player_id == shaker == 0",
 		"  PASS: case3_shaker_overrides_to_min_points — expected POINTS(30) — shaker override takes precedence over two-tier filter — got 30 points",
 		"",
 		"═══════════════════════════════════════════════════════════",
@@ -51,8 +51,8 @@
 		"═══════════════════════════════════════════════════════════",
 		"  4a (target <= 33): using hand trump5_dbl_weak_off (raw target_bid=30)",
 		"  PASS: case4a_final_bid_32 — expected POINTS(32), got 32 points",
-		"  4b (target > 33): using hand trump4_dbl_3_off_dbl (target_bid=34)",
-		"  PASS: case4b_final_bid_33 — expected POINTS(33) — ceiling withheld from target_bid=34 — got 33 points",
+		"  4b (target > 33): using hand trump4_dbl_3_off_dbl (target_bid=35)",
+		"  PASS: case4b_final_bid_33 — expected POINTS(33) — ceiling withheld from target_bid=35 — got 33 points",
 		"",
 		"═══════════════════════════════════════════════════════════",
 		"FORCED BID — is_forced=true, weak hand, current_high=null (min_points=30)",
@@ -109,7 +109,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 19
+			"target_bid": 21
 		},
 		{
 			"is_points": false,
@@ -145,7 +145,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 16
+			"target_bid": 18
 		},
 		{
 			"is_points": false,
@@ -181,7 +181,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 20
+			"target_bid": 22
 		},
 		{
 			"is_points": false,
@@ -217,7 +217,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 23
+			"target_bid": 25
 		},
 		{
 			"is_points": true,
@@ -325,7 +325,7 @@
 				]
 			],
 			"should_bid": true,
-			"target_bid": 34
+			"target_bid": 35
 		},
 		{
 			"is_points": true,
@@ -361,7 +361,7 @@
 				]
 			],
 			"should_bid": true,
-			"target_bid": 36
+			"target_bid": 37
 		},
 		{
 			"is_points": false,
@@ -397,7 +397,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 27
+			"target_bid": 28
 		},
 		{
 			"is_points": false,
@@ -433,7 +433,7 @@
 				]
 			],
 			"should_bid": false,
-			"target_bid": 20
+			"target_bid": 22
 		},
 		{
 			"is_points": true,

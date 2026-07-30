@@ -14,7 +14,7 @@
 		"═══════════════════════════════════════════════════════════",
 		"  Same setup, hand target_bid=34. Worked example: min_points=31,",
 		"  required_target=34, gate clears (34>=34), _announced_points_bid(34,31,...)",
-		"  -> min_points+1=32 at standard difficulty (max_overbid=4). Logged for",
+		"  -> min_points+1=32 at expert difficulty (max_overbid=6). Logged for",
 		"  sanity, NOT asserted on directly — see file header re: test 2.",
 		"  independently computed via _announced_points_bid(target_bid=34, min_points=31, ...) = 32",
 		"  PASS: case2_gate_clears — expected a POINTS bid (gate cleared), got 32 points",

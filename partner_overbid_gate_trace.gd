@@ -32,7 +32,11 @@ extends SceneTree
 # ═══════════════════════════════════════════════════════════════════
 
 const BidScript = preload("res://bid.gd")
-const DIFFICULTY := "standard"
+# Was "standard" — that tier was retired July 29 2026 when difficulty went to
+# two tiers (casual/expert). The assertions below stay valid because they compare
+# decide_bid()'s output against _announced_points_bid() called with the max_overbid
+# of this same tier, rather than against a hardcoded number.
+const DIFFICULTY := "expert"
 
 var trace_lines: Array = []
 var failures: Array = []
@@ -92,14 +96,19 @@ func _init():
 	_log("═══════════════════════════════════════════════════════════")
 	_log("  Same setup, hand target_bid=34. Worked example: min_points=31,")
 	_log("  required_target=34, gate clears (34>=34), _announced_points_bid(34,31,...)")
-	_log("  -> min_points+1=32 at standard difficulty (max_overbid=4). Logged for")
-	_log("  sanity, NOT asserted on directly — see file header re: test 2.")
 	var hand2 = _hand_from_pairs(_hand_strong34())
 	var bd2: Array = []
 	var result2 = AIPlayer.decide_bid(hand2, 2, p0_opens_30, settings, false, DIFFICULTY, bd2, -1, 0)
 	var min_points_case2 = 31  # current_high.value(30) + 1
-	var max_overbid_standard = AIPlayer.AI_MODES["standard"]["max_overbid"]
-	var expected_via_composition = AIPlayer._announced_points_bid(34, min_points_case2, 2, -1, max_overbid_standard)
+	# Read the tier's own max_overbid rather than naming a tier literally. The
+	# previous version looked up AI_MODES["standard"], which became a hard error
+	# (not a silent fallback) the moment that key was removed — Dictionary key
+	# access throws, and this line runs unconditionally.
+	var max_overbid_tier: int = AIPlayer.AI_MODES[DIFFICULTY]["max_overbid"]
+	_log("  -> min_points+1=32 at %s difficulty (max_overbid=%d). Logged for"
+		% [DIFFICULTY, max_overbid_tier])
+	_log("  sanity, NOT asserted on directly — see file header re: test 2.")
+	var expected_via_composition = AIPlayer._announced_points_bid(34, min_points_case2, 2, -1, max_overbid_tier)
 	_log("  independently computed via _announced_points_bid(target_bid=34, min_points=%d, ...) = %d" % [min_points_case2, expected_via_composition])
 	_check("case2_gate_clears", result2.type == BidScript.Type.POINTS,
 		"expected a POINTS bid (gate cleared), got %s" % result2.debug_string())
@@ -167,7 +176,7 @@ func _init():
 	var bd6: Array = []
 	var result6 = AIPlayer.decide_bid(hand6, 2, opponent_raises_33, settings, false, DIFFICULTY, bd6, -1, 0)
 	var min_points_case6 = 34  # current_high.value(33) + 1
-	var expected_via_composition_6 = AIPlayer._announced_points_bid(34, min_points_case6, 2, -1, max_overbid_standard)
+	var expected_via_composition_6 = AIPlayer._announced_points_bid(34, min_points_case6, 2, -1, max_overbid_tier)
 	_log("  independently computed via _announced_points_bid(target_bid=34, min_points=%d, ...) = %d" % [min_points_case6, expected_via_composition_6])
 	_check("case6_still_willing_to_raise", result6.type == BidScript.Type.POINTS,
 		"expected P2 to still raise with a POINTS bid, got %s" % result6.debug_string())

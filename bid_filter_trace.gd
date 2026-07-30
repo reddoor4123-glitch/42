@@ -30,7 +30,11 @@ extends SceneTree
 # ═══════════════════════════════════════════════════════════════════
 
 const BidScript = preload("res://bid.gd")
-const DIFFICULTY := "standard"
+# Was "standard" — that tier was retired July 29 2026 when difficulty went to
+# two tiers (casual/expert). Any recorded findings in this file's comments were
+# produced against the old middle tier (max_overbid 4); Expert's is 6, so
+# re-running now can legitimately produce different announced bid values.
+const DIFFICULTY := "expert"
 
 var trace_lines: Array = []
 var failures: Array = []

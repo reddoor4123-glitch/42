@@ -16,8 +16,8 @@ extends SceneTree
 # "the AI was handed a free pass and took it."
 #
 # This script removes that crutch and adds a second independent
-# variable: difficulty. AI_MODES (ai_player.gd:25-44) shows
-# beginner/standard have vigilance:"none", expert has vigilance:"full".
+# variable: difficulty. AI_MODES in ai_player.gd shows
+# casual has vigilance:"none", expert has vigilance:"full".
 # The safe-lead check that ran before P1's trump lead is gated by
 # `if mode["vigilance"] == "full" and public_knowledge != null:`
 # (ai_player.gd ~970). At vigilance:"none" that whole check is skipped
@@ -55,10 +55,15 @@ const TRUMP_SUIT := 6
 const BID_VALUE := 30
 const BIDDER_SEAT := 0
 const PARTNER_SEAT := 2
+# Diagnostic mirror of ai_player.gd's AI_MODES, vigilance axis only. Kept in
+# step with the July 29 2026 two-tier change: "beginner" is now "casual" and the
+# "standard" middle tier is gone. Both retired names resolved to Expert via the
+# real AI_MODES fallback, so leaving them here would have run Expert behavior
+# under a "standard"/"beginner" scenario label — a silently wrong comparison
+# rather than a crash.
 const AI_MODES := {
-	"beginner": {"vigilance": "none"},
-	"standard": {"vigilance": "none"},
-	"expert":   {"vigilance": "full"},
+	"casual": {"vigilance": "none"},
+	"expert": {"vigilance": "full"},
 }
 
 var trace_lines: Array = []
@@ -263,7 +268,7 @@ func _run_scenario(name: String, hands: Array, target_seat: int, difficulty: Str
 				_log("  CONTROL_TRUMP eligible (vigilance open AND rank_safe AND not-all-void): %s" % diag["control_trump_eligible"])
 
 			# NOTE: "difficulty" string passed to decide_play() must match a
-			# real AI_MODES key in ai_player.gd (beginner/standard/expert) —
+			# real AI_MODES key in ai_player.gd (casual/expert) —
 			# our local AI_MODES here is diagnostic-only and mirrors the
 			# vigilance field; decide_play() reads its own copy internally.
 			var chosen = AIPlayer.decide_play(
@@ -319,8 +324,10 @@ func _init():
 	var results := {}
 	results["B_original_expert"] = _run_scenario("B_original_expert", _hands_original(), 1, "expert")
 	results["B_hardened_expert"] = _run_scenario("B_hardened_expert", _hands_hardened(), 1, "expert")
-	results["B_hardened_standard"] = _run_scenario("B_hardened_standard", _hands_hardened(), 1, "standard")
-	results["B_hardened_beginner"] = _run_scenario("B_hardened_beginner", _hands_hardened(), 1, "beginner")
+	# The old B_hardened_standard scenario is gone with the tier itself. It shared
+	# vigilance:"none" with beginner, so the surviving casual run covers the same
+	# axis this trace actually varies.
+	results["B_hardened_casual"] = _run_scenario("B_hardened_casual", _hands_hardened(), 1, "casual")
 
 	results["full_log"] = trace_lines
 

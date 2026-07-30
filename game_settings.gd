@@ -1,13 +1,20 @@
 class_name GameSettings
 extends RefCounted
 
-# Which preset this session's settings originated from (e.g. "teel",
-# "standard", "tournament", "lechner", or "custom:<name>") — set once in
-# game_table.gd's _on_preset_chosen(), not by any individual setting field.
-# Persists through settings-screen tweaks (see _copy_settings()) until a
-# different preset is chosen from the main menu. Used today to gate the
-# Teel Rules custom domino back; "" means no preset has been chosen yet
-# (fresh GameSettings.new()).
+# Which of the five ruleset slots these settings came from — one of "teel",
+# "standard", "tournament", "lechner", or "custom:Custom" (see
+# game_table.gd's SLOT_KEYS). Set by _resolve_settings_for_slot(), not by any
+# individual setting field, and carried through settings-screen tweaks via
+# _copy_settings(). "" means no slot has been resolved yet (a fresh
+# GameSettings.new()), which _persist_preset_tweaks() treats as "nowhere to
+# save" — so anything that hands this object to the Settings screen must stamp
+# a real key first.
+#
+# NOTE: to_dict() deliberately does not serialize this. A settings object read
+# back from disk therefore arrives with preset_id == "" and must be re-stamped
+# by whoever loaded it. It also no longer selects the domino back — that moved
+# to a standalone display preference (July 29 2026) so the tile art stops
+# changing whenever the ruleset does.
 var preset_id: String = ""
 
 # ─────────────────────────────────────────────
@@ -59,7 +66,12 @@ var allow_follow_me: bool = true
 #  SEVENS
 # ─────────────────────────────────────────────
 var allow_sevens: bool = true
-var sevens_require_seven_in_hand: bool = true    # Must hold a domino summing to 7 to call it
+# Must hold a domino summing to 7 to call it. No longer user-facing (the
+# settings-screen toggle was removed July 29 2026) — the rule is always on.
+# from_dict() forces this true regardless of what a saved file says, so an
+# externally-distributed save that stored false can't strand a player with a
+# rule they have no control to change back.
+var sevens_require_seven_in_hand: bool = true
 var sevens_only_on_forced_bid: bool = false
 
 # ─────────────────────────────────────────────
@@ -79,7 +91,16 @@ var win_by_two: bool = false
 # ─────────────────────────────────────────────
 #  GAME FLOW / DISPLAY
 # ─────────────────────────────────────────────
-var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
+# "casual" | "expert" — see AIPlayer.AI_MODES.
+#
+# Player state that a ruleset merely seeds, not rule content. It has its own
+# main-menu screen, commits the moment it's clicked (unlike every other field
+# here, which waits for Play), and persists in last_used.json. Consequently it is
+# NOT serialized by to_dict() and NOT read by from_dict() — the value each preset
+# function sets below is the first-run seed for that slot, and
+# game_table.gd's _resolve_settings_for_slot() is the single place that decides
+# which difficulty a session actually runs at.
+var ai_difficulty: String = "expert"
 
 # ─────────────────────────────────────────────
 #  LAY DOWN ("Can't Be Caught")
@@ -87,20 +108,20 @@ var ai_difficulty: String = "standard"      # "beginner", "standard", "expert"
 var allow_laydown: bool = false
 var laydown_mode: String = "assisted"       # "assisted" (button only appears once
 											 # provably correct) | "authentic" (self-judged,
-                                             # verified silently, wrong claim forfeits)
+											 # verified silently, wrong claim forfeits)
 
 # ─────────────────────────────────────────────
 #  HAND-ENDS-EARLY
 # ─────────────────────────────────────────────
 var hand_ends_early_set: bool = true     # All-tricks contracts (Marks/Sevens/
-                                          # Nello/Plunge/Splash): stop the moment
-                                          # the contract is mathematically
-                                          # unrecoverable. Defaults true — matches
-                                          # current (previously toggle-less) behavior.
+										  # Nello/Plunge/Splash): stop the moment
+										  # the contract is mathematically
+										  # unrecoverable. Defaults true — matches
+										  # current (previously toggle-less) behavior.
 var hand_ends_early_points: bool = false # Points bids (incl. Follow Me): stop
-                                          # the moment the bid is either already
-                                          # achieved or already unreachable.
-                                          # New behavior — defaults off.
+										  # the moment the bid is either already
+										  # achieved or already unreachable.
+										  # New behavior — defaults off.
 
 # ─────────────────────────────────────────────
 #  PRESET HELPERS
@@ -126,7 +147,7 @@ static func standard_42() -> GameSettings:
 	s.allow_sevens = true
 	s.sevens_require_seven_in_hand = true
 	s.marks_to_win = 7
-	s.ai_difficulty = "standard"
+	s.ai_difficulty = "casual"
 	return s
 
 static func tournament_rules() -> GameSettings:
@@ -147,7 +168,7 @@ static func tournament_rules() -> GameSettings:
 	s.allow_follow_me = true
 	s.allow_sevens = false
 	s.marks_to_win = 7
-	s.ai_difficulty = "standard"
+	s.ai_difficulty = "expert"
 	return s
 
 static func lechner_hall() -> GameSettings:
@@ -175,7 +196,7 @@ static func lechner_hall() -> GameSettings:
 	s.sevens_require_seven_in_hand = true
 	s.marks_to_win = 7
 	s.win_by_two = true
-	s.ai_difficulty = "standard"
+	s.ai_difficulty = "expert"
 	return s
 
 static func teel_rules() -> GameSettings:
@@ -205,8 +226,34 @@ static func teel_rules() -> GameSettings:
 	s.sevens_require_seven_in_hand = true
 
 	s.marks_to_win = 7
-	s.ai_difficulty = "standard"
+	s.ai_difficulty = "casual"
 	return s
+
+# ─────────────────────────────────────────────
+#  DIFFICULTY NORMALIZATION
+# ─────────────────────────────────────────────
+# The middle tier "standard" was retired July 29 2026 when difficulty dropped
+# from three tiers to two (casual/expert). Saved files written before then can
+# still carry it, and they live in three shapes: preset_overrides/*.json and
+# custom_rulesets/*.json (both go through from_dict) AND last_used.json, which
+# is NOT a serialized GameSettings — it's {last_preset, ai_difficulty,
+# seat_assignments} and its ai_difficulty is read directly, bypassing from_dict
+# entirely. So this has to be a shared function callable from those direct read
+# sites too, not a fixup buried inside from_dict.
+#
+# Retired "standard" resolves to "expert", not "casual": it sat above the old
+# beginner tier, so rounding it down would quietly make a returning player's
+# opponents worse than they left them.
+static func normalize_difficulty(value: String) -> String:
+	if value == "standard" or value == "beginner":
+		# "beginner" is the pre-rename spelling of "casual"; "standard" is the
+		# retired middle tier.
+		return "casual" if value == "beginner" else "expert"
+	if value == "casual" or value == "expert":
+		return value
+	# Unrecognized (hand-edited file, future tier that got rolled back) — fall
+	# to the same place the AI_MODES lookup defaults to.
+	return "expert"
 
 # ─────────────────────────────────────────────
 #  SERIALIZATION
@@ -242,7 +289,9 @@ static func to_dict(s: GameSettings) -> Dictionary:
 		"force_trump_opening_lead": s.force_trump_opening_lead,
 		"marks_to_win": s.marks_to_win,
 		"win_by_two": s.win_by_two,
-		"ai_difficulty": s.ai_difficulty,
+		# ai_difficulty is deliberately absent — see the field's own comment.
+		# Ruleset files hold rule content only; the chosen difficulty is player
+		# state and lives in last_used.json.
 		"allow_laydown": s.allow_laydown,
 		"laydown_mode": s.laydown_mode,
 		"hand_ends_early_set": s.hand_ends_early_set,
@@ -272,7 +321,9 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.nello_doubles_reversed = d.get("nello_doubles_reversed", false)
 	s.allow_follow_me = d.get("allow_follow_me", true)
 	s.allow_sevens = d.get("allow_sevens", true)
-	s.sevens_require_seven_in_hand = d.get("sevens_require_seven_in_hand", true)
+	# Deliberately ignores the saved value — the rule is always on and has no UI
+	# control any more, so honoring a stored false would be unfixable in-game.
+	s.sevens_require_seven_in_hand = true
 	s.sevens_only_on_forced_bid = d.get("sevens_only_on_forced_bid", false)
 	s.doubles_are_trump = d.get("doubles_are_trump", false)
 	s.doubles_trump_reversed = d.get("doubles_trump_reversed", false)
@@ -280,7 +331,12 @@ static func from_dict(d: Dictionary) -> GameSettings:
 	s.force_trump_opening_lead = d.get("force_trump_opening_lead", false)
 	s.marks_to_win = d.get("marks_to_win", 7)
 	s.win_by_two = d.get("win_by_two", false)
-	s.ai_difficulty = d.get("ai_difficulty", "standard")
+	# ai_difficulty is intentionally NOT read back. to_dict() stopped writing it,
+	# and files written before that carry a value that the resolver overwrites
+	# anyway — reading it would only make a stale number look authoritative to
+	# anyone stepping through here. game_table.gd's _resolve_settings_for_slot()
+	# supplies difficulty: the slot's shipped default as a seed, overridden by the
+	# player's committed choice from last_used.json.
 	s.allow_laydown = d.get("allow_laydown", false)
 	s.laydown_mode = d.get("laydown_mode", "assisted")
 	s.hand_ends_early_set = d.get("hand_ends_early_set", true)

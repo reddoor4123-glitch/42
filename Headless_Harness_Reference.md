@@ -210,10 +210,27 @@ the script's header comment, the same way this one is.
 
 ## Difficulty & determinism
 
-- `AI_MODES["standard"]` has `opportunism: 0.6` — a real per-decision coin
-  flip for Opponent-shaped seats. Mixing this into an experiment tangles
-  two sources of randomness (the reshuffled deal + this roll) unless that's
-  specifically what's being tested.
+**Two tiers as of July 29, 2026, not three.** `AI_MODES` is now
+`casual`/`expert`. `casual` is the former `beginner` with identical numbers;
+the former middle tier `standard` is retired. Anything written before that
+date that names `"standard"` or `"beginner"` as a difficulty is stale —
+`bid_filter_trace.gd`, `partner_overbid_gate_trace.gd`, and
+`trump_control_trace_v2.gd` were all updated in that pass.
+
+- A retired name won't crash a *call* — `GameSettings.normalize_difficulty()`
+  maps `"standard"` → `"expert"` at every persisted read site, and
+  `AI_MODES.get(difficulty, AI_MODES["expert"])` catches anything that slips
+  past. But it also won't warn you: your scenario silently runs Expert under
+  whatever label you gave it.
+- **A direct `AI_MODES["standard"]` subscript is a hard error, not a
+  fallback.** Dictionary key access throws on a missing key, and it throws
+  even when it appears as a `.get()` default argument, because GDScript
+  evaluates default arguments eagerly on every call. This is what made
+  removing the key a crash risk rather than a stale-data risk.
+- `AI_MODES["casual"]` has `opportunism: 0.0` — never takes the tactical
+  branch, so it's deterministic too, but for the opposite reason to Expert.
+  The old middle tier's `0.6` (a real per-decision coin flip that tangled a
+  second source of randomness into any batch) no longer exists.
 - `AI_MODES["expert"]` has `opportunism: 1.0` — always evaluates tactically,
   no roll, fully deterministic given the same hand/trick state.
 - Partner's own `decide_play()` logic has **zero difficulty branching at
@@ -226,6 +243,54 @@ the script's header comment, the same way this one is.
   isolation from incidental AI randomness.** It pins the Opponent seats
   deterministic and costs nothing elsewhere (Partner/bidding are already
   deterministic regardless).
+
+### Gotcha #7 — a scene added in `_init()` is never `_ready()`
+
+Adding the main scene to the root from a `SceneTree` script's `_init()` gives
+you a constructed-but-un-readied node: `_ready()` hasn't run, so every UI
+member is still `null` and `get_viewport()` returns `null`. You get a pile of
+"Cannot call method on a null value" errors that read like the UI is broken
+rather than like you looked too early — and if the script then fails before
+reaching `quit()`, the main loop runs until your shell timeout kills it.
+
+Use `_initialize()` to build and `_process()` to test, returning `false` for
+the first couple of frames and `true` to quit:
+
+```gdscript
+var _table: Node = null
+var _frame := 0
+
+func _initialize() -> void:
+	_table = load("res://control.tscn").instantiate()
+	get_root().add_child(_table)
+
+func _process(_delta: float) -> bool:
+	_frame += 1
+	if _frame < 3:
+		return false    # let _ready()/_build_ui() finish
+	_run_checks()
+	return true         # quit
+```
+
+Only needed for tests that touch the live node tree. Pure-logic probes over
+`Game`/`AIPlayer`/`GameSettings` (Jobs 1–3) still work fine from `_init()`.
+
+### Gotcha #8 — `queue_free()` doesn't clear a container within one call
+
+A `for c in node.get_children(): c.queue_free()` loop followed by
+re-populating the same container leaves the old children parented until the
+end of the frame, so a child count taken right after the rebuild reads
+double. It's genuinely visible (one frame of doubled content) on any panel
+that rebuilds in response to a button press rather than only on open.
+`game_table.gd`'s `_clear_children()` detaches first, then frees.
+
+### Gotcha #9 — headless tests write to the real `user://`
+
+`user://` in a headless run is the same
+`%APPDATA%/Godot/app_userdata/42/` the game uses. A test that exercises
+persistence will overwrite real save data — `last_used.json` especially, which
+carries `last_preset`, `ai_difficulty`, **and** Profiles' `seat_assignments`.
+Back it up before the run and restore after.
 
 ---
 
@@ -270,6 +335,10 @@ evaluator's raw number — see Job 3 Step 1.
 | `scripts/job2_hand_eval_probe.gd` | Throwaway iteration tool for testing candidate hands against `evaluate_hand()` before committing them to a batch — not itself a batch script. |
 | `scripts/job3_find_bidworthy_hand.gd` | Random-deal-until-clears-threshold search using `decide_bid()`; writes `job3_fixed_hand.json`. |
 | `scripts/job3_experiment.gd` | Fixed bidder hand vs. random reshuffle of the other three seats, with per-tile `hand_history` stats; writes `job3_results.json`. First script to use the Gotcha #3 fix. |
+| `scripts/menu_merge_verify.gd` | Assertion suite for the Menu/Rules/Settings merge: difficulty normalization at every read shape, `AI_MODES` shape, slot resolution isolation, slot-name independence, domino-back independence, `last_used.json` routing. Writes `menu_merge_verify_results.json` with a `failures` count; exits non-zero on any failure. First script to use the Gotcha #7 pattern. |
+| `scripts/menu_merge_ui_probe.gd` | Smoke-drives every screen that merge restructured (settings rebuild per slot, reset popup, rename popups, the Choose Rules "…" menu, difficulty screen, first-launch vs. returning routing) and reports node counts. Treat non-empty stderr as failure. |
+| `scripts/node_leak_probe.gd` | Per-class node census before/after N rebuild cycles. Use when a leak *number* needs attributing to an actual class — a bare `OBJECT_NODE_COUNT` delta says "something grew", this says what. |
+| `scripts/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs for eyeball review. Must run **without** `--headless`, same as `font_screenshot.gd`. |
 
 None of these modify `ai_player.gd`, `game.gd`, or any other live game
 file — every job so far has been read-only instrumentation on top of

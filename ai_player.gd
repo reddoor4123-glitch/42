@@ -22,18 +22,18 @@ extends RefCounted
 # ─── DIFFICULTY PROFILES ─────────────────────────────────────────────────────
 # Single source of truth for all AI behavioral parameters.
 # Add new modes here; decide_bid() and decide_play() read from this dict.
+#
+# Two tiers as of July 29 2026 (was three). "casual" is the former "beginner"
+# with identical numbers; the former middle tier "standard" is retired. Saved
+# files can still carry "standard" — GameSettings.normalize_difficulty() maps
+# it to "expert" at every read site, and the .get() fallbacks below default to
+# "expert" as a second line of defense.
 const AI_MODES := {
-	"beginner": {
+	"casual": {
 		"risk_bias":        -0.25,
 		"max_overbid":      2,
 		"vigilance":        "none",
 		"opportunism":      0.0,
-	},
-	"standard": {
-		"risk_bias":        0.0,
-		"max_overbid":      4,
-		"vigilance":        "none",
-		"opportunism":      0.6,
 	},
 	"expert": {
 		"risk_bias":        0.25,
@@ -293,7 +293,7 @@ static func decide_bid(
 	current_high: RefCounted,  # Bid or null
 	settings: RefCounted,      # GameSettings
 	is_forced: bool = false,
-	difficulty: String = "standard",
+	difficulty: String = "expert",
 	bid_decisions: Array = [],  # out-parameter, mirrors reason_log convention
 	shaker: int = -1,
 	human_seat: int = -1
@@ -314,7 +314,7 @@ static func decide_bid(
 	#   (C) Risk signal    — how aggressive is this player? (AI_MODES personality)
 	# No signal overrides another. All three add. The threshold is fixed at 28.
 
-	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
+	var mode = AI_MODES.get(difficulty, AI_MODES["expert"])
 	var risk_bias: float = mode["risk_bias"]
 	var max_overbid: int = mode["max_overbid"]
 
@@ -567,7 +567,7 @@ static func _log_bid_decision(
 # ─── PLAY DECISION ───────────────────────────────────────────────────────────
 
 # Choose a domino to play.
-# difficulty: "beginner" | "standard" | "expert" — wired to settings.
+# difficulty: "casual" | "expert" — wired to settings.
 # is_partner: true when this AI player is the human's partner (seat +2 from human).
 
 # ═══════════════════════════════════════════════════════════════════
@@ -590,7 +590,7 @@ static func decide_play(
 	partner_id: int,
 	trump: int,
 	reason_log: Array,        # Pass an array to receive the reasoning string
-	difficulty: String = "standard",
+	difficulty: String = "expert",
 	is_partner: bool = false,
 	contract: int = -1,       # Bid.Type int; -1 = unknown/regular
 	bidder_id: int = -1,      # player_id of whoever won the auction
@@ -683,7 +683,7 @@ static func decide_play(
 		reason_log.append("Can't win this one.")
 		return lowest
 
-	var mode = AI_MODES.get(difficulty, AI_MODES["standard"])
+	var mode = AI_MODES.get(difficulty, AI_MODES["expert"])
 
 	# ── CONTRACT OBJECTIVE (Set vs. Make) ──────────────────────────────────
 	# A context fact, not an evaluation — mirrors how `mode` is established
@@ -1073,7 +1073,7 @@ static func decide_play(
 		# Step-3 heuristic fallback), gated on vigilance and positioned
 		# ahead of the safe-lead check below — mirroring exactly where
 		# CONTROL_TRUMP sits relative to Partner's own SAFE tier (BUG-016's
-		# precedent). Beginner/Standard (vigilance == "none") can't reach
+		# precedent). Casual (vigilance == "none") can't reach
 		# this — no PublicKnowledge access — and fall through unchanged to
 		# the plain trumps.size() >= 3 heuristic further below.
 		if mode["vigilance"] == "full" and public_knowledge != null:
@@ -1607,7 +1607,7 @@ static func _is_last_to_act(plays: Array) -> bool:
 
 # Estimate the point value already on the table in a trick.
 # Returns 1 (base trick point) plus any counter pip values played so far.
-# Used by beginner opponents to decide whether the trick is worth contesting.
+# Used by casual opponents to decide whether the trick is worth contesting.
 static func _estimate_trick_value(plays: Array, trump: int) -> int:
 	var pts = 1  # base 1 point for the trick itself
 	for play in plays:

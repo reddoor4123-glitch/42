@@ -41,6 +41,18 @@ own — those stay in each job's own results. **Open this before writing any
 new headless experiment script**, and update it if a new job finds a new
 gotcha or changes the template.
 
+**`Ruleset_Slots_And_Persistence.md`**
+The five-questions answer sheet for the ruleset/settings system after the
+July 29–30, 2026 Menu/Rules/Settings merge: what the five slots are, which of
+the five save files owns which kind of state (and why `last_used.json` must
+never be deleted wholesale — Player Profiles keeps `seat_assignments` in it),
+how `_resolve_settings_for_slot()` turns a slot key into settings, and which
+settings are global vs. per-ruleset. Exists because those answers span
+`game_table.gd`, `game_settings.gd`, and five JSON files; deliberately
+pointer-based rather than restating behavior, so it degrades into "slightly
+out-of-date signposts" rather than confident wrong detail. **Open this before
+changing anything about slots, saved settings, or the settings screen.**
+
 **`Texas_42_Bidding_System_Overview_and_Open_Items_July13_2026.md`**
 Current, from-scratch technical description of `decide_bid()`'s three-layer
 architecture plus a single consolidated open-items list for bidding —
@@ -336,6 +348,12 @@ existing entries.
   → `Headless_Harness_Reference.md` — conventions, template, gotchas, all in
   one place. Don't re-derive turn order or `is_partner` wiring from
   `game_table.gd` again.
+- **"What ruleset slots exist / where is setting X saved / is it global or
+  per-ruleset?"** → `Ruleset_Slots_And_Persistence.md`. Also the place to check
+  before writing any code that deletes or rewrites a `user://` file — several of
+  them are now shared between features.
+- **"Why is AI difficulty on `GameSettings` if it's a player preference?"**
+  → `Ruleset_Slots_And_Persistence.md` §5.
 
 ---
 

@@ -13,6 +13,73 @@ const PlayerProfileScript = preload("res://player_profile.gd")
 # GameSettings.* function.
 const BUILTIN_PRESET_KEYS: Array[String] = ["teel", "standard", "tournament", "lechner"]
 
+# ─── RULESET SLOTS ────────────────────────────────────────────────────────────
+# As of July 29 2026 the ruleset system is exactly five fixed slots rather than
+# four built-ins plus an arbitrary-length user list. The fifth is Custom.
+#
+# Custom's key is "custom:Custom", not a bare "custom", specifically so it keeps
+# matching the existing key.begins_with("custom:") discrimination used by
+# _resolve_settings_for_slot(), _persist_preset_tweaks() and
+# _on_menu_play_pressed(). That routes it to user://custom_rulesets/Custom.json
+# — reusing the storage path custom rulesets already used — instead of inventing
+# a third location, and keeps it out of BUILTIN_PRESET_KEYS so Reset to Default
+# correctly never offers itself for a slot that has no hardcoded default.
+const CUSTOM_SLOT_KEY := "custom:Custom"
+const SLOT_KEYS: Array[String] = ["teel", "standard", "tournament", "lechner", CUSTOM_SLOT_KEY]
+
+# Fallback label per slot, used when slot_names.json has no entry for it. These
+# are defaults for a *renameable* display name, not the slot's identity — the
+# key is the identity. Reset to Default restores one of these only when the
+# operator ticks "Also reset the name".
+const SLOT_DEFAULT_NAMES := {
+	"teel":       "Teel Rules",
+	"standard":   "Standard 42",
+	"tournament": "Tournament",
+	"lechner":    "Lechner Hall",
+	CUSTOM_SLOT_KEY: "Custom",
+}
+
+# Flavor line under each slot's name on the Choose Rules screen. Fixed per slot
+# (describes the *original* ruleset), so it isn't renamed along with the name.
+const SLOT_BLURBS := {
+	"teel":       "Our family's house rules",
+	"standard":   "The classic game",
+	"tournament": "Strict competitive rules",
+	"lechner":    "Aggie 42 — A&M dorm rules",
+	CUSTOM_SLOT_KEY: "Your own ruleset",
+}
+
+# ─── PERSISTENCE LAYOUT ───────────────────────────────────────────────────────
+# Five separate files, each owning exactly one kind of thing. Keeping them
+# separate is what lets "Reset to Default" throw away one slot's rules without
+# touching its name, and lets the domino back survive a ruleset switch.
+#
+#   last_used.json         session + player state: which slot to resume,
+#                          the committed difficulty, Profiles' seat assignments.
+#                          NOT rules, and NOT presentation.
+#   slot_names.json        presentation only: slot key -> display name.
+#   display_prefs.json     visual preferences only: currently the domino back.
+#   preset_overrides/<key>.json     rule content for a built-in slot.
+#   custom_rulesets/<name>.json     rule content for a custom slot.
+#
+# Nothing outside this block should hardcode one of these paths — use the
+# constants, or _slot_file_path() for the two rules directories, so a future
+# layout change is one edit rather than a grep.
+const LAST_USED_PATH := "user://last_used.json"
+const SLOT_NAMES_PATH := "user://slot_names.json"
+const DISPLAY_PREFS_PATH := "user://display_prefs.json"
+const PRESET_OVERRIDES_DIR := "user://preset_overrides"
+const CUSTOM_RULESETS_DIR := "user://custom_rulesets"
+
+# Available domino backs as [label, resource_path]. An empty path means
+# DominoTile's default procedural pattern. Table-wide display choice, fully
+# independent of which ruleset slot is active — before July 29 2026 the Teel
+# back was inferred from preset_id == "teel" instead of being chosen.
+const DOMINO_BACKS := [
+	["Default", ""],
+	["Teel", "res://art/domino_back_teel.png"],
+]
+
 # --- Layout: one shared inset for everything that lines the felt's border ---
 # The mid row is [left seat col | play-area panel | right seat col], so the
 # panel's own edges land SIDE_SEAT_COL_W + MID_ROW_SEPARATION in from the
@@ -130,6 +197,11 @@ var _settings_panel_inner: PanelContainer = null
 var _settings_scroll: ScrollContainer = null
 var _pending_settings: GameSettings = null
 var _preset_btn_container: VBoxContainer = null
+# The open "…" drop-down on Choose Rules, and which slot it belongs to. Tracked
+# rather than looked up because the toggle needs to know whether the press that
+# just arrived is re-pressing the same slot's button.
+var _slot_menu_popup: Control = null
+var _slot_menu_key: String = ""
 var _preset_status_label: Label = null
 var main_menu_panel: PanelContainer = null
 var difficulty_panel: PanelContainer = null
@@ -191,6 +263,9 @@ func _ready():
 	_build_fonts()
 	_build_ui()
 	seat_profiles = _load_seat_assignments()
+	# Apply the saved back before anything renders — it's a display preference
+	# now, so it must be live even on screens reached without picking a ruleset.
+	_update_domino_back_texture()
 	_start_game()
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
@@ -574,6 +649,7 @@ func _build_ui():
 	preset_back_btn.text = "← Menu"
 	preset_back_btn.custom_minimum_size = Vector2(160, 48)
 	preset_back_btn.pressed.connect(func():
+		_close_slot_options_menu()
 		preset_panel.visible = false
 		main_menu_panel.visible = true
 	)
@@ -1301,47 +1377,98 @@ func _start_game():
 	_show_game_board(false)
 	main_menu_panel.visible = true
 
-# Table-wide domino back — currently just Teel Rules' custom tile art;
-# every other preset (including custom rulesets saved from any base) falls
-# back to DominoTile's default procedural pattern. Called whenever a preset
-# is actually applied (_on_preset_chosen, _restart_game_with_settings) —
-# not on every settings-screen keystroke, since dominoes only render once
-# a game is showing.
-func _update_domino_back_texture(preset_id: String):
-	if preset_id == "teel":
-		DominoTile.custom_back_texture = load("res://art/domino_back_teel.png")
-	else:
+# Table-wide domino back. Now a stored display preference rather than something
+# inferred from the active ruleset — before July 29 2026 this read
+# preset_id == "teel", which meant picking a different ruleset silently changed
+# the tile art and no other combination was reachable at all. Reads
+# display_prefs.json, so it takes no argument and stays correct no matter which
+# slot is loaded.
+func _update_domino_back_texture():
+	var res_path := _load_domino_back_pref()
+	if res_path.is_empty() or not ResourceLoader.exists(res_path):
 		DominoTile.custom_back_texture = null
+	else:
+		DominoTile.custom_back_texture = load(res_path)
+
+# Resolves a slot key to a fresh GameSettings without starting a game: saved
+# override if one exists, else the hardcoded default (Standard 42 for a Custom
+# slot that has never been saved). Extracted from _on_preset_chosen() so the
+# Settings screen's slot buttons and Choose Rules' instant-apply share one
+# source of truth for what a slot means.
+#
+# Always returns a NEW object and always re-stamps preset_id. Both matter:
+# building fresh is what keeps switching slots from carrying the previous slot's
+# tweaks along, and re-stamping is required because to_dict() does not serialize
+# preset_id — a settings object loaded from disk comes back with preset_id == ""
+# and would silently no-op _persist_preset_tweaks() and hide Reset to Default.
+# Where a slot's rule content lives. The ONLY place that knows a "custom:" key
+# maps to custom_rulesets/ and everything else to preset_overrides/ — previously
+# this same begins_with() test was spelled out separately in the resolver and in
+# _persist_preset_tweaks(), which is exactly the pair you'd want to stay in step.
+func _slot_file_path(key: String) -> String:
+	if key.begins_with("custom:"):
+		return "%s/%s.json" % [CUSTOM_RULESETS_DIR, key.substr(7)]
+	return "%s/%s.json" % [PRESET_OVERRIDES_DIR, key]
+
+# Creates the directory a slot's file will live in. Split out of the path lookup
+# so reads don't have the side effect of making directories.
+func _ensure_slot_dir(key: String) -> void:
+	var d = DirAccess.open("user://")
+	if d == null:
+		return
+	d.make_dir(_slot_file_path(key).get_base_dir().replace("user://", ""))
+
+# A slot's shipped rules, ignoring anything saved on disk. Single source of truth
+# for the key -> preset-function mapping, shared by the resolver and by Reset to
+# Default; those two used to carry separate `match key:` statements that had to
+# be kept identical by hand.
+func _hardcoded_defaults_for_slot(key: String) -> GameSettings:
+	match key:
+		"teel":       return GameSettingsScript.teel_rules()
+		"standard":   return GameSettingsScript.standard_42()
+		"tournament": return GameSettingsScript.tournament_rules()
+		"lechner":    return GameSettingsScript.lechner_hall()
+		# Custom ships no rules of its own — Standard 42 is its first-run seed,
+		# after which its saved file is its default.
+		_:            return GameSettingsScript.standard_42()
+
+func _resolve_settings_for_slot(key: String) -> GameSettings:
+	var defaults := _hardcoded_defaults_for_slot(key)
+	var s: GameSettings = null
+	var f = FileAccess.open(_slot_file_path(key), FileAccess.READ)
+	if f:
+		var data = JSON.parse_string(f.get_as_text())
+		f.close()
+		if data is Dictionary:
+			s = GameSettingsScript.from_dict(data)
+	if s == null:
+		s = defaults
+	s.preset_id = key
+
+	# ── Difficulty is player state, not rule content ──────────────────────────
+	# It has its own main-menu screen, commits the instant it's clicked, and
+	# lives in last_used.json. Ruleset files therefore don't serialize it (see
+	# GameSettings.to_dict()), and this is where it gets supplied instead:
+	#
+	#   1. the slot's shipped default is the seed, for a player who has never
+	#      chosen — this is what makes Tournament/Lechner start at Expert and
+	#      Teel/Standard at Casual even when a saved override exists;
+	#   2. an explicit choice overrides it, so setting Expert and then tapping a
+	#      Casual-defaulting slot doesn't silently downgrade the opponents.
+	s.ai_difficulty = defaults.ai_difficulty
+	var chosen_difficulty := _last_used_difficulty()
+	if not chosen_difficulty.is_empty():
+		s.ai_difficulty = chosen_difficulty
+	return s
 
 func _on_preset_chosen(key: String):
+	# Tapping a slot row while its "…" menu is open should not leave the menu
+	# parked on a hidden panel, waiting to reappear next time Choose Rules opens.
+	_close_slot_options_menu()
 	preset_panel.visible = false
 	_save_last_used(key)
-	var s: GameSettings
-	if key.begins_with("custom:"):
-		var cname = key.substr(7)
-		var cf = FileAccess.open("user://custom_rulesets/%s.json" % cname, FileAccess.READ)
-		if cf:
-			var data = JSON.parse_string(cf.get_as_text())
-			cf.close()
-			s = GameSettingsScript.from_dict(data)
-		else:
-			s = GameSettingsScript.standard_42()
-	else:
-		var override_path = "user://preset_overrides/%s.json" % key
-		var of = FileAccess.open(override_path, FileAccess.READ)
-		if of:
-			var data = JSON.parse_string(of.get_as_text())
-			of.close()
-			s = GameSettingsScript.from_dict(data)
-		else:
-			match key:
-				"teel":       s = GameSettingsScript.teel_rules()
-				"standard":   s = GameSettingsScript.standard_42()
-				"tournament": s = GameSettingsScript.tournament_rules()
-				"lechner":    s = GameSettingsScript.lechner_hall()
-				_:            s = GameSettingsScript.standard_42()
-	s.preset_id = key
-	_update_domino_back_texture(s.preset_id)
+	var s := _resolve_settings_for_slot(key)
+	_update_domino_back_texture()
 	game = Game.new(s)
 	game.setup_players(human_seat)
 	_start_hand()
@@ -2645,16 +2772,41 @@ func _seat_label(pid: int) -> String:
 
 # ─── SETTINGS OVERLAY ────────────────────────────────────────────────────────
 
-func _show_settings_panel(from_create: bool = false):
-	_pending_settings = GameSettingsScript.standard_42() if game == null else _copy_settings(game.settings)
+func _show_settings_panel():
+	if game != null:
+		_pending_settings = _copy_settings(game.settings)
+	else:
+		# No game running: open on whichever slot was last played, falling back
+		# to Standard 42 on a fresh install. Seeding a real slot rather than a
+		# bare standard_42() with preset_id == "" is load-bearing — Play's
+		# persistence and the Reset button's visibility are both keyed off
+		# preset_id, so an empty one would make the screen quietly unable to save.
+		var key := _last_used_preset_key()
+		_pending_settings = _resolve_settings_for_slot(key if not key.is_empty() else "standard")
 	var vp = get_viewport().get_visible_rect().size
 	_settings_panel_inner.custom_minimum_size = vp * 0.92
-	_build_settings_content(from_create)
+	_build_settings_content()
 	settings_panel.visible = true
 
-func _build_settings_content(from_create: bool = false):
-	for c in _settings_content_vbox.get_children():
+# Switching slots rebuilds _pending_settings from scratch instead of patching the
+# object in place, so no field from the previously selected slot can survive into
+# the new one.
+func _on_settings_slot_pressed(key: String):
+	_pending_settings = _resolve_settings_for_slot(key)
+	_build_settings_content()
+
+# Detach before freeing. queue_free() on its own is deferred to end-of-frame, so
+# a rebuild that clears and refills within one call leaves the old rows parented
+# alongside the new ones until the frame ends. That was invisible while these
+# panels were only built on open; the slot buttons and domino-back buttons now
+# rebuild in place on a press, where it shows as the whole form briefly doubling.
+func _clear_children(node: Node) -> void:
+	for c in node.get_children():
+		node.remove_child(c)
 		c.queue_free()
+
+func _build_settings_content():
+	_clear_children(_settings_content_vbox)
 
 	var title = Label.new()
 	title.text = "Settings"
@@ -2663,15 +2815,42 @@ func _build_settings_content(from_create: bool = false):
 	title.add_theme_color_override("font_color", Color.WHITE)
 	_settings_content_vbox.add_child(title)
 
+	# ── Header: which ruleset, and how hard ──────────────────────────────────
+	# These two frame everything below rather than sitting among the rules: the
+	# slot decides what the form is even showing, and difficulty is orthogonal to
+	# every rule in it. The difficulty row used to be a lone full-width row here
+	# with no space beside it, hence the container.
+	var slot_lbl = Label.new()
+	slot_lbl.text = "Ruleset:"
+	slot_lbl.add_theme_color_override("font_color", Color.WHITE)
+	slot_lbl.add_theme_font_override("font", _font_nunito_heavy)
+	_scaled_font(slot_lbl, 15)
+	_settings_content_vbox.add_child(slot_lbl)
+
+	# Five fixed slots, wrapped rather than in one row — the names are
+	# player-editable and can be much wider than the built-in labels.
+	var slot_flow = HFlowContainer.new()
+	slot_flow.add_theme_constant_override("h_separation", 6)
+	slot_flow.add_theme_constant_override("v_separation", 6)
+	_settings_content_vbox.add_child(slot_flow)
+
+	for key in SLOT_KEYS:
+		var slot_btn = Button.new()
+		slot_btn.text = _slot_display_name(key)
+		slot_btn.custom_minimum_size = Vector2(0, 40)
+		_scaled_font(slot_btn, 14)
+		if key == _pending_settings.preset_id:
+			slot_btn.modulate = Color(0.95, 0.80, 0.15)
+		slot_btn.pressed.connect(_on_settings_slot_pressed.bind(key))
+		slot_flow.add_child(slot_btn)
+
 	# AI Difficulty applies immediately, unlike every other row in this panel —
 	# it's a pure AI-behavior parameter, not a ruleset/legality setting, so it
-	# doesn't need to wait for "Confirm & Restart". Still keeps _pending_settings
-	# in sync so a later Confirm & Restart (triggered by changing something
-	# else) doesn't silently revert this back to its pre-panel-open value.
+	# doesn't need to wait for Play. Still keeps _pending_settings in sync so a
+	# later Play doesn't silently revert this to its pre-panel-open value.
 	_add_option_row(_settings_content_vbox, "AI Difficulty", [
-		["Beginner", "beginner"],
-		["Standard", "standard"],
-		["Expert",   "expert"],
+		["Casual", "casual"],
+		["Expert", "expert"],
 	], _pending_settings.ai_difficulty, func(v):
 		_pending_settings.ai_difficulty = v
 		_on_difficulty_chosen(v)
@@ -2733,8 +2912,9 @@ func _build_settings_content(from_create: bool = false):
 	var sevens_cb = _add_checkbox_row(sc_body, "Allow Sevens", _pending_settings.allow_sevens,
 		func(v): _pending_settings.allow_sevens = v)
 	var sevens_sub = _add_sub_container(sc_body, sevens_cb)
-	_add_checkbox_row(sevens_sub, "Require 7-pip Domino in Hand", _pending_settings.sevens_require_seven_in_hand,
-		func(v): _pending_settings.sevens_require_seven_in_hand = v)
+	# "Require 7-pip Domino in Hand" was removed here July 29 2026 — the rule is
+	# now always on (from_dict() forces the field true), so there's nothing to
+	# toggle. Only-on-forced-bid stays.
 	_add_checkbox_row(sevens_sub, "Only on Forced Bid", _pending_settings.sevens_only_on_forced_bid,
 		func(v): _pending_settings.sevens_only_on_forced_bid = v)
 
@@ -2769,20 +2949,12 @@ func _build_settings_content(from_create: bool = false):
 	_add_checkbox_row(trump_body, "Allow Small-End Opening Lead", _pending_settings.allow_small_end_opening_lead,
 		func(v): _pending_settings.allow_small_end_opening_lead = v)
 
-	# ── Save as preset ──
-	var save_sep = HSeparator.new()
-	_settings_content_vbox.add_child(save_sep)
-
-	var save_btn = Button.new()
-	save_btn.text = "Save as New Ruleset..."
-	save_btn.custom_minimum_size = Vector2(220, 44)
-	save_btn.pressed.connect(_show_save_preset_popup)
-	_settings_content_vbox.add_child(save_btn)
-
 	# Only the four built-in rulesets have a hardcoded "default" to reset
-	# to — a custom ruleset's saved file IS its default, so resetting it
-	# would be a no-op at best and confusing at worst.
-	if not from_create and BUILTIN_PRESET_KEYS.has(_pending_settings.preset_id):
+	# to — the Custom slot's saved file IS its default, so resetting it
+	# would be a no-op at best and confusing at worst. CUSTOM_SLOT_KEY is
+	# deliberately absent from BUILTIN_PRESET_KEYS so this gate covers it.
+	if BUILTIN_PRESET_KEYS.has(_pending_settings.preset_id):
+		_settings_content_vbox.add_child(HSeparator.new())
 		var reset_btn = Button.new()
 		reset_btn.text = "Reset to Default"
 		reset_btn.custom_minimum_size = Vector2(220, 44)
@@ -2804,38 +2976,57 @@ func _build_settings_content(from_create: bool = false):
 	home_btn.pressed.connect(_on_settings_home_pressed)
 	btn_row.add_child(home_btn)
 
-	if from_create:
-		# Arrived from "Create New Ruleset" — intent is to save, not start a game.
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 44)
+	cancel_btn.pressed.connect(func(): settings_panel.visible = false)
+	btn_row.add_child(cancel_btn)
+
+	# One action replaces both the old "Confirm & Restart" and "Save as New
+	# Ruleset...": the active slot IS the save target, so there's nothing to name.
+	# _save_last_used() matters here in a way it didn't for Confirm & Restart —
+	# this screen can now switch slots, so the slot you actually pressed Play on
+	# is what next launch should resume.
+	var play_btn = Button.new()
+	play_btn.text = "Play"
+	play_btn.custom_minimum_size = Vector2(180, 44)
+	play_btn.pressed.connect(func():
+		_persist_preset_tweaks(_pending_settings)
+		_save_last_used(_pending_settings.preset_id)
+		_restart_game_with_settings(_pending_settings)
+	)
+	btn_row.add_child(play_btn)
+
+	# ── Domino back ──
+	# Below the button row on purpose: it's a table display preference, not part
+	# of the ruleset those buttons commit. It saves on click rather than waiting
+	# for Play, and is deliberately unaffected by which slot is selected.
+	var back_body = _make_section(_settings_content_vbox, "DOMINO BACK")
+	var back_flow = HFlowContainer.new()
+	back_flow.add_theme_constant_override("h_separation", 6)
+	back_flow.add_theme_constant_override("v_separation", 6)
+	back_body.add_child(back_flow)
+
+	var current_back := _load_domino_back_pref()
+	for entry in DOMINO_BACKS:
 		var back_btn = Button.new()
-		back_btn.text = "← Back"
-		back_btn.custom_minimum_size = Vector2(120, 44)
-		back_btn.pressed.connect(func():
-			settings_panel.visible = false
-			preset_panel.visible = true
-		)
-		btn_row.add_child(back_btn)
+		back_btn.text = str(entry[0])
+		back_btn.custom_minimum_size = Vector2(120, 40)
+		_scaled_font(back_btn, 14)
+		if str(entry[1]) == current_back:
+			back_btn.modulate = Color(0.95, 0.80, 0.15)
+		back_btn.pressed.connect(_on_domino_back_pressed.bind(str(entry[1])))
+		back_flow.add_child(back_btn)
 
-		var save_btn_bottom = Button.new()
-		save_btn_bottom.text = "Save Ruleset"
-		save_btn_bottom.custom_minimum_size = Vector2(180, 44)
-		save_btn_bottom.pressed.connect(_show_save_preset_popup)
-		btn_row.add_child(save_btn_bottom)
-	else:
-		# Arrived from gear icon mid-game — intent is to modify and restart.
-		var cancel_btn = Button.new()
-		cancel_btn.text = "Cancel"
-		cancel_btn.custom_minimum_size = Vector2(120, 44)
-		cancel_btn.pressed.connect(func(): settings_panel.visible = false)
-		btn_row.add_child(cancel_btn)
-
-		var confirm_btn = Button.new()
-		confirm_btn.text = "Confirm & Restart"
-		confirm_btn.custom_minimum_size = Vector2(180, 44)
-		confirm_btn.pressed.connect(func():
-			_persist_preset_tweaks(_pending_settings)
-			_restart_game_with_settings(_pending_settings)
-		)
-		btn_row.add_child(confirm_btn)
+func _on_domino_back_pressed(res_path: String):
+	_save_domino_back_pref(res_path)
+	_update_domino_back_texture()
+	# DominoTile reads the texture in _draw(), so tiles already on the table keep
+	# the old art until they're rebuilt. Rebuild the hands now for immediate
+	# feedback; everything else picks it up on the next hand.
+	if game != null:
+		_refresh_all_hands()
+	_build_settings_content()
 
 func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
 	var header = Button.new()
@@ -2960,7 +3151,7 @@ func _copy_settings(src: GameSettings) -> GameSettings:
 func _restart_game_with_settings(new_settings: GameSettings):
 	settings_panel.visible = false
 	preset_panel.visible = false
-	_update_domino_back_texture(new_settings.preset_id)
+	_update_domino_back_texture()
 	game = Game.new(new_settings)
 	game.setup_players(human_seat)
 	_us_marks.set_marks(0)
@@ -3080,25 +3271,25 @@ func _set_tricks_expanded(team: int, expanded: bool) -> void:
 	_reposition_tricks_controls()
 
 func _on_menu_play_pressed():
-	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
-	if f:
-		var data = JSON.parse_string(f.get_as_text())
-		f.close()
-		if data is Dictionary and data.has("last_preset"):
-			var key = str(data["last_preset"])
-			var valid = true
-			if key.begins_with("custom:"):
-				valid = FileAccess.file_exists("user://custom_rulesets/%s.json" % key.substr(7))
-			if valid:
-				main_menu_panel.visible = false
-				_on_preset_chosen(key)
-				# Apply saved difficulty on top of preset default
-				if game != null and data.has("ai_difficulty"):
-					game.settings.ai_difficulty = str(data["ai_difficulty"])
-				return
-	_on_menu_rules_pressed()
+	var key := _last_used_preset_key()
+	if key.is_empty():
+		# Nothing saved to resume — send them to Settings to pick and tune a
+		# ruleset rather than dropping them into an arbitrary default. Note this
+		# is Settings, not the old fall-through to the rules picker: on a first
+		# launch the merged screen is the one that can do everything.
+		_show_settings_panel()
+		return
+	main_menu_panel.visible = false
+	# _resolve_settings_for_slot() layers the saved difficulty on top of the
+	# slot's own value, so there's no separate re-apply step here any more.
+	_on_preset_chosen(key)
 
 func _on_menu_rules_pressed():
+	if _last_used_preset_key().is_empty():
+		# First launch — the quick-switch picker has nothing to switch between
+		# yet, so both menu buttons lead to the same place.
+		_show_settings_panel()
+		return
 	main_menu_panel.visible = false
 	_preset_status_label.visible = false
 	_rebuild_preset_buttons()
@@ -3127,80 +3318,95 @@ func _on_settings_home_pressed():
 	add_child(confirm)
 	confirm.popup_centered()
 
+# The Choose Rules screen: quick-switch between the five slots, plus rename.
+# Deliberately stays instant-apply (tapping a slot starts a hand) — full editing
+# lives in the merged Settings screen, so this screen's only jobs are switching
+# and naming. No directory scan any more: the slot list is fixed, and a slot with
+# no saved file still resolves to its default.
 func _rebuild_preset_buttons():
-	for c in _preset_btn_container.get_children():
-		c.queue_free()
+	# The menu floats on preset_panel, not inside the container being cleared, so
+	# it would otherwise outlive the row it was anchored to.
+	_close_slot_options_menu()
+	_clear_children(_preset_btn_container)
 
-	var builtins = [
-		["Teel Rules",   "Our family's house rules",       "teel"],
-		["Standard 42",  "The classic game",               "standard"],
-		["Tournament",   "Strict competitive rules",       "tournament"],
-		["Lechner Hall", "Aggie 42 — A&M dorm rules",      "lechner"],
-	]
-	for p in builtins:
+	var active := _last_used_preset_key()
+	for key in SLOT_KEYS:
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+
 		var btn = Button.new()
-		btn.text = "%s\n%s" % [p[0], p[1]]
-		btn.custom_minimum_size = Vector2(220, 60)
-		btn.pressed.connect(_on_preset_chosen.bind(p[2]))
-		_preset_btn_container.add_child(btn)
+		btn.text = "%s\n%s" % [_slot_display_name(key), str(SLOT_BLURBS.get(key, ""))]
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.custom_minimum_size = Vector2(0, 60)
+		if key == active:
+			btn.modulate = Color(0.95, 0.80, 0.15)
+		btn.pressed.connect(_on_preset_chosen.bind(key))
+		row.add_child(btn)
 
-	# Load custom presets from disk
-	var dir = DirAccess.open("user://custom_rulesets")
-	if dir:
-		var files: Array[String] = []
-		dir.list_dir_begin()
-		var fname = dir.get_next()
-		while fname != "":
-			if fname.ends_with(".json"):
-				files.append(fname)
-			fname = dir.get_next()
-		dir.list_dir_end()
-		files.sort()
-		if files.size() > 0:
-			_preset_btn_container.add_child(HSeparator.new())
-		for file_name in files:
-			var cname = file_name.left(file_name.length() - 5)
-			var row = HBoxContainer.new()
-			row.add_theme_constant_override("separation", 4)
-			var btn = Button.new()
-			btn.text = "★ %s\nCustom ruleset" % cname
-			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			btn.custom_minimum_size = Vector2(0, 60)
-			btn.pressed.connect(_on_preset_chosen.bind("custom:" + cname))
-			row.add_child(btn)
-			var opts_btn = Button.new()
-			opts_btn.text = "…"
-			opts_btn.custom_minimum_size = Vector2(36, 60)
-			opts_btn.pressed.connect(_show_custom_preset_options.bind(cname))
-			row.add_child(opts_btn)
-			_preset_btn_container.add_child(row)
+		# Same "…" affordance the old custom-ruleset rows had, but it opens
+		# rename only — slots are fixed now, so there's nothing to delete.
+		var opts_btn = Button.new()
+		opts_btn.text = "…"
+		opts_btn.custom_minimum_size = Vector2(36, 60)
+		opts_btn.pressed.connect(_on_slot_options_pressed.bind(key, opts_btn))
+		row.add_child(opts_btn)
 
-	_preset_btn_container.add_child(HSeparator.new())
-	var create_btn = Button.new()
-	create_btn.text = "+ Create New Ruleset"
-	create_btn.custom_minimum_size = Vector2(220, 44)
-	create_btn.pressed.connect(func():
-		preset_panel.visible = false
-		_show_settings_panel(true)
-	)
-	_preset_btn_container.add_child(create_btn)
+		_preset_btn_container.add_child(row)
 
 func _save_last_used(key: String):
 	var data = {}
-	var fr = FileAccess.open("user://last_used.json", FileAccess.READ)
+	var fr = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
 	if fr:
 		var existing = JSON.parse_string(fr.get_as_text())
 		fr.close()
 		if existing is Dictionary:
 			data = existing
 	data["last_preset"] = key
-	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	var fw = FileAccess.open(LAST_USED_PATH, FileAccess.WRITE)
 	if fw:
 		fw.store_string(JSON.stringify(data))
 		fw.close()
 
+# The slot key to resume into, or "" when there's nothing usable — which is the
+# signal for "first launch" that routes Play and Choose Rules to Settings.
+#
+# Two things this deliberately does NOT do. It doesn't treat the existence of
+# last_used.json as evidence of saved rules: that file also carries Profiles'
+# seat_assignments and the difficulty choice, so a player who named their
+# opponents before ever picking a ruleset has the file without having any rules.
+# And it doesn't check for a file on disk the way the old inline check did —
+# every slot in SLOT_KEYS resolves with or without one, so file existence is the
+# wrong question. Validating against SLOT_KEYS also retires any pre-July-29-2026
+# "custom:<name>" key that isn't the single Custom slot; those rulesets are no
+# longer reachable from any screen, so resuming into one would drop the player
+# into rules they can neither see nor edit.
+func _last_used_preset_key() -> String:
+	var f = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
+	if f == null:
+		return ""
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	if data is Dictionary and data.has("last_preset"):
+		var key := str(data["last_preset"])
+		if SLOT_KEYS.has(key):
+			return key
+	return ""
+
+# The player's committed difficulty, normalized, or "" if they've never chosen.
+# Read directly from last_used.json — that file is not a serialized GameSettings,
+# so GameSettingsScript.from_dict() (and its normalization) never sees it.
+func _last_used_difficulty() -> String:
+	var f = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
+	if f == null:
+		return ""
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	if data is Dictionary and data.has("ai_difficulty"):
+		return GameSettingsScript.normalize_difficulty(str(data["ai_difficulty"]))
+	return ""
+
 func _load_seat_assignments() -> Dictionary:
-	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+	var f = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
 	if f == null:
 		return {}
 	var data = JSON.parse_string(f.get_as_text())
@@ -3216,214 +3422,310 @@ func _load_seat_assignments() -> Dictionary:
 
 func _save_seat_assignments() -> void:
 	var data := {}
-	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
+	var f = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
 	if f:
 		var existing = JSON.parse_string(f.get_as_text())
 		f.close()
 		if existing is Dictionary:
 			data = existing
 	data["seat_assignments"] = seat_profiles
-	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	var fw = FileAccess.open(LAST_USED_PATH, FileAccess.WRITE)
 	if fw:
 		fw.store_string(JSON.stringify(data))
 		fw.close()
 
-func _show_save_preset_popup():
-	var popup = Control.new()
-	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	settings_panel.add_child(popup)
+# The Settings screen's own Reset button. Resets the slot currently being edited
+# and refreshes the form underneath.
+func _on_reset_to_default_pressed():
+	var key: String = _pending_settings.preset_id
+	_show_reset_confirm_popup(key, settings_panel, func():
+		# Re-resolve rather than re-deriving the defaults inline: with the saved
+		# file now deleted, the resolver falls through to this slot's shipped
+		# rules and handles preset_id and difficulty the same way every other
+		# entry point does.
+		_pending_settings = _resolve_settings_for_slot(key)
+		_build_settings_content()
+	)
 
-	var dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.5)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(dim)
+# Reset-to-default confirmation, shared by the Settings screen's button and the
+# Choose Rules "…" menu. `on_reset` runs after the files have been changed, so
+# each caller can refresh whichever screen it's on.
+func _show_reset_confirm_popup(key: String, parent: Control, on_reset: Callable):
+	var shell := _make_modal_popup(parent, 340)
+	var popup: Control = shell["root"]
+	var vb: VBoxContainer = shell["body"]
 
-	var center = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(center)
+	var title_lbl = Label.new()
+	title_lbl.text = "Reset \"%s\"?" % _slot_display_name(key)
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_lbl.add_theme_color_override("font_color", Color.WHITE)
+	title_lbl.add_theme_font_override("font", _font_nunito_heavy)
+	_scaled_font(title_lbl, 16)
+	vb.add_child(title_lbl)
 
-	var box = PanelContainer.new()
-	box.custom_minimum_size = Vector2(320, 0)
-	var box_style = StyleBoxFlat.new()
-	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
-	box_style.corner_radius_top_left = 8
-	box_style.corner_radius_top_right = 8
-	box_style.corner_radius_bottom_left = 8
-	box_style.corner_radius_bottom_right = 8
-	box.add_theme_stylebox_override("panel", box_style)
-	center.add_child(box)
+	var body_lbl = Label.new()
+	body_lbl.text = "This discards your saved changes to this ruleset and restores its original rules."
+	body_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body_lbl.custom_minimum_size = Vector2(300, 0)
+	body_lbl.add_theme_color_override("font_color", Color(0.82, 0.82, 0.82))
+	_scaled_font(body_lbl, 13)
+	vb.add_child(body_lbl)
 
-	var vb = VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 12)
-	box.add_child(vb)
+	# Rules and name are stored separately (slot_names.json vs. the rules file), so
+	# resetting rules leaves a renamed slot renamed unless the player asks
+	# otherwise. Opt-in, not opt-out: losing a name you chose is the more annoying
+	# surprise of the two.
+	# Centered in its own row rather than added straight to the VBox — a CheckBox
+	# stretched to the full popup width puts its indicator hard against the left
+	# edge, visually detached from the label it belongs to.
+	var cb_row = HBoxContainer.new()
+	cb_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vb.add_child(cb_row)
 
-	var prompt_lbl = Label.new()
-	prompt_lbl.text = "Name your ruleset:"
-	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
-	prompt_lbl.add_theme_font_override("font", _font_nunito_heavy)
-	_scaled_font(prompt_lbl, 16)
-	vb.add_child(prompt_lbl)
-
-	var line_edit = LineEdit.new()
-	line_edit.placeholder_text = "e.g. My Custom Rules"
-	line_edit.custom_minimum_size = Vector2(280, 40)
-	vb.add_child(line_edit)
+	var also_name_cb = CheckBox.new()
+	also_name_cb.text = "Also reset the name"
+	also_name_cb.button_pressed = false
+	also_name_cb.add_theme_color_override("font_color", Color.WHITE)
+	# The default theme's tick/box glyph is dark, which on this panel left the
+	# indicator all but invisible — you could read the label but not tell whether
+	# it was checked. Brighten it in every state so the box reads as a control.
+	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+			"icon_focus_color", "icon_hover_pressed_color"]:
+		also_name_cb.add_theme_color_override(state, Color.WHITE)
+	_scaled_font(also_name_cb, 14)
+	cb_row.add_child(also_name_cb)
 
 	var btn_row = HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 12)
 	vb.add_child(btn_row)
 
-	var cancel_p = Button.new()
-	cancel_p.text = "Cancel"
-	cancel_p.custom_minimum_size = Vector2(100, 40)
-	cancel_p.pressed.connect(func(): popup.queue_free())
-	btn_row.add_child(cancel_p)
+	var cancel_btn = Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(100, 40)
+	cancel_btn.pressed.connect(func(): popup.queue_free())
+	btn_row.add_child(cancel_btn)
 
-	var ok_btn = Button.new()
-	ok_btn.text = "Save"
-	ok_btn.custom_minimum_size = Vector2(100, 40)
-	btn_row.add_child(ok_btn)
-
-	var do_save = func():
-		var cname = line_edit.text.strip_edges()
-		if cname.is_empty():
-			return
+	var reset_btn = Button.new()
+	reset_btn.text = "Reset"
+	reset_btn.custom_minimum_size = Vector2(100, 40)
+	reset_btn.pressed.connect(func():
 		popup.queue_free()
-		_save_custom_preset(cname)
-
-	ok_btn.pressed.connect(do_save)
-	line_edit.text_submitted.connect(func(_t): do_save.call())
-	line_edit.grab_focus()
-
-func _on_reset_to_default_pressed():
-	var key = _pending_settings.preset_id
-	var confirm = ConfirmationDialog.new()
-	confirm.title = "Reset to Default?"
-	confirm.dialog_text = "This discards your saved changes to this ruleset and restores its original rules."
-	confirm.ok_button_text = "Reset"
-	confirm.cancel_button_text = "Cancel"
-	confirm.confirmed.connect(func():
-		var path = "user://preset_overrides/%s.json" % key
+		var path := _slot_file_path(key)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-		match key:
-			"teel":       _pending_settings = GameSettingsScript.teel_rules()
-			"standard":   _pending_settings = GameSettingsScript.standard_42()
-			"tournament": _pending_settings = GameSettingsScript.tournament_rules()
-			"lechner":    _pending_settings = GameSettingsScript.lechner_hall()
-		_pending_settings.preset_id = key
-		confirm.queue_free()
-		_build_settings_content(false)
+		if also_name_cb.button_pressed:
+			_reset_slot_display_name(key)
+		on_reset.call()
 	)
-	confirm.canceled.connect(func(): confirm.queue_free())
-	add_child(confirm)
-	confirm.popup_centered()
+	btn_row.add_child(reset_btn)
 
-# Writes a preset's current settings back to its own identity on disk —
-# a built-in key (e.g. "teel") to user://preset_overrides/, a "custom:<name>"
-# key to its existing user://custom_rulesets/ file. Called on "Confirm &
-# Restart" so tweaks to whichever ruleset you're playing stick around next
-# time you pick that same ruleset, instead of resetting to its hardcoded
-# defaults. No-op if no preset has been chosen yet (preset_id == "").
+# Writes a slot's current settings back to its own file (located by
+# _slot_file_path, which owns the built-in/custom split). Called by the Settings
+# screen's Play button so tweaks to whichever ruleset you're playing stick around
+# next time you pick that same slot, instead of resetting to its shipped rules.
+# Writes rule content only — difficulty and the domino back are player/display
+# state and live elsewhere; see the PERSISTENCE LAYOUT block at the top.
 func _persist_preset_tweaks(s: GameSettings):
 	if s.preset_id == "":
+		# Reachable only via a bug, but it used to fail *silently*: Play would
+		# look like it worked and simply never save. Every production path now
+		# stamps preset_id (_resolve_settings_for_slot, _copy_settings, and Reset
+		# to Default all do), yet Game's own constructor still falls back to a
+		# bare GameSettings.new() when handed no settings (game.gd), so an
+		# unstamped object remains constructible. Complain rather than no-op.
+		push_error("_persist_preset_tweaks: settings have no preset_id; nothing saved. "
+			+ "Whoever built these settings needs to stamp a slot key from SLOT_KEYS.")
 		return
-	var path: String
-	if s.preset_id.begins_with("custom:"):
-		path = "user://custom_rulesets/%s.json" % s.preset_id.substr(7)
-	else:
-		var d = DirAccess.open("user://")
-		if d:
-			d.make_dir("preset_overrides")
-		path = "user://preset_overrides/%s.json" % s.preset_id
-	var f = FileAccess.open(path, FileAccess.WRITE)
+	# make_dir used to happen only in _save_custom_preset(), which created
+	# custom_rulesets/ before anything wrote into it. That function is gone (five
+	# fixed slots need no "save as new"), so the save path has to create its own
+	# directory or the first save of the Custom slot on a fresh install no-ops.
+	_ensure_slot_dir(s.preset_id)
+	var f = FileAccess.open(_slot_file_path(s.preset_id), FileAccess.WRITE)
 	if f:
 		f.store_string(JSON.stringify(GameSettingsScript.to_dict(s), "\t"))
 		f.close()
 
-func _save_custom_preset(cname: String):
-	var d = DirAccess.open("user://")
-	if d:
-		d.make_dir("custom_rulesets")
-	var path = "user://custom_rulesets/%s.json" % cname
-	var f = FileAccess.open(path, FileAccess.WRITE)
+# ─── SLOT DISPLAY NAMES ───────────────────────────────────────────────────────
+# Kept in their own tiny file rather than inside each ruleset's JSON so that the
+# two are independently resettable: "Reset to Default" throws away rule content
+# by deleting the override file, and a name stored in there would go with it.
+
+func _load_slot_names() -> Dictionary:
+	var f = FileAccess.open(SLOT_NAMES_PATH, FileAccess.READ)
+	if f == null:
+		return {}
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	return data if data is Dictionary else {}
+
+func _save_slot_names(names: Dictionary) -> void:
+	var f = FileAccess.open(SLOT_NAMES_PATH, FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify(GameSettingsScript.to_dict(_pending_settings), "\t"))
+		f.store_string(JSON.stringify(names, "\t"))
 		f.close()
-	settings_panel.visible = false
-	_rebuild_preset_buttons()
-	preset_panel.visible = true
 
-func _show_custom_preset_options(cname: String):
-	var popup = Control.new()
-	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	preset_panel.add_child(popup)
+func _slot_display_name(key: String) -> String:
+	var names = _load_slot_names()
+	var stored := str(names.get(key, ""))
+	if not stored.is_empty():
+		return stored
+	return str(SLOT_DEFAULT_NAMES.get(key, key))
 
-	var dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(dim)
+func _set_slot_display_name(key: String, new_name: String) -> void:
+	var names = _load_slot_names()
+	names[key] = new_name
+	_save_slot_names(names)
 
-	var center = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(center)
+func _reset_slot_display_name(key: String) -> void:
+	var names = _load_slot_names()
+	names.erase(key)
+	_save_slot_names(names)
 
-	var box = PanelContainer.new()
-	box.custom_minimum_size = Vector2(300, 0)
-	var box_style = StyleBoxFlat.new()
-	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
-	box_style.corner_radius_top_left = 8
-	box_style.corner_radius_top_right = 8
-	box_style.corner_radius_bottom_left = 8
-	box_style.corner_radius_bottom_right = 8
-	box.add_theme_stylebox_override("panel", box_style)
-	center.add_child(box)
+# ─── DOMINO BACK (display preference, not a rule) ──────────────────────────────
+
+func _load_domino_back_pref() -> String:
+	var f = FileAccess.open(DISPLAY_PREFS_PATH, FileAccess.READ)
+	if f == null:
+		return ""
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	if data is Dictionary:
+		return str(data.get("domino_back", ""))
+	return ""
+
+func _save_domino_back_pref(res_path: String) -> void:
+	var data := {}
+	var fr = FileAccess.open(DISPLAY_PREFS_PATH, FileAccess.READ)
+	if fr:
+		var existing = JSON.parse_string(fr.get_as_text())
+		fr.close()
+		if existing is Dictionary:
+			data = existing
+	data["domino_back"] = res_path
+	var fw = FileAccess.open(DISPLAY_PREFS_PATH, FileAccess.WRITE)
+	if fw:
+		fw.store_string(JSON.stringify(data, "\t"))
+		fw.close()
+
+# Renames a slot's display name. Replaces the old custom-ruleset rename, which
+# worked by moving files in user://custom_rulesets/ and patching last_used.json
+# to follow the new filename — with fixed slots the key never changes, so this
+# only touches the name mapping and no rules content moves anywhere.
+# ─── SLOT "…" OPTIONS MENU (Choose Rules) ─────────────────────────────────────
+# A small drop-down next to a slot row offering Rename and Reset. Pressing "…"
+# again closes it; pressing a different slot's "…" moves it there. Unlike the
+# rename/reset popups this one has no dimmed backdrop — a full-rect click-blocker
+# would swallow the very press that's meant to toggle it shut.
+
+func _close_slot_options_menu() -> void:
+	if _slot_menu_popup != null and is_instance_valid(_slot_menu_popup):
+		_slot_menu_popup.queue_free()
+	_slot_menu_popup = null
+	_slot_menu_key = ""
+
+func _on_slot_options_pressed(key: String, anchor: Button) -> void:
+	# Same button twice = collapse, with no choice made.
+	if _slot_menu_key == key and _slot_menu_popup != null and is_instance_valid(_slot_menu_popup):
+		_close_slot_options_menu()
+		return
+	_close_slot_options_menu()
+	_slot_menu_key = key
+
+	var menu = PanelContainer.new()
+	# preset_panel is a PanelContainer, which would otherwise stretch this menu to
+	# fill the whole panel. set_as_top_level() makes Container layout skip it AND
+	# makes it ignore the parent's transform, so `position` below is plain global
+	# coordinates.
+	#
+	# That second half is the important one. The first attempt wrapped the menu in
+	# a full-rect Control and positioned it relative to that holder — but a
+	# freshly-added child reports the panel's *outer* rect until layout runs, after
+	# which PanelContainer insets it by its content margins (32, 40). The
+	# arithmetic was right and the menu still landed 32px right and 40px low,
+	# because the frame of reference moved underneath it a frame later. Anchoring
+	# to a coordinate space nobody re-lays-out removes the whole class of problem.
+	menu.set_as_top_level(true)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.16, 0.16, 0.21, 0.98)
+	style.border_color = Color(0.42, 0.42, 0.50)
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	menu.add_theme_stylebox_override("panel", style)
+	# Parented to preset_panel so it dies with that screen, but positioned in
+	# global space thanks to set_as_top_level().
+	preset_panel.add_child(menu)
+	_slot_menu_popup = menu
 
 	var vb = VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 10)
-	box.add_child(vb)
-
-	var title = Label.new()
-	title.text = cname
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_color_override("font_color", Color.WHITE)
-	_scaled_font(title, 16)
-	vb.add_child(title)
-
-	vb.add_child(HSeparator.new())
+	vb.add_theme_constant_override("separation", 4)
+	menu.add_child(vb)
 
 	var rename_btn = Button.new()
-	rename_btn.text = "Rename…"
-	rename_btn.custom_minimum_size = Vector2(0, 44)
+	rename_btn.text = "Rename"
+	rename_btn.custom_minimum_size = Vector2(120, 36)
+	_scaled_font(rename_btn, 14)
+	rename_btn.pressed.connect(func():
+		_close_slot_options_menu()
+		_show_slot_rename_popup(key)
+	)
 	vb.add_child(rename_btn)
 
-	var delete_btn = Button.new()
-	delete_btn.text = "Delete"
-	delete_btn.custom_minimum_size = Vector2(0, 44)
-	vb.add_child(delete_btn)
+	# Reset is offered only where there's something to reset to. The Custom slot's
+	# saved file IS its default — same gate the Settings screen's Reset button uses.
+	if BUILTIN_PRESET_KEYS.has(key):
+		var reset_btn = Button.new()
+		reset_btn.text = "Reset"
+		reset_btn.custom_minimum_size = Vector2(120, 36)
+		_scaled_font(reset_btn, 14)
+		reset_btn.pressed.connect(func():
+			_close_slot_options_menu()
+			_show_reset_confirm_popup(key, preset_panel, func():
+				# Names and highlighting can both have changed — rebuild the list.
+				_rebuild_preset_buttons()
+			)
+		)
+		vb.add_child(reset_btn)
 
-	var cancel_btn = Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(0, 44)
-	cancel_btn.pressed.connect(func(): popup.queue_free())
-	vb.add_child(cancel_btn)
+	# Sit under the "…" that opened it, right edges aligned, then pull back
+	# on-screen if the slot sits near an edge.
+	#
+	# get_combined_minimum_size() rather than .size: the menu was created this
+	# frame, so .size is still zero until layout runs, and waiting a frame to
+	# position it would flash it in the corner first.
+	var menu_size := menu.get_combined_minimum_size()
+	menu.size = menu_size
+	var anchor_rect := anchor.get_global_rect()
+	var want := Vector2(
+		anchor_rect.end.x - menu_size.x,
+		anchor_rect.end.y + 2)
+	var screen: Vector2 = get_viewport().get_visible_rect().size
+	menu.position = Vector2(
+		clampf(want.x, 4.0, maxf(4.0, screen.x - menu_size.x - 4.0)),
+		clampf(want.y, 4.0, maxf(4.0, screen.y - menu_size.y - 4.0)))
 
-	rename_btn.pressed.connect(func():
-		popup.queue_free()
-		_show_rename_preset_popup(cname)
-	)
-
-	delete_btn.pressed.connect(func():
-		popup.queue_free()
-		_show_delete_preset_confirm(cname)
-	)
-
-func _show_rename_preset_popup(old_name: String):
+# Shared chrome for the project's dimmed, centered modal popups (rename, reset).
+# Returns {"root": the full-rect Control to free on dismiss, "body": the
+# VBoxContainer to fill}. Parented to `parent` so a popup raised from Choose Rules
+# lands over that panel and one raised from Settings lands over Settings.
+#
+# Deliberately NOT a ConfirmationDialog. AcceptDialog positions its own
+# dialog_text label directly and does not re-flow for children added via
+# add_child(), so the "Also reset the name" checkbox rendered on top of the
+# message text — legible in neither. It also ignores this project's theme.
+func _make_modal_popup(parent: Control, min_width: int) -> Dictionary:
 	var popup = Control.new()
 	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	preset_panel.add_child(popup)
+	parent.add_child(popup)
 
 	var dim = ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
@@ -3435,19 +3737,31 @@ func _show_rename_preset_popup(old_name: String):
 	popup.add_child(center)
 
 	var box = PanelContainer.new()
-	box.custom_minimum_size = Vector2(320, 0)
+	box.custom_minimum_size = Vector2(min_width, 0)
 	var box_style = StyleBoxFlat.new()
 	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
 	box_style.corner_radius_top_left = 8
 	box_style.corner_radius_top_right = 8
 	box_style.corner_radius_bottom_left = 8
 	box_style.corner_radius_bottom_right = 8
+	box_style.content_margin_left = 20
+	box_style.content_margin_right = 20
+	box_style.content_margin_top = 18
+	box_style.content_margin_bottom = 18
 	box.add_theme_stylebox_override("panel", box_style)
 	center.add_child(box)
 
 	var vb = VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 12)
 	box.add_child(vb)
+
+	return {"root": popup, "body": vb}
+
+func _show_slot_rename_popup(key: String):
+	var old_name := _slot_display_name(key)
+	var shell := _make_modal_popup(preset_panel, 320)
+	var popup: Control = shell["root"]
+	var vb: VBoxContainer = shell["body"]
 
 	var prompt_lbl = Label.new()
 	prompt_lbl.text = "Rename \"%s\":" % old_name
@@ -3480,115 +3794,16 @@ func _show_rename_preset_popup(old_name: String):
 
 	var do_rename = func():
 		var new_name = line_edit.text.strip_edges()
-		if new_name.is_empty() or new_name == old_name:
-			popup.queue_free()
-			return
 		popup.queue_free()
-		var old_path = "user://custom_rulesets/%s.json" % old_name
-		var new_path = "user://custom_rulesets/%s.json" % new_name
-		# Read old data
-		var fr = FileAccess.open(old_path, FileAccess.READ)
-		if fr:
-			var content = fr.get_as_text()
-			fr.close()
-			var fw = FileAccess.open(new_path, FileAccess.WRITE)
-			if fw:
-				fw.store_string(content)
-				fw.close()
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(old_path))
-		# Update last_used if it pointed to old name
-		var lu_data = {}
-		var lu_r = FileAccess.open("user://last_used.json", FileAccess.READ)
-		if lu_r:
-			var existing = JSON.parse_string(lu_r.get_as_text())
-			lu_r.close()
-			if existing is Dictionary:
-				lu_data = existing
-		if lu_data.get("last_preset", "") == "custom:" + old_name:
-			lu_data["last_preset"] = "custom:" + new_name
-			var lu_w = FileAccess.open("user://last_used.json", FileAccess.WRITE)
-			if lu_w:
-				lu_w.store_string(JSON.stringify(lu_data))
-				lu_w.close()
+		if new_name.is_empty() or new_name == old_name:
+			return
+		_set_slot_display_name(key, new_name)
 		_rebuild_preset_buttons()
 
 	ok_btn.pressed.connect(do_rename)
 	line_edit.text_submitted.connect(func(_t): do_rename.call())
 	line_edit.select_all()
 	line_edit.grab_focus()
-
-func _show_delete_preset_confirm(cname: String):
-	var popup = Control.new()
-	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	preset_panel.add_child(popup)
-
-	var dim = ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.55)
-	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(dim)
-
-	var center = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	popup.add_child(center)
-
-	var box = PanelContainer.new()
-	box.custom_minimum_size = Vector2(300, 0)
-	var box_style = StyleBoxFlat.new()
-	box_style.bg_color = Color(0.12, 0.12, 0.16, 0.97)
-	box_style.corner_radius_top_left = 8
-	box_style.corner_radius_top_right = 8
-	box_style.corner_radius_bottom_left = 8
-	box_style.corner_radius_bottom_right = 8
-	box.add_theme_stylebox_override("panel", box_style)
-	center.add_child(box)
-
-	var vb = VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 12)
-	box.add_child(vb)
-
-	var lbl = Label.new()
-	lbl.text = "Delete \"%s\"?" % cname
-	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.add_theme_color_override("font_color", Color.WHITE)
-	_scaled_font(lbl, 16)
-	vb.add_child(lbl)
-
-	var btn_row = HBoxContainer.new()
-	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 12)
-	vb.add_child(btn_row)
-
-	var cancel_btn = Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(100, 40)
-	cancel_btn.pressed.connect(func(): popup.queue_free())
-	btn_row.add_child(cancel_btn)
-
-	var del_btn = Button.new()
-	del_btn.text = "Delete"
-	del_btn.custom_minimum_size = Vector2(100, 40)
-	btn_row.add_child(del_btn)
-
-	del_btn.pressed.connect(func():
-		popup.queue_free()
-		var path = "user://custom_rulesets/%s.json" % cname
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-		# Clear last_used if it pointed here
-		var lu_data = {}
-		var lu_r = FileAccess.open("user://last_used.json", FileAccess.READ)
-		if lu_r:
-			var existing = JSON.parse_string(lu_r.get_as_text())
-			lu_r.close()
-			if existing is Dictionary:
-				lu_data = existing
-		if lu_data.get("last_preset", "") == "custom:" + cname:
-			lu_data.erase("last_preset")
-			var lu_w = FileAccess.open("user://last_used.json", FileAccess.WRITE)
-			if lu_w:
-				lu_w.store_string(JSON.stringify(lu_data))
-				lu_w.close()
-		_rebuild_preset_buttons()
-	)
 
 func _on_menu_difficulty_pressed():
 	main_menu_panel.visible = false
@@ -3598,7 +3813,7 @@ func _on_menu_difficulty_pressed():
 func _on_difficulty_chosen(key: String):
 	# Persist the choice merged into last_used.json
 	var data = {}
-	var fr = FileAccess.open("user://last_used.json", FileAccess.READ)
+	var fr = FileAccess.open(LAST_USED_PATH, FileAccess.READ)
 	if fr:
 		var existing = JSON.parse_string(fr.get_as_text())
 		fr.close()
@@ -3607,7 +3822,7 @@ func _on_difficulty_chosen(key: String):
 	if not data is Dictionary:
 		data = {}
 	data["ai_difficulty"] = key
-	var fw = FileAccess.open("user://last_used.json", FileAccess.WRITE)
+	var fw = FileAccess.open(LAST_USED_PATH, FileAccess.WRITE)
 	if fw:
 		fw.store_string(JSON.stringify(data))
 		fw.close()
@@ -3617,24 +3832,21 @@ func _on_difficulty_chosen(key: String):
 	_rebuild_difficulty_buttons()
 
 func _rebuild_difficulty_buttons():
-	for c in _difficulty_btn_container.get_children():
-		c.queue_free()
+	_clear_children(_difficulty_btn_container)
 
-	var current = "standard"
+	# Normalized on the way in — a saved "standard" from before the two-tier
+	# change would otherwise highlight nothing and read as "no choice made".
+	var current := "expert"
 	if game != null:
-		current = game.settings.ai_difficulty
+		current = GameSettingsScript.normalize_difficulty(game.settings.ai_difficulty)
 	else:
-		var f = FileAccess.open("user://last_used.json", FileAccess.READ)
-		if f:
-			var data = JSON.parse_string(f.get_as_text())
-			f.close()
-			if data is Dictionary and data.has("ai_difficulty"):
-				current = str(data["ai_difficulty"])
+		var saved := _last_used_difficulty()
+		if not saved.is_empty():
+			current = saved
 
 	var options = [
-		["Beginner", "Supportive partner, relaxed opponents", "beginner"],
-		["Standard", "Balanced play — the real game",         "standard"],
-		["Expert",   "Serious players, no mercy",             "expert"],
+		["Casual", "Supportive partner, relaxed opponents", "casual"],
+		["Expert", "Serious players, no mercy",             "expert"],
 	]
 	for opt in options:
 		var btn = Button.new()
@@ -3662,8 +3874,7 @@ func _assignable_seats() -> Array:
 	]
 
 func _rebuild_profile_panel():
-	for c in _profile_content_vbox.get_children():
-		c.queue_free()
+	_clear_children(_profile_content_vbox)
 
 	var new_profile_btn = Button.new()
 	new_profile_btn.text = "+ New Profile"
