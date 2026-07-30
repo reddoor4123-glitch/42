@@ -15,13 +15,21 @@ var face_up: bool = true
 var is_playable: bool = false   # Highlighted as a legal move
 var is_selected: bool = false
 
-# Optional ruleset-specific domino back (e.g. Teel Rules' custom tile art).
-# Shared across every DominoTile instance rather than set per-tile, since
-# it's a table-wide choice, not a per-domino one — game_table.gd sets this
-# once, in _update_domino_back_texture(), whenever the active preset
-# changes. null (default) falls back to the procedural striped pattern
-# below via _draw_back_pattern().
+# The player's chosen domino back. Shared across every DominoTile instance
+# rather than set per-tile, since it's a table-wide display choice, not a
+# per-domino one — game_table.gd sets this once, in
+# _update_domino_back_texture(), from the saved display preference. null
+# (default) falls back to the procedural striped pattern below via
+# _draw_back_pattern().
 static var custom_back_texture: Texture2D = null
+
+# Per-instance escape hatch from that static, for UI that has to show several
+# backs at the same time — the Settings screen's back picker draws one tile per
+# option, which a single shared static can't express. Two variables rather than
+# one because "override to the procedural default" and "don't override" are
+# different states and both need to be sayable.
+var use_back_override: bool = false
+var back_texture_override: Texture2D = null
 
 var _press_pos: Vector2 = Vector2.ZERO
 var _dragging: bool = false
@@ -101,12 +109,13 @@ func _draw():
 	draw_rect(rect, border_color)
 
 	var inner = rect.grow(-3.0 * s)
+	var back_tex: Texture2D = back_texture_override if use_back_override else custom_back_texture
 	if face_up and domino != null:
 		draw_rect(inner, COLOR_FACE)
 		_draw_pips(inner, s)
 		_draw_divider(inner, s)
-	elif custom_back_texture != null:
-		draw_texture_rect(custom_back_texture, inner, false)
+	elif back_tex != null:
+		draw_texture_rect(back_tex, inner, false)
 	else:
 		draw_rect(inner, COLOR_BACK)
 		_draw_back_pattern(inner, s)

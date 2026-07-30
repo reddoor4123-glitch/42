@@ -15,6 +15,12 @@ var font_scale: float = 1.0
 # ThemeDB.fallback_font default keeps this script standalone if it never does.
 static var custom_font: Font = null
 
+# The team name ("US"/"THEM") is drawn in its own face — Rye, matching the
+# wordmark — separately from custom_font, which nothing else here actually uses
+# now that the "ALL" is stroked rather than typed. Falls back to custom_font when
+# unset so this stays standalone.
+static var label_font: Font = null
+
 const STROKE_LIT    := Color(0.95, 0.90, 0.70)   # Warm white/gold when earned
 const STROKE_UNLIT  := Color(0.25, 0.25, 0.25)   # Dark grey unearned
 const STROKE_WIDTH  := 3.0
@@ -49,11 +55,22 @@ func set_team(color: Color, label: String):
 # within the W=72 space, letter height ~60px starting at y=20
 
 func _draw():
-	var font: Font = custom_font if custom_font != null else ThemeDB.fallback_font
+	var font: Font = label_font
+	if font == null:
+		font = custom_font
+	if font == null:
+		font = ThemeDB.fallback_font
 	# Team label at top. Measured at the same size it is drawn at — they used to
 	# differ (11 vs 13), which left the text sitting slightly right of centre.
 	var lbl_px: int = int(round(LABEL_SIZE * font_scale))
 	var lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl_px)
+	# Shrink to fit rather than overflow the W-wide box. Rye is a broad display
+	# face and "THEM" in it is much wider than in Nunito at the same nominal size,
+	# so a fixed LABEL_SIZE that suits one face clips in the other. Measuring and
+	# backing off keeps this correct for whatever face gets assigned next.
+	if lbl_size.x > W - 4.0 and lbl_size.x > 0.0:
+		lbl_px = int(floor(lbl_px * (W - 4.0) / lbl_size.x))
+		lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl_px)
 	draw_string(font, Vector2(W/2 - lbl_size.x/2, LABEL_BASELINE * font_scale), label_text,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, lbl_px, team_color)
 

@@ -580,4 +580,8 @@ func _process(_delta: float) -> bool:
 			"results": _results,
 		}, "\t"))
 		f.close()
-	return true        # quit the main loop
+	# quit() carries the exit code. Returning true from _process ends the loop but
+	# always exits 0, which reported a failing suite as a clean run — the results
+	# JSON was the only thing telling the truth.
+	quit(1 if _failures > 0 else 0)
+	return true

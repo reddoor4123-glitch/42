@@ -80,6 +80,17 @@ const DOMINO_BACKS := [
 	["Teel", "res://art/domino_back_teel.png"],
 ]
 
+# Swatch size for the Settings picker: one DominoTile (64x128) plus a padding
+# ring, so the gold selection border has somewhere to sit without covering art.
+const SWATCH_PAD := 6
+const SWATCH_W := 64 + SWATCH_PAD * 2
+const SWATCH_H := 128 + SWATCH_PAD * 2
+
+# The small-end toggle floats rather than sitting in a row, so its size has to be
+# stated explicitly instead of coming from a container.
+const SMALL_END_BTN_W := 180.0
+const SMALL_END_BTN_H := 40.0
+
 # --- Layout: one shared inset for everything that lines the felt's border ---
 # The mid row is [left seat col | play-area panel | right seat col], so the
 # panel's own edges land SIDE_SEAT_COL_W + MID_ROW_SEPARATION in from the
@@ -220,6 +231,13 @@ var selected_tile: DominoTile = null
 var human_seat: int = 0
 var seat_profiles: Dictionary = {}  # seat_id (int, 0-3) -> profile_id (String); never contains human_seat
 var waiting_for_human: bool = false
+# Set the moment a hand is decided, cleared when the next one is dealt. Play
+# input is gated on this rather than on waiting_for_human alone, because a hand
+# can end while the human still holds tiles — a lay-down claim, or either
+# hand-ends-early toggle firing. Without it the result banner appears but the
+# hand stays live underneath: the tiles are still hit-testable, so tapping one
+# resumes the play chain on top of an already-resolved hand.
+var _hand_over: bool = false
 var _armed_domino: Domino = null   # human's pre-selected play for later this trick, if any
 var _current_trick_reasons: Array = []  # accumulates {player, domino, reason} during a trick
 var _last_play_reason: String = ""      # set by AI chooser; read by _execute_play
@@ -329,6 +347,7 @@ func _build_fonts():
 	# pattern as DominoTile.custom_back_texture).
 	DrumPicker.custom_font = _font_nunito_regular
 	MarksDisplay.custom_font = _font_nunito_heavy
+	MarksDisplay.label_font = _font_rye
 
 func _make_variation(base: FontFile, fallbacks: Array[Font], weight: int) -> FontVariation:
 	var fv = FontVariation.new()
@@ -751,16 +770,19 @@ func _build_ui():
 	profile_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
 	profile_outer_vbox.add_child(profile_subtitle)
 
-	var profile_scroll = ScrollContainer.new()
-	profile_scroll.custom_minimum_size = Vector2(280, 300)
-	profile_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	profile_outer_vbox.add_child(profile_scroll)
-
+	# No ScrollContainer. There are exactly four rows (New Profile + three seats),
+	# so the list is a known, small, fixed height — the scroll box was clipping the
+	# last seat behind a scrollbar for no benefit. Added straight to the column and
+	# allowed to size itself, which pushes the Menu button down to make room.
 	_profile_content_vbox = VBoxContainer.new()
 	_profile_content_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_profile_content_vbox.add_theme_constant_override("separation", 12)
 	_profile_content_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	profile_scroll.add_child(_profile_content_vbox)
+	profile_outer_vbox.add_child(_profile_content_vbox)
+
+	var profile_back_spacer = Control.new()
+	profile_back_spacer.custom_minimum_size = Vector2(0, 8)
+	profile_outer_vbox.add_child(profile_back_spacer)
 
 	var profile_back_btn = Button.new()
 	profile_back_btn.text = "← Menu"
@@ -815,6 +837,41 @@ func _build_ui():
 	# is one owner for that, whatever the cause.
 	play_area_container.resized.connect(_replace_play_area_children)
 	play_vbox.add_child(play_area_container)
+
+	# --- Small-end opening lead toggle ---
+	# Floats immediately above the yellow status line, and costs the layout
+	# nothing.
+	#
+	# That second part is the whole point. A hidden Control contributes no minimum
+	# size to its container, so a button that merely *appears* grows the column it
+	# lives in — which is why the player's hand slid off the bottom of the screen
+	# the moment this became visible, and why simply moving it between containers
+	# didn't help. The holder below is a zero-height Control: plain Controls don't
+	# lay their children out, so the button keeps the offsets set here and the
+	# holder adds nothing to play_vbox's minimum height whether it's shown or not.
+	# It renders over the empty felt above the status line, exactly where it sat
+	# before, but the hand no longer moves when it toggles.
+	var se_holder = Control.new()
+	se_holder.custom_minimum_size = Vector2(0, 0)
+	se_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE   # children still get input
+	play_vbox.add_child(se_holder)
+
+	_small_end_toggle_btn = Button.new()
+	_small_end_toggle_btn.text = "Open with Small End"
+	_small_end_toggle_btn.toggle_mode = true
+	_small_end_toggle_btn.visible = false
+	# Centred on the holder's width and lifted clear of it, so it sits in the felt
+	# rather than on top of the status text.
+	_small_end_toggle_btn.anchor_left = 0.5
+	_small_end_toggle_btn.anchor_right = 0.5
+	_small_end_toggle_btn.anchor_top = 0.0
+	_small_end_toggle_btn.anchor_bottom = 0.0
+	_small_end_toggle_btn.offset_left = -SMALL_END_BTN_W / 2.0
+	_small_end_toggle_btn.offset_right = SMALL_END_BTN_W / 2.0
+	_small_end_toggle_btn.offset_top = -SMALL_END_BTN_H - 6.0
+	_small_end_toggle_btn.offset_bottom = -6.0
+	_small_end_toggle_btn.toggled.connect(_on_small_end_toggle_pressed)
+	se_holder.add_child(_small_end_toggle_btn)
 
 	status_label = Label.new()
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -997,22 +1054,6 @@ func _build_ui():
 	player_hand_container = HBoxContainer.new()
 	player_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	player_hand_container.custom_minimum_size = Vector2(0, 100)
-
-	# --- Small-end opening lead toggle — sits directly above the player's own
-	# hand (not in the shared trick-display area) so it reads as the human's
-	# control, not something ambiguous near the AI seats.
-	var se_row = HBoxContainer.new()
-	se_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_child(se_row)
-
-	_small_end_toggle_btn = Button.new()
-	_small_end_toggle_btn.text = "Open with Small End"
-	_small_end_toggle_btn.toggle_mode = true
-	_small_end_toggle_btn.custom_minimum_size = Vector2(160, 40)
-	_small_end_toggle_btn.visible = false
-	_small_end_toggle_btn.toggled.connect(_on_small_end_toggle_pressed)
-	se_row.add_child(_small_end_toggle_btn)
-
 	vbox.add_child(player_hand_container)
 
 	# Overlay for bid bubbles — sits on top of everything, ignores mouse
@@ -1474,6 +1515,7 @@ func _on_preset_chosen(key: String):
 	_start_hand()
 
 func _start_hand():
+	_hand_over = false
 	_armed_domino = null
 	_small_end_active = false
 	if _small_end_toggle_btn:
@@ -1982,12 +2024,42 @@ func _update_small_end_button_style():
 
 func _update_small_end_button_visibility():
 	var is_opening_lead = game.tricks_played == 0 and game.current_trick.plays.size() == 0
-	var eligible = game.settings.allow_small_end_opening_lead and is_opening_lead
+	# Trump contracts only. `game.trump >= 0` is the right test rather than a list
+	# of variants: Nello and Sevens both apply_bid_result(-1), and so does a Follow
+	# Me, which the live bidding flow issues as a POINTS bid with no trump rather
+	# than as Bid.Type.FOLLOW_ME — a variant check would miss it. DOUBLES_TRUMP (7)
+	# still counts as a trump suit and stays eligible.
+	var eligible = game.settings.allow_small_end_opening_lead \
+		and game.trump >= 0 \
+		and is_opening_lead
 	_small_end_toggle_btn.visible = eligible
 	if not eligible:
 		_small_end_active = false
 		_small_end_toggle_btn.button_pressed = false
 		_update_small_end_button_style()
+
+# Contracts whose lay-down claim laydown_check.gd can actually verify. Its proof
+# is "every tile I hold WINS the trick it's played into", which is only the right
+# question for a take-tricks contract — see that file's header, which scopes Nello
+# and Sevens out explicitly.
+#
+# Nello inverts the goal (the claim would be "every tile I hold LOSES"), so the
+# existing proof reports the exact opposite of the truth: it says yes precisely
+# when the player holds the top tiles and is therefore guaranteed to fail. Sevens
+# ranks tiles by distance from 7 pips rather than by suit rank, so the comparison
+# doesn't apply either. Neither is a near-miss that a visibility tweak fixes.
+const LAYDOWN_SUPPORTED_VARIANTS := [
+	BidScript.Type.POINTS,
+	BidScript.Type.MARKS,
+	BidScript.Type.PLUNGE,
+	BidScript.Type.SPLASH,
+	BidScript.Type.FOLLOW_ME,
+]
+
+# Nello is supported too, but by a different proof with the opposite
+# precondition, so it routes through its own branch rather than joining the list
+# above. Sevens remains genuinely unsupported: it ranks by distance from a pip
+# sum of 7, so neither proof's suit-rank comparison applies to it at all.
 
 # Lead-only, per Laydown_Session_Handoff_July21_2026.md — the proof is only
 # valid when it's the claimant's turn to lead (see laydown_check.gd's own
@@ -1996,10 +2068,53 @@ func _update_small_end_button_visibility():
 # to get wrong. Authentic mode shows it any time it's the human's lead,
 # self-judged; _on_laydown_button_pressed() re-verifies on press regardless.
 func _update_laydown_button_visibility():
-	var eligible = game.settings.allow_laydown and game.current_trick.plays.size() == 0
+	if not game.settings.allow_laydown:
+		laydown_btn.visible = false
+		return
+	if game.variant == BidScript.Type.NELLO:
+		_update_laydown_button_visibility_nello()
+		return
+	var eligible = LAYDOWN_SUPPORTED_VARIANTS.has(game.variant) \
+		and game.current_trick.plays.size() == 0
 	if eligible and game.settings.laydown_mode == "assisted":
 		eligible = _laydown_currently_provable() and not game.is_contract_already_lost(human_seat)
 	laydown_btn.visible = eligible
+
+# The mirror image of the rule above: for Nello the button appears only when the
+# claimant is NOT on lead. That single condition also excludes trick 1 for free
+# (the bidder leads it), and self-hides once the Nello is dead — catching a trick
+# is exactly what puts you back on lead.
+#
+# Bidder only. A defender's equivalent claim would be "I can force the bidder to
+# take a trick", which is a different proof this doesn't implement.
+func _update_laydown_button_visibility_nello():
+	var eligible = game.current_bid != null \
+		and game.current_bid.player_id == human_seat \
+		and game.current_trick.plays.size() > 0 \
+		and not game.is_contract_already_lost(human_seat)
+	if eligible and game.settings.laydown_mode == "assisted":
+		eligible = _nello_laydown_provable()
+	laydown_btn.visible = eligible
+
+# Gathers live state for the Nello search. The sitting-out partner is left out of
+# `hands` entirely — that absence is what lets the search ignore their seven
+# dominoes instead of treating them as unseen threats.
+func _nello_laydown_provable() -> bool:
+	if game.current_bid == null:
+		return false
+	var partner_seat: int = (int(game.current_bid.player_id) + 2) % 4
+	var hands := {}
+	for p in game.players:
+		if p.id != partner_seat:
+			hands[p.id] = p.hand
+	var leader_seat: int = game.current_player
+	if game.current_trick.plays.size() > 0:
+		leader_seat = int(game.current_trick.plays[0]["player"])
+	# Mirrors game.gd's own fallback: an unset per-hand mode means "high".
+	var mode: String = game.active_nello_doubles_mode if game.active_nello_doubles_mode != "" else "high"
+	return LaydownCheckScript.is_provable_nello_laydown(
+		human_seat, hands, game.current_trick.plays, leader_seat,
+		mode, game.active_nello_doubles_reversed)
 
 func _laydown_currently_provable() -> bool:
 	var knowledge = PublicKnowledge.from_state(PublicFrame.new(game.hand_history, game.current_trick))
@@ -2011,7 +2126,11 @@ func _laydown_currently_provable() -> bool:
 
 func _on_laydown_button_pressed():
 	laydown_btn.visible = false
-	var provable = _laydown_currently_provable()
+	# Authentic mode shows the button without checking first, so this is the only
+	# thing standing between a self-judged claim and a wrongly awarded hand — it
+	# has to use the proof that matches the contract being played.
+	var provable = _nello_laydown_provable() if game.variant == BidScript.Type.NELLO \
+		else _laydown_currently_provable()
 	var correct = provable and not game.is_contract_already_lost(human_seat)
 	_reveal_all_hands_face_up()
 	var result = game.resolve_hand_via_laydown(human_seat, correct)
@@ -2095,6 +2214,9 @@ func _human_already_played_this_trick() -> bool:
 	return false
 
 func _update_armable_highlights():
+	if _hand_over:
+		return  # hand's decided — nothing left to arm, and re-lighting tiles here
+			# would undo the shutdown _show_hand_result() just performed
 	if waiting_for_human:
 		return  # your actual turn owns highlighting via _highlight_legal_moves()
 
@@ -2118,6 +2240,8 @@ func _update_armable_highlights():
 			child.mouse_filter = Control.MOUSE_FILTER_STOP if playable else Control.MOUSE_FILTER_IGNORE
 
 func _on_human_domino_pressed(tile: DominoTile):
+	if _hand_over:
+		return   # banner is up; the hand is decided and taps must not resume play
 	if waiting_for_human:
 		var legal = game.get_legal_moves(game.players[human_seat])
 		if not legal.has(tile.domino):
@@ -2302,6 +2426,23 @@ func _resolve_hand():
 # banner/marks-update/Replay-and-Next-Hand UI applies regardless of how
 # the hand actually ended.
 func _show_hand_result(result: Dictionary):
+	# Close the hand down before anything is drawn. A hand can end with tiles
+	# still in the human's hand (lay-down, or either hand-ends-early toggle), and
+	# those tiles stay hit-testable unless play input is explicitly shut off —
+	# which is how a lay-down could show "YOU WIN THIS HAND!" and then carry on
+	# playing the hand underneath the banner.
+	_hand_over = true
+	waiting_for_human = false
+	_armed_domino = null
+	_clear_highlights()
+	if _small_end_toggle_btn:
+		_small_end_active = false
+		_small_end_toggle_btn.visible = false
+		_small_end_toggle_btn.button_pressed = false
+		_update_small_end_button_style()
+	if laydown_btn:
+		laydown_btn.visible = false
+
 	var winner_team = result.get("winner", 0)
 	var team_str = "Your team" if winner_team == 0 else "Their team"
 	var marks = result.get("team_marks", [0,0])
@@ -2949,19 +3090,11 @@ func _build_settings_content():
 	_add_checkbox_row(trump_body, "Allow Small-End Opening Lead", _pending_settings.allow_small_end_opening_lead,
 		func(v): _pending_settings.allow_small_end_opening_lead = v)
 
-	# Only the four built-in rulesets have a hardcoded "default" to reset
-	# to — the Custom slot's saved file IS its default, so resetting it
-	# would be a no-op at best and confusing at worst. CUSTOM_SLOT_KEY is
-	# deliberately absent from BUILTIN_PRESET_KEYS so this gate covers it.
-	if BUILTIN_PRESET_KEYS.has(_pending_settings.preset_id):
-		_settings_content_vbox.add_child(HSeparator.new())
-		var reset_btn = Button.new()
-		reset_btn.text = "Reset to Default"
-		reset_btn.custom_minimum_size = Vector2(220, 44)
-		reset_btn.pressed.connect(_on_reset_to_default_pressed)
-		_settings_content_vbox.add_child(reset_btn)
-
-	# ── Bottom buttons ──
+	# ── Action row: Menu / Cancel / Play ──
+	# Directly under the collapsed rule sections so all three are reachable without
+	# scrolling. It used to sit last, but the domino-back picker below is ~140px of
+	# always-open swatches and pushed the row off the fold — the one place in this
+	# screen where "content, then actions" cost more than it was worth.
 	var sep = HSeparator.new()
 	_settings_content_vbox.add_child(sep)
 
@@ -2998,25 +3131,79 @@ func _build_settings_content():
 	btn_row.add_child(play_btn)
 
 	# ── Domino back ──
-	# Below the button row on purpose: it's a table display preference, not part
-	# of the ruleset those buttons commit. It saves on click rather than waiting
-	# for Play, and is deliberately unaffected by which slot is selected.
-	var back_body = _make_section(_settings_content_vbox, "DOMINO BACK")
+	# A table display preference, not part of the ruleset the action row above
+	# commits: it saves on click rather than waiting for Play, and is deliberately
+	# unaffected by which slot is selected.
+	#
+	# Not a collapsible _make_section() and not a list of names — the choice is
+	# entirely visual, so it shows the actual backs, always open. Each swatch is a
+	# real face-down DominoTile using its per-instance back override, so a new
+	# entry in DOMINO_BACKS appears here correctly with no extra work.
+	_settings_content_vbox.add_child(HSeparator.new())
+
+	var back_header = Label.new()
+	back_header.text = "DOMINO BACK"
+	back_header.add_theme_font_override("font", _font_nunito_heavy)
+	back_header.add_theme_color_override("font_color", Color.WHITE)
+	_scaled_font(back_header, 15)
+	_settings_content_vbox.add_child(back_header)
+
 	var back_flow = HFlowContainer.new()
-	back_flow.add_theme_constant_override("h_separation", 6)
-	back_flow.add_theme_constant_override("v_separation", 6)
-	back_body.add_child(back_flow)
+	back_flow.add_theme_constant_override("h_separation", 10)
+	back_flow.add_theme_constant_override("v_separation", 10)
+	_settings_content_vbox.add_child(back_flow)
 
 	var current_back := _load_domino_back_pref()
 	for entry in DOMINO_BACKS:
-		var back_btn = Button.new()
-		back_btn.text = str(entry[0])
-		back_btn.custom_minimum_size = Vector2(120, 40)
-		_scaled_font(back_btn, 14)
-		if str(entry[1]) == current_back:
-			back_btn.modulate = Color(0.95, 0.80, 0.15)
-		back_btn.pressed.connect(_on_domino_back_pressed.bind(str(entry[1])))
-		back_flow.add_child(back_btn)
+		var res_path := str(entry[1])
+		var swatch = Button.new()
+		swatch.custom_minimum_size = Vector2(SWATCH_W, SWATCH_H)
+		# The name survives as a tooltip — useful for telling two similar patterns
+		# apart, without putting a caption back under every tile.
+		swatch.tooltip_text = str(entry[0])
+		# Selection is a gold border, not modulate: modulate tints child nodes too,
+		# which would recolour the very pattern the swatch exists to show.
+		var sel_style = StyleBoxFlat.new()
+		sel_style.bg_color = Color(0.10, 0.10, 0.13, 0.9)
+		sel_style.set_border_width_all(3)
+		sel_style.border_color = Color(0.95, 0.80, 0.15) if res_path == current_back \
+			else Color(0.30, 0.30, 0.36)
+		sel_style.corner_radius_top_left = 6
+		sel_style.corner_radius_top_right = 6
+		sel_style.corner_radius_bottom_left = 6
+		sel_style.corner_radius_bottom_right = 6
+		swatch.add_theme_stylebox_override("normal", sel_style)
+		swatch.add_theme_stylebox_override("hover", sel_style)
+		swatch.add_theme_stylebox_override("pressed", sel_style)
+		swatch.pressed.connect(_on_domino_back_pressed.bind(res_path))
+		back_flow.add_child(swatch)
+
+		var tile = DominoTile.new()
+		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE   # let clicks reach the Button
+		tile.use_back_override = true
+		tile.back_texture_override = load(res_path) if not res_path.is_empty() \
+			and ResourceLoader.exists(res_path) else null
+		tile.setup(null, false, -1)                       # face down: no domino needed
+		tile.position = Vector2(SWATCH_PAD, SWATCH_PAD)
+		swatch.add_child(tile)
+
+	# ── Reset to Default ──
+	# Last on the screen deliberately. It is the one destructive control here, and
+	# it is also the rarest — putting it below the action row keeps it out of reach
+	# of a stray tap aimed at Play, and costs nothing since anyone who wants it
+	# will go looking.
+	#
+	# Only the four built-in rulesets have a hardcoded "default" to reset to — the
+	# Custom slot's saved file IS its default, so resetting it would be a no-op at
+	# best and confusing at worst. CUSTOM_SLOT_KEY is deliberately absent from
+	# BUILTIN_PRESET_KEYS so this gate covers it.
+	if BUILTIN_PRESET_KEYS.has(_pending_settings.preset_id):
+		_settings_content_vbox.add_child(HSeparator.new())
+		var reset_btn = Button.new()
+		reset_btn.text = "Reset to Default"
+		reset_btn.custom_minimum_size = Vector2(220, 44)
+		reset_btn.pressed.connect(_on_reset_to_default_pressed)
+		_settings_content_vbox.add_child(reset_btn)
 
 func _on_domino_back_pressed(res_path: String):
 	_save_domino_back_pref(res_path)

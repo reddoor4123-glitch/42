@@ -284,6 +284,21 @@ double. It's genuinely visible (one frame of doubled content) on any panel
 that rebuilds in response to a button press rather than only on open.
 `game_table.gd`'s `_clear_children()` detaches first, then frees.
 
+### Gotcha #10 — `return true` from `_process()` always exits 0
+
+In the `_initialize()`/`_process()` shape from gotcha #7, ending the loop by
+returning `true` exits with status **0 regardless of what the suite found** —
+a fully failing run reports as clean, and only the results JSON tells the
+truth. Call `quit(1 if failures > 0 else 0)` before returning. Two harnesses
+shipped with this before it was noticed.
+
+Related: a harness that starts a real game (`_on_preset_chosen()` or similar)
+will print `ObjectDB instances leaked at exit` on stderr. Bidding kicks off a
+coroutine that parks on a 1-second timer — `DEBUG_FAST_MODE` is a `const`, so
+it can't be shortened at runtime — and it is still suspended when the harness
+exits. Benign, and `free()`ing the table doesn't clear it. For those scripts
+judge the exit code and the JSON, not stderr.
+
 ### Gotcha #9 — headless tests write to the real `user://`
 
 `user://` in a headless run is the same
@@ -337,6 +352,8 @@ evaluator's raw number — see Job 3 Step 1.
 | `scripts/job3_experiment.gd` | Fixed bidder hand vs. random reshuffle of the other three seats, with per-tile `hand_history` stats; writes `job3_results.json`. First script to use the Gotcha #3 fix. |
 | `scripts/menu_merge_verify.gd` | Assertion suite for the Menu/Rules/Settings merge: difficulty normalization at every read shape, `AI_MODES` shape, slot resolution isolation, slot-name independence, domino-back independence, `last_used.json` routing. Writes `menu_merge_verify_results.json` with a `failures` count; exits non-zero on any failure. First script to use the Gotcha #7 pattern. |
 | `scripts/menu_merge_ui_probe.gd` | Smoke-drives every screen that merge restructured (settings rebuild per slot, reset popup, rename popups, the Choose Rules "…" menu, difficulty screen, first-launch vs. returning routing) and reports node counts. Treat non-empty stderr as failure. |
+| `scripts/nello_laydown_verify.gd` | Assertion suite for `LaydownCheck.is_provable_nello_laydown()` — all four doubles modes, void discards, both ends of mixed tiles, the strand shape, and a full seven-trick position for cost (~450 ms). Pure logic, no scene, no `user://`. Exits non-zero on failure. |
+| `scripts/laydown_ends_hand_verify.gd` | Regression suite for "a decided hand stays playable underneath the result banner". Drives the real handlers — claims a lay-down mid-hand, then taps a tile the way a player would. Verified to fail without the fix. Expect the gotcha #10 stderr warning; judge the exit code. |
 | `scripts/node_leak_probe.gd` | Per-class node census before/after N rebuild cycles. Use when a leak *number* needs attributing to an actual class — a bare `OBJECT_NODE_COUNT` delta says "something grew", this says what. |
 | `scripts/menu_merge_screenshot.gd` | Renders the reset popup and both "…" menu variants to PNGs for eyeball review. Must run **without** `--headless`, same as `font_screenshot.gd`. |
 
