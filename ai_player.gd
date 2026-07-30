@@ -1684,11 +1684,15 @@ static func select_nello_exchange_give(hand: Array[Domino], doubles_mode: String
 
 		if doubles_mode == "high":
 			# Every double is highest-of-suit here, so 0:0 already being
-			# gone means non-doubles are the next-safest gives.
+			# gone means non-doubles are the next-safest gives. Both pools
+			# exclude doubles for that reason — a double is the WORST give
+			# under "high", not a cheap one, which is the exact opposite of
+			# the low/own_suit branch below.
 			var blanks: Array[Domino] = hand.filter(func(d): return d.left == 0 and d.right != 0)
 			if blanks.size() > 0:
 				return _lowest_pip_sum(blanks)
-			var ones: Array[Domino] = hand.filter(func(d): return d.left == 1 or d.right == 1)
+			var ones: Array[Domino] = hand.filter(func(d):
+				return (d.left == 1 or d.right == 1) and d.left != d.right)
 			if ones.size() > 0:
 				return _lowest_pip_sum(ones)
 		else:

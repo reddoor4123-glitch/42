@@ -69,8 +69,23 @@ func _init():
 		[[0,3],[0,5],[2,4],[3,6],[4,6],[5,6],[2,2]], [0,3])
 	_run_case("high_tier4_ones_lowest_pip", "high", false,
 		[[1,4],[1,2],[2,4],[3,6],[4,6],[5,6],[2,2]], [1,2])
+	# Regression: under "high" every double is highest-of-suit, so 1:1 is the
+	# WORST give in the ones tier, not the cheapest. It also has the lowest
+	# pip_sum of any one (2), so an un-filtered pool hands it over every time.
+	# The pre-existing high_tier4 case above holds no 1:1 and so never caught
+	# this. Expect 1:3 (the lowest NON-double one), not 1:1.
+	_run_case("high_tier4_ones_excludes_1_1", "high", false,
+		[[1,1],[1,3],[1,5],[2,4],[3,6],[4,6],[5,6]], [1,3])
 	_run_case("high_fallback_no_0_or_1", "high", false,
 		[[2,2],[3,3],[4,4],[5,5],[6,6],[2,3],[2,4]], [2,2])
+	# KNOWN GAP, documented not endorsed: with 1:1 as the hand's only "one" and
+	# no blanks, both "high" pools come back empty and control reaches the
+	# universal fallback, which ranks by raw pip_sum and so returns 1:1 anyway.
+	# The fallback has no notion that doubles are dangerous under "high" — 2:4
+	# is the genuinely safest tile here. Tracked, not fixed in this pass: the
+	# fallback is shared by all four modes and changing it is a design call.
+	_run_case("high_fallback_still_gives_1_1_KNOWN_GAP", "high", false,
+		[[1,1],[2,4],[3,6],[4,6],[5,6],[2,2],[3,3]], [1,1])
 
 	# ── LOW mode ─────────────────────────────────────────────────────────────
 	_run_case("low_tier2_0_0", "low", false,
