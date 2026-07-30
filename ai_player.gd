@@ -373,8 +373,20 @@ static func decide_bid(
 	# - enforce max_overbid cap
 	# - do NOT re-score the hand here
 
+	# Auction floors come from the ruleset, not from a hardcoded 30. These used
+	# to be literal 30s in three places, which meant the AI ignored both
+	# settings while the human was held to them — game_table.gd tells the human
+	# "you must bid at least %d" % settings.forced_bid_minimum, and on a table
+	# with minimum_bid = 32 the AI would happily open at 30 beside them.
+	#
+	# forced_minimum takes the max of the two so a ruleset that sets
+	# forced_bid_minimum BELOW minimum_bid cannot produce a forced bid that
+	# Bid.is_valid() then rejects for being under the table floor.
+	var auction_minimum: int = settings.minimum_bid
+	var forced_minimum: int = max(settings.forced_bid_minimum, settings.minimum_bid)
+
 	var points_still_legal := true
-	var min_points := 30
+	var min_points := auction_minimum
 
 	if current_high != null and current_high.type == BidScript.Type.POINTS:
 		min_points = current_high.value + 1
@@ -389,8 +401,11 @@ static func decide_bid(
 		points_still_legal = false
 
 	if is_forced:
+		# is_forced only ever fires with nothing standing (game_table.gd gates it
+		# on current_bid == null), so min_points is still the opening floor here
+		# and raising it to forced_minimum cannot lower a raise requirement.
 		should_bid = true
-		target_bid = max(target_bid, 30)
+		min_points = max(min_points, forced_minimum)
 
 	# If Layer 2 decided to bid but target is below the legal minimum, raise it.
 	# should_bid is already true — this preserves intent rather than silently passing.
@@ -447,9 +462,15 @@ static func decide_bid(
 				should_bid, target_bid, est_pts, current_high, pts_bid, control_hand, bid_decisions)
 			return pts_bid
 
-	# Forced minimum fallback
+	# Forced minimum fallback. Currently unreachable — is_forced sets
+	# should_bid true and clamps target_bid up to min_points above, and
+	# is_forced implies nothing is standing, so points_still_legal is true and
+	# the branch above always returns first. Kept as a floor rather than
+	# deleted: it is the only thing that would answer a forced bid if any of
+	# those three facts stopped holding, and returning PASS on a forced bid
+	# reshuffles the hand.
 	if is_forced:
-		var forced_bid = BidScript.new(BidScript.Type.POINTS, 30, player_id)
+		var forced_bid = BidScript.new(BidScript.Type.POINTS, forced_minimum, player_id)
 		_log_bid_decision(hand, eval, difficulty, risk_bias, max_overbid,
 			should_bid, target_bid, est_pts, current_high, forced_bid, control_hand, bid_decisions)
 		return forced_bid

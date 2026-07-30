@@ -1594,11 +1594,35 @@ func _run_bidding_sequence():
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
-		if ai_bid.type != BidScript.Type.PASS:
-			game.current_bid = ai_bid
+		ai_bid = _accept_ai_bid(ai_bid, pid, i)
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
+
+# Accept an AI bid only if it is legal, and return what actually happened.
+# Both AI bid loops go through this instead of assigning game.current_bid
+# directly. That direct assignment at four separate sites is the whole reason
+# allow_jump_bids quietly did nothing for weeks: Bid.is_valid() was written
+# correctly and simply never ran during a real auction. The human path was put
+# behind the validator when that was found; this is the other half.
+#
+# A rejected bid becomes a pass. An illegal bid must never become the standing
+# bid, and passing is the one response that is always legal. It is also a bug
+# if this ever fires — decide_bid() is meant to produce legal bids, not to be
+# filtered into producing them — so it reports loudly rather than silently
+# correcting. The returned bid is what gets shown in the bubble and status
+# line, so the table never announces a bid that wasn't accepted.
+func _accept_ai_bid(ai_bid: RefCounted, pid: int, bid_position: int) -> RefCounted:
+	if ai_bid.type == BidScript.Type.PASS:
+		return ai_bid
+	if BidScript.is_valid(ai_bid, game.current_bid, game.settings,
+			game.bid_context(pid, bid_position)):
+		game.current_bid = ai_bid
+		return ai_bid
+	push_error("AI seat %d produced an illegal bid: %s (high: %s) — treated as a pass"
+		% [pid, ai_bid.debug_string(),
+		   "none" if game.current_bid == null else game.current_bid.debug_string()])
+	return BidScript.new(BidScript.Type.PASS, 0, pid)
 
 # Highest marks value the human may legally pick right now — the drum's ceiling,
 # deliberately mirroring Bid.is_valid()'s. The drum used to run to 7 unconditionally,
@@ -1871,8 +1895,7 @@ func _run_post_human_bids():
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
-		if ai_bid.type != BidScript.Type.PASS:
-			game.current_bid = ai_bid
+		ai_bid = _accept_ai_bid(ai_bid, pid, i)
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
