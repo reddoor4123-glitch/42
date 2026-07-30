@@ -363,6 +363,38 @@ A lead is genuinely safe overall only when **both** opposing players independent
 
 ---
 
+## Pattern I — Counter dump doesn't check whether the dumped tile has independent future value
+
+### ⚑ BUG-017 — Partner's guaranteed-win counter dump doesn't check whether the dumped tile is itself a future guaranteed win
+
+**Where:** `decide_play()`, "FOLLOWING as Partner" block, `human_is_winning` → `guaranteed_win or win_safe_against_remaining` branch, the `counters_to_dump` selection (`ai_player.gd`, lines 896–898 as of this entry).
+
+**Flagged hand (July 22, 2026):** Trump = 4. Trick 4: human (P0) trumps in with 4:4 (the trump double — an unbeatable, guaranteed-win lead) to capture a 5:5 counter led by an opponent. Partner (P2), void in the led suit, follows the cardinal rule's dump path:
+
+```gdscript
+var counters_to_dump = legal.filter(func(d): return (d.pip_sum() == 5 or d.pip_sum() == 10) and not _beats(d, winning_domino, ...))
+if counters_to_dump.size() > 0:
+    var chosen = _highest_in(counters_to_dump, ...)
+    ...
+    return chosen
+```
+
+Partner holds 4:6 — the second-highest trump under trump-suit 4, and, once 4:4 falls, provably the new highest remaining trump. The filter's only conditions are "is a counter" and "doesn't beat the winning tile" — it dumps 4:6 into the already-secured trick rather than holding it, even though held it would itself be a guaranteed winner (by the same rank-vs-`highest_remaining_trump()` test `_is_guaranteed_win()`'s trump-suit branch already uses elsewhere) in some future trick.
+
+**User's framing:** "that left 6:4 as an unbeatable trump — partner put it on the trick not taking into account that this counter was no longer in jeopardy and could've been used to win another trick besides the one I was already winning."
+
+**Not the same as:**
+- BUG-004 (opponent-side, last-to-act, stranded-counter dump) — different branch, already fixed, and about disposing of a counter that has no remaining use, not one with independent future value.
+- Phase1 Scenario 2 (`Phase1_Control_Layer_Audit.md`) — Marks contract, partner considers taking the trick away from the human to hold control. Here the trick stays the human's; nothing is contested. This is narrower: which specific tile to spend while dumping, not who wins the trick.
+
+Likely the same underlying gap as the parked cross-trick/standing-commitment concept (see `Phase1_Control_Layer_Audit.md`'s own conclusion that this category of decision "reasons about future tricks" and doesn't fit Selection/Commitment/Modulation as currently scoped). Logged here as a second concrete data point rather than folded into that design session — that session is still explicitly parked.
+
+**Verification status of this entry itself:** the code path and citation above are Implemented (confirmed live, re-viewed same session). The claim that 4:6 becomes the highest remaining trump once 4:4 falls is Inferred from standard 42 trump ranking (double first, then descending by off-pip) — not independently re-derived from `PublicKnowledge.highest_remaining_trump()` output for this exact hand state. No fix designed or specced yet.
+
+**Status:** ⚑ Needs more examples before speccing — one flagged hand, log entry only, per Katy's request. Design session needed to decide whether this is a narrow fix (exclude from `counters_to_dump` any candidate that is itself currently the highest remaining trump) or belongs inside the larger parked cross-trick-narrative discussion.
+
+---
+
 ## Summary — suggested order of attack
 
 1. ~~BUG-003/003b~~ ✓ Fixed July 5, 2026.
@@ -381,3 +413,4 @@ A lead is genuinely safe overall only when **both** opposing players independent
 14. ~~BUG-012~~ ✓ Fixed July 13, 2026, jointly with BUG-007 (Lead-Safety Priority Stack — see Pattern H).
 15. **BUG-015** — ⚑ new, log entry only, holding 6:6/6:5/6:4 + another double switches leads before both opponents are proven void in trump. Needs its own design session.
 16. ~~BUG-016~~ ✓ Fixed July 13, 2026 — `CONTROL_TRUMP` eligibility replaced with rank-safety + objective-incomplete, the root cause behind BUG-003/003b, BUG-010, and BUG-014.
+17. **BUG-017** — ⚑ new, log entry only, partner dumps a counter into an already-guaranteed win without checking if that counter is itself a future guaranteed win. Possibly the same gap as the parked cross-trick/standing-commitment concept. Needs its own design session.

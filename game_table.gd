@@ -2,10 +2,7 @@ extends Node
 
 const BidScript       = preload("res://bid.gd")
 const GameSettingsScript = preload("res://game_settings.gd")
-const DominoTileScript = preload("res://domino_tile.gd")
 const AIPlayer = preload("res://ai_player.gd")
-const MarksDisplayScript = preload("res://marks_display.gd")
-const TrickPileScript = preload("res://trick_pile.gd")
 const LaydownCheckScript = preload("res://laydown_check.gd")
 const PlayerProfileScript = preload("res://player_profile.gd")
 
@@ -16,11 +13,71 @@ const PlayerProfileScript = preload("res://player_profile.gd")
 # GameSettings.* function.
 const BUILTIN_PRESET_KEYS: Array[String] = ["teel", "standard", "tournament", "lechner"]
 
+# --- Layout: one shared inset for everything that lines the felt's border ---
+# The mid row is [left seat col | play-area panel | right seat col], so the
+# panel's own edges land SIDE_SEAT_COL_W + MID_ROW_SEPARATION in from the
+# window. The US/THEM columns above and the two bottom-corner overlays align
+# to that same pair of verticals instead of hugging the border, which is why
+# these are constants rather than literals at each site — move PLAY_AREA_INSET
+# and all five elements stay in register.
+const SIDE_SEAT_COL_W := 60
+const MID_ROW_SEPARATION := 8
+const PLAY_AREA_INSET := SIDE_SEAT_COL_W + MID_ROW_SEPARATION
+
+# Team columns also come down off the top edge by this much.
+const TEAM_COL_INSET_TOP := 24
+
+# Seat bid bubbles ("Nanny / 30 points"). Down from 13 — at the old size they
+# crowded the felt, and the left/right ones reached into the band the expanded
+# trick lists now use.
+const BID_BUBBLE_FONT_SIZE := 11
+
+# Bottom-left winning-contract reminder. Base size, so it rides font_scale.
+# At this size every contract line clears the player's hand except one —
+# "Nello doubles own suit (reversed)" — which wraps rather than run under the
+# tiles, hence the autowrap and the measured width cap.
+#
+# LINE_SPACING is negative because Font.get_height() here reports the tallest
+# font in the fallback chain (NotoSansSymbols, 44px at this size), not Nunito's
+# own ~30, and the surplus is pure padding. -14 lands the pitch back on Nunito's
+# natural line height. Note Godot applies line_spacing BETWEEN lines, so a block
+# is n*height + (n-1)*spacing — 104px at three lines, 134px at four.
+const BID_REMINDER_FONT_SIZE := 14
+const BID_REMINDER_LINE_SPACING := -14
+const BID_REMINDER_SIDE_GAP := 8.0
+const BID_REMINDER_BOTTOM := -3.0   # offset of the block's bottom from the window's
+
+# Expanded trick list: a floating panel per team that replaces the little
+# scrolling box in place, and the toggle that opens it. The toggle sits on the
+# felt just medial of its column so it covers no domino and, like the panel,
+# costs the surrounding layout nothing.
+const TRICKS_BTN_SIZE := 24.0
+const TRICKS_BTN_GAP := 6.0
+
+# Main-menu wordmark: the Rye "42" and the subtitle under it. AIR is the space
+# left between them after the title's dead descender band is closed up, so it
+# reads as the gap the eye actually sees rather than a box-to-box separation.
+const MENU_TITLE_SIZE := 48
+const MENU_SUBTITLE_SIZE := 24
+const MENU_WORDMARK_AIR := 0.0
+
+# Top edge of the two bottom-corner overlays (Lay Down, bid reminder),
+# measured up from the window's bottom — puts them level with the top of the
+# player's own hand, clear of the play-area panel above.
+const CORNER_OVERLAY_TOP := -115
+
 var game: Game
+
+# Typeface resources, built once by _build_fonts() before _build_ui() runs.
+# Nunito carries the UI; Rye is reserved for the two display spots (the menu
+# "42" and the end-of-hand banner).
+var _font_nunito_regular: Font
+var _font_nunito_heavy: Font
+var _font_rye: Font
 
 # UI node references (assigned in _ready)
 var player_hand_container: HBoxContainer
-var play_area_container: HBoxContainer
+var play_area_container: Control
 var opponent_top_container: HBoxContainer
 var opponent_left_container: VBoxContainer
 var opponent_right_container: VBoxContainer
@@ -43,6 +100,13 @@ var _us_marks: MarksDisplay = null
 var _them_marks: MarksDisplay = null
 var _us_tricks: TrickPile = null
 var _them_tricks: TrickPile = null
+# Indexed by team (0 = US, 1 = THEM) so the expand/collapse code is written once
+# instead of twice. The TrickPile itself is never duplicated — it is reparented
+# between its scroll box and its overlay, so there is one pile and no sync.
+var _tricks_scroll: Array[ScrollContainer] = [null, null]
+var _tricks_overlay: Array[PanelContainer] = [null, null]
+var _tricks_toggle_btn: Array[Button] = [null, null]
+var _tricks_expanded: Array[bool] = [false, false]
 var trump_panel: PanelContainer
 var trump_buttons: HBoxContainer
 var _special_trump_sep: HSeparator = null
@@ -72,7 +136,7 @@ var difficulty_panel: PanelContainer = null
 var _difficulty_btn_container: VBoxContainer = null
 var profile_panel: PanelContainer = null
 var _profile_content_vbox: VBoxContainer = null
-var _game_top_row: HBoxContainer = null
+var _game_top_row: MarginContainer = null
 var _game_mid_row: HBoxContainer = null
 
 # Debug flag — set true to skip AI thinking pauses for faster testing.
@@ -112,6 +176,7 @@ var _human_bid_position: int = -1
 # Viewport-proportional tile sizes — recomputed on resize by _on_viewport_resized()
 var TILE_FULL: Vector2
 var TILE_SMALL: Vector2
+var TILE_PLAYED: Vector2
 var TILE_REPLAY_HAND: Vector2
 var TILE_REPLAY_PLAYED: Vector2
 
@@ -123,6 +188,7 @@ var font_scale: float = 1.0
 var _font_registry: Array = []
 
 func _ready():
+	_build_fonts()
 	_build_ui()
 	seat_profiles = _load_seat_assignments()
 	_start_game()
@@ -141,11 +207,69 @@ func _player_label(pid: int) -> String:
 	else:
 		return "Left Opponent"
 
+# ─── TYPEFACES ────────────────────────────────────────────────────────────────
+# Nunito is a variable font whose wght axis runs 200–1000 with a DEFAULT of 200
+# (ExtraLight), not 400 — so every weight has to be an explicit FontVariation
+# or the whole UI renders hairline-thin.
+#
+# Every variation below re-attaches the same symbol/emoji fallback chain that
+# fonts/default_font.tres (wired as project.godot's theme/custom_font) already
+# supplies. That chain is load-bearing: the UI leans on glyphs no Latin
+# text face carries — ● ⚙ ✕ ⌂ ★ ▶ ▼ ← → ✓ and the 🚩/🎉 emoji. Handing a bare
+# FontFile to Theme.default_font drops the fallbacks and turns all of those
+# into tofu boxes.
+#
+# One more trap, confirmed by measurement rather than by reading the API:
+# FontVariation.variation_opentype keys must be INTEGER OpenType tags, not the
+# axis name. {"wght": 815} is accepted and stored verbatim, but silently never
+# applied — every weight then renders at the font's default instance, which for
+# Nunito is 200. Widths for "MMMMMMMMMM" @40px make it plain:
+#     {"wght": 400} -> 338.00      {"wght": 815} -> 338.00   (no-op)
+#     {tag:    400} -> 342.00      {tag:    815} -> 351.00   (live)
+# so the tag goes through TextServer.name_to_tag() below.
+#
+# FONT_WEIGHT_BASE is the lightest weight anything in this UI uses — the floor,
+# not a typographic "regular". Nunito reads thin on dark felt at small sizes, so
+# the body weight sits well above 400.
+const FONT_WEIGHT_BASE  := 777
+const FONT_WEIGHT_HEAVY := 815
+
+func _build_fonts():
+	var nunito_base: FontFile = load("res://fonts/Nunito-VariableFont_wght.ttf")
+	var rye_base: FontFile = load("res://fonts/Rye-Regular.ttf")
+
+	var fallbacks: Array[Font] = [
+		load("res://fonts/NotoSansSymbols.ttf"),
+		load("res://fonts/NotoSansSymbols2.ttf"),
+		load("res://fonts/NotoEmoji.ttf"),
+	]
+
+	_font_nunito_regular = _make_variation(nunito_base, fallbacks, FONT_WEIGHT_BASE)
+	_font_nunito_heavy   = _make_variation(nunito_base, fallbacks, FONT_WEIGHT_HEAVY)
+	# Rye is a single static cut — no wght axis to sample, so no variation_opentype.
+	_font_rye            = _make_variation(rye_base, fallbacks, 0)
+
+	# The two hand-drawn Controls call ThemeDB.fallback_font in _draw() and so
+	# never see a Theme on root — hand them the font directly (same static-var
+	# pattern as DominoTile.custom_back_texture).
+	DrumPicker.custom_font = _font_nunito_regular
+	MarksDisplay.custom_font = _font_nunito_heavy
+
+func _make_variation(base: FontFile, fallbacks: Array[Font], weight: int) -> FontVariation:
+	var fv = FontVariation.new()
+	fv.base_font = base
+	if weight > 0:
+		var wght_tag: int = TextServerManager.get_primary_interface().name_to_tag("wght")
+		fv.variation_opentype = {wght_tag: weight}
+	fv.fallbacks = fallbacks
+	return fv
+
 func _build_ui():
 	var vp_w: float = get_viewport().get_visible_rect().size.x
 	var tile_w: float = min(64.0, floor(vp_w / 9.0))
 	TILE_FULL         = Vector2(tile_w,        tile_w * 2.0)
 	TILE_SMALL        = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
+	TILE_PLAYED       = Vector2(tile_w * PLAY_TILE_SCALE, tile_w * 2.0 * PLAY_TILE_SCALE)
 	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
 	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 	font_scale = clamp(vp_w / DESIGN_WIDTH, MIN_SCALE, MAX_SCALE)
@@ -156,6 +280,14 @@ func _build_ui():
 	root.set_offsets_preset(Control.PRESET_FULL_RECT)
 	root.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	root.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+	# One Theme on root is the whole delivery mechanism — every stock Control
+	# below inherits Nunito through Godot's ancestor theme lookup, so
+	# _scaled_font() keeps owning size only and none of its call sites change.
+	var theme = Theme.new()
+	theme.default_font = _font_nunito_regular
+	root.theme = theme
+
 	add_child(root)
 
 	# Background
@@ -170,14 +302,28 @@ func _build_ui():
 	# see _update_bid_reminder().
 	bid_reminder_label = Label.new()
 	bid_reminder_label.text = ""
+	bid_reminder_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bid_reminder_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	bid_reminder_label.add_theme_color_override("font_color", Color(0.90, 0.90, 0.85))
-	bid_reminder_label.add_theme_constant_override("line_spacing", -10)
+	bid_reminder_label.add_theme_constant_override("line_spacing", BID_REMINDER_LINE_SPACING)
+	# Sized on its own account now rather than borrowed from status_label — the
+	# contract is worth reading at a glance, so it runs deliberately larger.
+	# _scaled_font() also registers it, so it tracks font_scale on a resize,
+	# which the old copied literal never did.
+	_scaled_font(bid_reminder_label, BID_REMINDER_FONT_SIZE)
 	bid_reminder_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	# Bottom-pinned, growing upward. Normally three lines, but the longest
+	# contract wording wraps to four, and a fourth line growing DOWNWARD from a
+	# fixed top ran off the bottom of the window. Pinning the bottom puts the
+	# extra line above instead, into the empty felt below the play panel.
+	# Offsets are set directly rather than through `position`, which under this
+	# grow direction folds the label's current line count into what it computes.
 	bid_reminder_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	bid_reminder_label.position = Vector2(85, -36)
+	bid_reminder_label.offset_left = PLAY_AREA_INSET
+	bid_reminder_label.offset_bottom = BID_REMINDER_BOTTOM
+	bid_reminder_label.offset_top = BID_REMINDER_BOTTOM - 1.0
 	root.add_child(bid_reminder_label)
-	# Font size is set below, once status_label exists — matched to it
-	# exactly (not a guessed literal) so the two always read as the same size.
+	_refresh_bid_reminder_width()
 
 	# Main vertical layout
 	var vbox = VBoxContainer.new()
@@ -186,10 +332,18 @@ func _build_ui():
 	root.add_child(vbox)
 
 	# --- Top row: US panel | partner hand | THEM panel ---
-	_game_top_row = HBoxContainer.new()
-	var top_row = _game_top_row
+	# The MarginContainer is the row as far as _show_game_board() cares (it
+	# toggles _game_top_row), so hiding the board takes the inset with it
+	# rather than leaving a strip of dead margin above the menu.
+	_game_top_row = MarginContainer.new()
+	_game_top_row.add_theme_constant_override("margin_left", PLAY_AREA_INSET)
+	_game_top_row.add_theme_constant_override("margin_right", PLAY_AREA_INSET)
+	_game_top_row.add_theme_constant_override("margin_top", TEAM_COL_INSET_TOP)
+	vbox.add_child(_game_top_row)
+
+	var top_row = HBoxContainer.new()
 	top_row.add_theme_constant_override("separation", 6)
-	vbox.add_child(top_row)
+	_game_top_row.add_child(top_row)
 
 	# US side (team 0 = player 0 & 2)
 	var us_vbox = VBoxContainer.new()
@@ -207,13 +361,29 @@ func _build_ui():
 	us_vbox.add_child(us_scroll)
 	_us_tricks = TrickPile.new()
 	us_scroll.add_child(_us_tricks)
+	_tricks_scroll[0] = us_scroll
 
-	# Partner hand (center)
+	# Partner hand (center), with the points readout tucked under it. This band's
+	# height is set by the US/THEM columns beside it, and the partner's tiles are
+	# shorter than that, so the readout rides in slack that already existed —
+	# it costs the play area below nothing, which is the whole point of moving it
+	# out of play_vbox. The tiles take the leftover room via EXPAND_FILL so they
+	# stay centred in the band and the readout stays pinned to its bottom edge.
+	var partner_col = VBoxContainer.new()
+	partner_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_row.add_child(partner_col)
+
 	opponent_top_container = HBoxContainer.new()
 	opponent_top_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	opponent_top_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	opponent_top_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	opponent_top_container.custom_minimum_size = Vector2(0, 80)
-	top_row.add_child(opponent_top_container)
+	partner_col.add_child(opponent_top_container)
+
+	info_label = Label.new()
+	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info_label.add_theme_color_override("font_color", Color.WHITE)
+	partner_col.add_child(info_label)
 
 	# THEM side (team 1 = player 1 & 3)
 	var them_vbox = VBoxContainer.new()
@@ -231,6 +401,13 @@ func _build_ui():
 	them_vbox.add_child(them_scroll)
 	_them_tricks = TrickPile.new()
 	them_scroll.add_child(_them_tricks)
+	_tricks_scroll[1] = them_scroll
+
+	# Both scroll boxes exist now, so the floating half of the trick lists can be
+	# built. Added to root at this point on purpose: after vbox, so the expanded
+	# panel draws over the play area, but before _bubble_overlay, so the seat bid
+	# bubbles stay on top of it.
+	_build_tricks_overlays(root)
 
 	# --- Main menu panel — dark card centered over the felt ---
 	main_menu_panel = PanelContainer.new()
@@ -278,19 +455,33 @@ func _build_ui():
 				dot.add_theme_color_override("font_color", Color(0.95, 0.93, 0.88, 0.55))
 				half_row.add_child(dot)
 
+	# "42" and its subtitle read as one wordmark, so they get their own box with
+	# its own separation instead of inheriting menu_vbox's 16px. Rye reserves a
+	# descender band under the title (46px at this size) that the digits never
+	# use, and it dwarfs any separation constant — which is why the subtitle sat
+	# adrift below the title. Close that band up and keep MENU_WORDMARK_AIR of
+	# real space, derived from the live metric so it holds at any font_scale.
+	var title_px: int = int(round(MENU_TITLE_SIZE * font_scale))
+	var wordmark = VBoxContainer.new()
+	wordmark.add_theme_constant_override("separation",
+		int(round(MENU_WORDMARK_AIR - _font_rye.get_descent(title_px))))
+	menu_vbox.add_child(wordmark)
+
 	var menu_title = Label.new()
 	menu_title.text = "42"
 	menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_scaled_font(menu_title, 48)
+	_scaled_font(menu_title, MENU_TITLE_SIZE)
+	menu_title.add_theme_font_override("font", _font_rye)
 	menu_title.add_theme_color_override("font_color", Color.WHITE)
-	menu_vbox.add_child(menu_title)
+	wordmark.add_child(menu_title)
 
 	var menu_subtitle = Label.new()
-	menu_subtitle.text = "The National Game of Texas"
+	menu_subtitle.text = "Texas Dominos"
 	menu_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_scaled_font(menu_subtitle, 14)
+	_scaled_font(menu_subtitle, MENU_SUBTITLE_SIZE)
+	menu_subtitle.add_theme_font_override("font", _font_rye)
 	menu_subtitle.add_theme_color_override("font_color", Color(0.75, 0.75, 0.75))
-	menu_vbox.add_child(menu_subtitle)
+	wordmark.add_child(menu_subtitle)
 
 	var menu_spacer = Control.new()
 	menu_spacer.custom_minimum_size = Vector2(0, 24)
@@ -299,24 +490,28 @@ func _build_ui():
 	var play_btn = Button.new()
 	play_btn.text = "Play"
 	play_btn.custom_minimum_size = Vector2(220, 64)
+	play_btn.add_theme_font_override("font", _font_nunito_heavy)
 	play_btn.pressed.connect(_on_menu_play_pressed)
 	menu_vbox.add_child(play_btn)
 
 	var rules_btn = Button.new()
 	rules_btn.text = "Choose Rules"
 	rules_btn.custom_minimum_size = Vector2(220, 64)
+	rules_btn.add_theme_font_override("font", _font_nunito_heavy)
 	rules_btn.pressed.connect(_on_menu_rules_pressed)
 	menu_vbox.add_child(rules_btn)
 
 	var diff_menu_btn = Button.new()
 	diff_menu_btn.text = "Difficulty"
 	diff_menu_btn.custom_minimum_size = Vector2(220, 64)
+	diff_menu_btn.add_theme_font_override("font", _font_nunito_heavy)
 	diff_menu_btn.pressed.connect(_on_menu_difficulty_pressed)
 	menu_vbox.add_child(diff_menu_btn)
 
 	var profiles_menu_btn = Button.new()
 	profiles_menu_btn.text = "Profiles"
 	profiles_menu_btn.custom_minimum_size = Vector2(220, 64)
+	profiles_menu_btn.add_theme_font_override("font", _font_nunito_heavy)
 	profiles_menu_btn.pressed.connect(_on_menu_profiles_pressed)
 	menu_vbox.add_child(profiles_menu_btn)
 
@@ -504,13 +699,12 @@ func _build_ui():
 	_game_mid_row = HBoxContainer.new()
 	var hbox_mid = _game_mid_row
 	hbox_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	hbox_mid.add_theme_constant_override("separation", 4)
-	hbox_mid.add_theme_constant_override("separation", 8)
+	hbox_mid.add_theme_constant_override("separation", MID_ROW_SEPARATION)
 	vbox.add_child(hbox_mid)
 
 	opponent_left_container = VBoxContainer.new()
 	opponent_left_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	opponent_left_container.custom_minimum_size = Vector2(60, 0)
+	opponent_left_container.custom_minimum_size = Vector2(SIDE_SEAT_COL_W, 0)
 	opponent_left_container.add_theme_constant_override("separation", -55)
 	hbox_mid.add_child(opponent_left_container)
 
@@ -522,21 +716,28 @@ func _build_ui():
 	play_vbox = VBoxContainer.new()
 	play_area_panel.add_child(play_vbox)
 
-	info_label = Label.new()
-	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_color_override("font_color", Color.WHITE)
-	play_vbox.add_child(info_label)
-
+	# First child of the play area now that the points readout has moved up into
+	# the top band — the trump call takes over the spot points used to hold.
 	trump_indicator_label = Label.new()
 	trump_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	trump_indicator_label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15))
 	_scaled_font(trump_indicator_label, 20)
 	play_vbox.add_child(trump_indicator_label)
 
-	play_area_container = HBoxContainer.new()
-	play_area_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	play_area_container.add_theme_constant_override("separation", 8)
-	play_area_container.custom_minimum_size = Vector2(0, 100)
+	# Plain Control, not an HBoxContainer: _add_to_play_area() positions each
+	# played tile toward the seat that played it, so no row-flow layout wanted.
+	play_area_container = Control.new()
+	play_area_container.custom_minimum_size = Vector2(0, _play_area_min_height())
+	# Takes up whatever the play panel has left over, so collapsing the
+	# reservation below (see _refresh_play_area_reservation) frees height for
+	# the player's hand without the pickers jumping to the top of the felt.
+	play_area_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# _place_in_play_area() centres against the container's size as it is at
+	# call time, so every child goes stale the moment the container changes
+	# height — which it now does whenever a picker opens or closes, not just on
+	# a window resize. Re-place on the container's own resized signal so there
+	# is one owner for that, whatever the cause.
+	play_area_container.resized.connect(_replace_play_area_children)
 	play_vbox.add_child(play_area_container)
 
 	status_label = Label.new()
@@ -544,7 +745,6 @@ func _build_ui():
 	status_label.add_theme_color_override("font_color", Color.YELLOW)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	play_vbox.add_child(status_label)
-	bid_reminder_label.add_theme_font_size_override("font_size", status_label.get_theme_font_size("font_size"))
 
 	# --- Bid panel lives inside the play area ---
 	bid_panel = PanelContainer.new()
@@ -565,7 +765,7 @@ func _build_ui():
 
 	opponent_right_container = VBoxContainer.new()
 	opponent_right_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	opponent_right_container.custom_minimum_size = Vector2(60, 0)
+	opponent_right_container.custom_minimum_size = Vector2(SIDE_SEAT_COL_W, 0)
 	opponent_right_container.add_theme_constant_override("separation", -55)
 	hbox_mid.add_child(opponent_right_container)
 
@@ -712,6 +912,11 @@ func _build_ui():
 	nello_exchange_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	exchange_vbox.add_child(nello_exchange_hand_container)
 
+	# All four pickers exist by now, so wire the one hook that keeps the play
+	# area's height reservation honest no matter which of them opens or closes.
+	for picker in [bid_panel, trump_panel, nello_panel, nello_exchange_panel]:
+		picker.visibility_changed.connect(_refresh_play_area_reservation)
+
 	# --- Human player hand ---
 	player_hand_container = HBoxContainer.new()
 	player_hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -751,18 +956,20 @@ func _build_ui():
 	root.add_child(gear_btn)
 
 	# --- Lay Down button (bottom-right, near the player's own hand) —
-	# placeholder positioning, refine once visible in the editor, same
-	# treatment as the Nello exchange panel's "Don't Trade" button.
+	# right edge on the play-area panel's right vertical, top level with the
+	# bid reminder in the opposite corner, so the two bottom-corner overlays
+	# read as a matched pair framing the player's hand.
 	# Visibility is driven entirely by _update_laydown_button_visibility(),
 	# called whenever it becomes the human's turn (_play_next_in_trick()).
+	const LAYDOWN_BTN_W := 120
 	laydown_btn = Button.new()
 	laydown_btn.text = "Lay Down"
-	laydown_btn.custom_minimum_size = Vector2(120, 44)
+	laydown_btn.custom_minimum_size = Vector2(LAYDOWN_BTN_W, 44)
 	laydown_btn.visible = false
 	laydown_btn.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	laydown_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	laydown_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	laydown_btn.position = Vector2(-132, -60)
+	laydown_btn.grow_vertical = Control.GROW_DIRECTION_END
+	laydown_btn.position = Vector2(-(LAYDOWN_BTN_W + PLAY_AREA_INSET), CORNER_OVERLAY_TOP)
 	laydown_btn.pressed.connect(_on_laydown_button_pressed)
 	root.add_child(laydown_btn)
 
@@ -1001,12 +1208,21 @@ func _on_viewport_resized():
 	var tile_w: float = min(64.0, floor(vp_w / 9.0))
 	TILE_FULL          = Vector2(tile_w,        tile_w * 2.0)
 	TILE_SMALL         = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
+	TILE_PLAYED        = Vector2(tile_w * PLAY_TILE_SCALE, tile_w * 2.0 * PLAY_TILE_SCALE)
 	TILE_REPLAY_HAND   = Vector2(tile_w * 0.65, tile_w * 2.0 * 0.65)
 	TILE_REPLAY_PLAYED = Vector2(tile_w * 0.85, tile_w * 2.0 * 0.85)
 
 	font_scale = clamp(vp_w / DESIGN_WIDTH, MIN_SCALE, MAX_SCALE)
 	for entry in _font_registry:
 		entry["node"].add_theme_font_size_override("font_size", round(entry["base_size"] * font_scale))
+
+	# Must come after the font-size refresh above: the diamond's vertical room
+	# depends on the seat label's height, which rides on font_scale.
+	_refresh_bid_reminder_width()
+
+	if is_instance_valid(play_area_container):
+		_refresh_play_area_reservation()
+		_replace_play_area_children()
 
 	if is_instance_valid(_pts_picker):
 		_pts_picker.font_scale = font_scale
@@ -1156,15 +1372,20 @@ func _start_hand():
 	_refresh_all_hands()
 	_us_tricks.clear_tricks()
 	_them_tricks.clear_tricks()
+	# Both piles are empty now, so an expanded list would be a panel of nothing
+	# sitting over the new hand's bidding. Fold them back into their boxes.
+	_set_tricks_expanded(0, false)
+	_set_tricks_expanded(1, false)
 	_start_bidding()
 
 func _start_bidding():
-	_set_info("Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+	_update_points_readout()
 	trump_indicator_label.text = ""
 	bid_reminder_label.text = ""
 	if is_instance_valid(_hand_result_banner):
 		_hand_result_banner.queue_free()
 		_hand_result_banner = null
+		_refresh_play_area_reservation()   # banner gone — diamond needs its room back
 	game.current_bid = null
 	human_is_forced = false
 	_human_bid_position = -1
@@ -1466,7 +1687,7 @@ func _finish_bidding(_unused: Array):
 			# AI Nello: use table default, bid winner leads
 			game.active_nello_doubles_mode = game.settings.nello_doubles_mode
 			game.apply_bid_result(-1)
-			_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+			_update_points_readout()
 			trump_indicator_label.text = ""
 			_update_bid_reminder()
 			_refresh_all_hands()
@@ -1476,7 +1697,7 @@ func _finish_bidding(_unused: Array):
 	elif winning.type == BidScript.Type.SEVENS:
 		# Sevens needs no trump selection from anyone
 		game.apply_bid_result(-1)
-		_set_info("Sevens | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+		_update_points_readout()
 		trump_indicator_label.text = ""
 		_update_bid_reminder()
 		_refresh_all_hands()
@@ -1496,7 +1717,7 @@ func _finish_bidding(_unused: Array):
 			var ai_eval = AIPlayer.best_trump(game.players[partner_id].hand)
 			var best_suit = ai_eval["trump"]
 			game.apply_bid_result(best_suit)
-			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			_update_points_readout()
 			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
 			_update_bid_reminder()
 			_show_trump_announcement(best_suit)
@@ -1517,7 +1738,7 @@ func _finish_bidding(_unused: Array):
 			var ai_eval = AIPlayer.best_trump(game.players[winning.player_id].hand)
 			var best_suit = ai_eval["trump"]
 			game.apply_bid_result(best_suit)
-			_set_info("Trump: %ds | Marks: You %d | Them %d" % [best_suit, game.team_marks[0], game.team_marks[1]])
+			_update_points_readout()
 			trump_indicator_label.text = "Trump: %s" % _trump_display_name(best_suit)
 			_update_bid_reminder()
 			_show_trump_announcement(best_suit)
@@ -1540,7 +1761,7 @@ func _on_trump_selected(suit: int):
 	trump_panel.visible = false
 	waiting_for_trump = false
 	game.apply_bid_result(suit)
-	_set_info("Trump: %ds | Marks: You %d | Them %d" % [suit, game.team_marks[0], game.team_marks[1]])
+	_update_points_readout()
 	trump_indicator_label.text = "Trump: %s" % _trump_display_name(suit)
 	_update_bid_reminder()
 	_show_trump_announcement(suit)
@@ -1567,7 +1788,7 @@ func _on_nello_mode_selected(mode: String):
 		game.active_nello_doubles_mode = mode
 		game.active_nello_doubles_reversed = false
 	game.apply_bid_result(-1)
-	_set_info("Nello | Marks: You %d | Them %d" % [game.team_marks[0], game.team_marks[1]])
+	_update_points_readout()
 	trump_indicator_label.text = ""
 	_update_bid_reminder()
 	_refresh_all_hands()
@@ -1908,6 +2129,9 @@ func _resolve_trick():
 	var winner_team = winner_id % 2
 	var win_verb = "win" if winner_id == human_seat else "wins"
 	_set_status("%s %s the trick!" % [_seat_label(winner_id), win_verb])
+	# game.resolve_trick() has already credited this trick's points, so the
+	# readout ticks over at the same moment the trick is awarded.
+	_update_points_readout()
 
 	# All 4 dominoes from this trick, in play order
 	var trick_dominoes: Array = []
@@ -1942,24 +2166,6 @@ func _resolve_trick():
 	else:
 		_resolve_hand()
 
-# Retired July 22, 2026 — superseded by game.is_contract_already_lost(),
-# which covers the same Marks/Sevens/Nello cases plus Plunge/Splash (a
-# real, pre-existing gap this function never covered). Commented out
-# rather than deleted: traced to a single call site (removed below)
-# across the whole visible codebase, but kept here pending one literal
-# repo-wide grep confirmation before actual deletion.
-#
-# func _is_bid_mathematically_set(winner_id: int) -> bool:
-# 	if game.current_bid == null:
-# 		return false
-# 	if game.variant == BidScript.Type.NELLO:
-# 		return winner_id == game.current_bid.player_id
-# 	var needs_all_tricks = game.current_bid.type == BidScript.Type.MARKS or game.current_bid.type == BidScript.Type.SEVENS
-# 	if not needs_all_tricks:
-# 		return false
-# 	var bid_team = game.current_bid.player_id % 2
-# 	return (winner_id % 2) != bid_team
-
 func _resolve_hand():
 	_show_hand_result(game.resolve_hand())
 
@@ -1977,15 +2183,28 @@ func _show_hand_result(result: Dictionary):
 	if is_instance_valid(_hand_result_banner):
 		_hand_result_banner.queue_free()
 	_hand_result_banner = Label.new()
-	_hand_result_banner.text = "YOU WIN THIS HAND! 🎉" if winner_team == 0 else "Hand Lost"
+	# Two different ways to lose, and they deserve different words: our own
+	# contract going down is "Hand Lost", the opponents making theirs is "They
+	# Won". Read off the bidder's seat rather than the result dict, which only
+	# records who won the hand, not who was playing the contract. No bid on
+	# record falls back to "Hand Lost" — the safer thing to claim.
+	var lost_text := "Hand Lost"
+	if game.current_bid != null and game.current_bid.player_id % 2 != 0:
+		lost_text = "They Won"
+	_hand_result_banner.text = "YOU WIN THIS HAND! 🎉" if winner_team == 0 else lost_text
 	_hand_result_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_scaled_font(_hand_result_banner, 36)
+	_hand_result_banner.add_theme_font_override("font", _font_rye)
 	_hand_result_banner.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15) if winner_team == 0 else Color(0.85, 0.35, 0.30))
 	play_vbox.add_child(_hand_result_banner)
+	# The banner is a big Rye line, and the diamond below is about to be cleared
+	# for the Replay/Next buttons — holding its full height open on top of the
+	# banner overflowed play_vbox and shoved the player's hand off the bottom.
+	_refresh_play_area_reservation()
 
 	_us_marks.set_marks(marks[0])
 	_them_marks.set_marks(marks[1])
-	_set_info("Marks: You %d | Them %d" % [marks[0], marks[1]])
+	_update_points_readout()
 
 	_clear_play_area()
 
@@ -2021,6 +2240,10 @@ func _show_hand_result(result: Dictionary):
 		var winner_str = "YOU WIN! 🎉" if game_winner == 0 else "Opponents win."
 		_set_status("GAME OVER — " + winner_str)
 		if _continue_btn and is_instance_valid(_continue_btn):
+			# remove_child before queue_free so btn_vbox's minimum size stops
+			# counting this button this frame — queue_free alone defers the
+			# unparenting to end-of-frame and would skew the centring below.
+			btn_vbox.remove_child(_continue_btn)
 			_continue_btn.queue_free()
 			_continue_btn = null
 		_new_game_btn = Button.new()
@@ -2029,7 +2252,11 @@ func _show_hand_result(result: Dictionary):
 		_new_game_btn.modulate = Color(0.95, 0.80, 0.15)
 		_new_game_btn.pressed.connect(_on_new_game_pressed)
 		btn_vbox.add_child(_new_game_btn)
+		# play_area_container no longer centres its children for us.
+		_place_in_play_area(btn_vbox)
 		return
+
+	_place_in_play_area(btn_vbox)
 
 # ─── DISPLAY HELPERS ─────────────────────────────────────────────────────────
 
@@ -2068,24 +2295,143 @@ func _populate_hand_container(container: Container, hand: Array, face: bool, sma
 			tile.domino_drag_moved.connect(_on_hand_drag_moved)
 			tile.domino_drag_ended.connect(_on_hand_drag_ended)
 
+# Played tiles ride smaller than the ones in your hand. Not cosmetic: four
+# slots have to clear each other inside the play area's ~290px of height, and a
+# slot at full tile size is 165px tall, so the top and bottom seats alone would
+# need 338px. At 0.72 the four fit with room to spare.
+const PLAY_TILE_SCALE := 0.85
+const SEAT_LABEL_SIZE := 11
+const SLOT_VBOX_SEPARATION := 2.0   # must match _add_to_play_area()'s override
+const PLAY_SLOT_GAP := 8.0          # clear felt between neighbouring slots
+const PLAY_AREA_PADDING := 8.0
+
+# The box one played tile occupies: the tile, the VBox separation, and the seat
+# label beneath it. Width takes the WIDEST of the four live seat labels — they
+# range from "You" to a profile name to the "Right Opponent" fallback — so one
+# box describes every slot and the clearance maths below holds whoever is
+# seated. Height is measured, not guessed: Font.get_height() reports the tallest
+# font in the fallback chain (NotoSansSymbols, ~42px at size 20) rather than
+# Nunito's own ~29px, and the Label really is that tall, so that is the number
+# that matters.
+func _play_area_slot_size() -> Vector2:
+	var fs: int = int(round(SEAT_LABEL_SIZE * font_scale))
+	var f: Font = _font_nunito_regular if _font_nunito_regular != null else ThemeDB.fallback_font
+	var label_w: float = 0.0
+	for pid in range(4):
+		label_w = max(label_w, f.get_string_size(_seat_label(pid), HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x)
+	return Vector2(
+		max(TILE_PLAYED.x, label_w),
+		TILE_PLAYED.y + SLOT_VBOX_SEPARATION + f.get_height(fs))
+
+# Vertical room the diamond needs: the top and bottom slots sit one slot-height
+# plus a gap apart centre to centre, so the whole span is two slots plus the gap.
+func _play_area_min_height() -> float:
+	return _play_area_slot_size().y * 2.0 + PLAY_SLOT_GAP + PLAY_AREA_PADDING
+
+# Whether the diamond needs its full height held open. While one of the picker
+# panels is up, nothing has been played yet — the diamond is empty felt, and
+# reserving room for it on top of the picker made play_vbox taller than the
+# window, which pushed the player's own hand clean off the bottom of the
+# screen. So the reservation is dropped for as long as a picker is showing.
+func _play_area_reserves_height() -> bool:
+	for p in [bid_panel, trump_panel, nello_panel, nello_exchange_panel]:
+		if is_instance_valid(p) and p.visible:
+			return false
+	# Same story for the end-of-hand banner: it only ever shares play_vbox with
+	# an emptied diamond (just the Replay/Next buttons), so the reservation is
+	# dead weight while it is up. Checked for being in-tree as well as valid,
+	# since queue_free() defers and the node outlives the call that dropped it.
+	if is_instance_valid(_hand_result_banner) and _hand_result_banner.is_inside_tree():
+		return false
+	return true
+
+# Driven off each picker's visibility_changed rather than called at the ~13
+# sites that set .visible, so a future panel toggle can't silently reintroduce
+# the overflow. Also the single owner of the reservation after a resize.
+func _refresh_play_area_reservation():
+	if not is_instance_valid(play_area_container):
+		return
+	var h: float = _play_area_min_height() if _play_area_reserves_height() else 0.0
+	play_area_container.custom_minimum_size = Vector2(0, h)
+
+# Re-derives a placed child's seat bias after a resize. An HBoxContainer used
+# to re-flow its children for free; a plain Control does not, so anything
+# already on the table has to be repositioned explicitly. Children tagged in
+# _add_to_play_area() keep their seat bias; anything else (the end-of-hand
+# button column) re-centres with none.
+func _play_area_slot_offset_for(node: Control) -> Vector2:
+	if node.has_meta("play_area_seat"):
+		return _play_area_slot_offset(int(node.get_meta("play_area_seat")))
+	return Vector2.ZERO
+
+
+# Centre-to-centre offsets derived from the slot box, so the four slots are
+# guaranteed to clear each other. The old fixed fraction of TILE_FULL
+# (PLAY_SLOT_BIAS 0.4) gave 25.6px of bias against a 172px-tall slot, which is
+# why all six pairs overlapped into an unreadable smear. Left and right clear
+# the centre column horizontally, where the play area has width to spare; top
+# and bottom clear each other vertically, which is the scarce axis.
+func _play_area_slot_offset(player_id: int) -> Vector2:
+	var slot: Vector2 = _play_area_slot_size()
+	var dx: float = slot.x + PLAY_SLOT_GAP
+	var dy: float = (slot.y + PLAY_SLOT_GAP) * 0.5
+	if player_id == human_seat:
+		return Vector2(0, dy)          # bottom — toward you
+	elif player_id == (human_seat + 2) % 4:
+		return Vector2(0, -dy)         # top — toward partner
+	elif player_id == (human_seat + 1) % 4:
+		return Vector2(dx, 0)          # right — toward right opponent
+	else:
+		return Vector2(-dx, 0)         # left — toward left opponent
+
+# Centres a child of play_area_container, optionally biased toward a seat.
+# Deliberately synchronous — _add_to_play_area() runs mid-sequence inside
+# _execute_play(), which continues straight into turn-passing, so a frame-wait
+# here would shift turn-order timing. get_combined_minimum_size() reads the
+# properties set directly above (custom_minimum_size, font size) rather than
+# the results of a layout pass, so it is accurate without waiting.
+# Re-centres everything currently on the table. Setting a child's size/position
+# can't change a plain Control's own size, so this can't re-trigger `resized`.
+func _replace_play_area_children() -> void:
+	if not is_instance_valid(play_area_container):
+		return
+	for child in play_area_container.get_children():
+		if not (child is Control):
+			continue
+		# Tiles already on the table have to pick up the new TILE_PLAYED before
+		# being re-placed, or the slot boxes and the offsets disagree.
+		if child.has_meta("play_area_seat"):
+			for t in child.get_children():
+				if t is DominoTile:
+					t.custom_minimum_size = TILE_PLAYED
+		_place_in_play_area(child, _play_area_slot_offset_for(child))
+
+func _place_in_play_area(node: Control, offset: Vector2 = Vector2.ZERO) -> void:
+	var node_size = node.get_combined_minimum_size()
+	node.size = node_size
+	node.position = play_area_container.size * 0.5 + offset - node_size * 0.5
+
 func _add_to_play_area(player_id: int, domino: Domino):
 	var vb = VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 2)
+	vb.add_theme_constant_override("separation", int(SLOT_VBOX_SEPARATION))
 	vb.alignment = BoxContainer.ALIGNMENT_CENTER
+	vb.set_meta("play_area_seat", player_id)  # lets _on_viewport_resized re-place it
 	play_area_container.add_child(vb)
 
 	var tile = DominoTile.new()
 	tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vb.add_child(tile)
 	tile.setup(domino, true, game.trump)
-	tile.custom_minimum_size = TILE_FULL
+	tile.custom_minimum_size = TILE_PLAYED
 
 	var lbl = Label.new()
 	lbl.text = _seat_label(player_id)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.add_theme_color_override("font_color", Color.WHITE)
-	_scaled_font(lbl, 13)
+	_scaled_font(lbl, SEAT_LABEL_SIZE)
 	vb.add_child(lbl)
+
+	_place_in_play_area(vb, _play_area_slot_offset(player_id))
 
 func _clear_play_area():
 	for child in play_area_container.get_children():
@@ -2100,6 +2446,16 @@ func _clear_highlights():
 
 func _set_info(text: String):
 	info_label.text = text
+
+# The readout at the top of the play area: points each team has taken in the
+# hand currently being played, refreshed as each trick is awarded. Marks are
+# already permanently on screen in the two ALL displays, and trump/contract in
+# trump_indicator_label and the bid reminder, so this line is free to track the
+# one number that actually moves trick to trick. game.team_points is zeroed by
+# deal_hands() and accumulated by resolve_trick(), so it needs no reset here.
+func _update_points_readout():
+	var pts: Array = game.team_points if game != null else [0, 0]
+	_set_info("You   %d   | POINTS |   Them   %d" % [pts[0], pts[1]])
 
 func _set_status(text: String):
 	status_label.text = text
@@ -2124,14 +2480,36 @@ func _trump_display_name(suit: int) -> String:
 # human panels' handlers and the inline AI branches in _finish_bidding()),
 # so it never goes stale mid-hand. Cleared (empty text) at the start of a
 # new auction in _start_bidding(), before any bid exists yet.
+# How wide the reminder may run before it would sit under the player's own
+# dominoes: from its own left edge across to where a full hand of seven starts.
+# The hand is centred, so this is at its narrowest at the minimum viewport width
+# and only opens up from there — which is why it is computed rather than fixed.
+func _refresh_bid_reminder_width() -> void:
+	if not is_instance_valid(bid_reminder_label):
+		return
+	var hand_w: float = 7.0 * TILE_FULL.x + 6.0 * 4.0   # tiles plus HBox separations
+	var vp_w: float = get_viewport().get_visible_rect().size.x
+	var avail: float = (vp_w - hand_w) * 0.5 - PLAY_AREA_INSET - BID_REMINDER_SIDE_GAP
+	# offset_right, not size.x: the anchors are collapsed on the left edge, so the
+	# width is these two offsets and setting it this way can't be undone by a
+	# minimum-size recalculation.
+	bid_reminder_label.offset_right = bid_reminder_label.offset_left + max(120.0, avail)
+
 func _update_bid_reminder():
 	var bid = game.current_bid
 	if bid == null or bid.type == BidScript.Type.PASS:
 		bid_reminder_label.text = ""
 		return
 
-	var team_label = "Us" if bid.player_id % 2 == human_seat % 2 else "Them"
-	var line1 = "P%d - %s" % [bid.player_id, team_label]
+	# Who won the bid, by the name on the table rather than a seat index. For the
+	# human, _seat_label() already returns "You", and "You - Us" reads as noise,
+	# so the team tag is dropped there and kept everywhere it actually tells you
+	# something.
+	var bidder_name = _seat_label(bid.player_id)
+	var line1: String = bidder_name
+	if bid.player_id != human_seat:
+		var team_label = "Us" if bid.player_id % 2 == human_seat % 2 else "Them"
+		line1 = "%s - %s" % [bidder_name, team_label]
 
 	var line2: String
 	if bid.type == BidScript.Type.NELLO:
@@ -2195,7 +2573,7 @@ func _show_bid_bubble(pid: int, text: String):
 
 	var lbl = Label.new()
 	lbl.text = text
-	_scaled_font(lbl, 13)
+	_scaled_font(lbl, BID_BUBBLE_FONT_SIZE)
 	lbl.add_theme_color_override("font_color", Color.WHITE)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
@@ -2205,10 +2583,10 @@ func _show_bid_bubble(pid: int, text: String):
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8
 	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
 	style.border_width_left = 1
 	style.border_width_right = 1
 	style.border_width_top = 1
@@ -2464,6 +2842,7 @@ func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
 	header.text = "▶  " + title
 	header.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_theme_font_override("font", _font_nunito_heavy)
 	parent.add_child(header)
 
 	var body = VBoxContainer.new()
@@ -2594,6 +2973,111 @@ func _show_game_board(visible: bool):
 	_game_top_row.visible = visible
 	_game_mid_row.visible = visible
 	player_hand_container.visible = visible
+	# The trick-list toggles and panels float on root rather than living in the
+	# top row, so hiding the board doesn't take them with it — do it here.
+	for team in range(2):
+		if _tricks_toggle_btn[team] != null:
+			_tricks_toggle_btn[team].visible = visible
+		if _tricks_overlay[team] != null:
+			_tricks_overlay[team].visible = visible and _tricks_expanded[team]
+
+# ─── EXPANDED TRICK LISTS ─────────────────────────────────────────────────────
+# The little scroll box only shows two rows of a pile that can reach seven, so
+# each team gets a panel that opens in place over the felt and shows the lot.
+# Two rules shape the implementation:
+#   * It must not disturb the surrounding layout, so both the panel and its
+#     toggle are absolutely-positioned children of root, tracked against the
+#     scroll box's live rect rather than given a slot in the top row.
+#   * There is only ever one TrickPile per team. Expanding reparents it into the
+#     panel instead of mirroring it, so the two views can never disagree.
+func _build_tricks_overlays(root_node: Control) -> void:
+	for team in range(2):
+		var panel := PanelContainer.new()
+		panel.visible = false
+		panel.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		var st := StyleBoxFlat.new()
+		st.bg_color = Color(0.06, 0.06, 0.09, 0.82)
+		st.corner_radius_top_left = 8
+		st.corner_radius_top_right = 8
+		st.corner_radius_bottom_left = 8
+		st.corner_radius_bottom_right = 8
+		st.content_margin_left = 4
+		st.content_margin_right = 4
+		st.content_margin_top = 4
+		st.content_margin_bottom = 4
+		st.border_width_left = 1
+		st.border_width_right = 1
+		st.border_width_top = 1
+		st.border_width_bottom = 1
+		st.border_color = Color(0.55, 0.55, 0.55, 0.35)
+		panel.add_theme_stylebox_override("panel", st)
+		root_node.add_child(panel)
+		_tricks_overlay[team] = panel
+
+		var btn := Button.new()
+		btn.text = "▼"
+		btn.tooltip_text = "Show every domino this team has won"
+		btn.custom_minimum_size = Vector2(TRICKS_BTN_SIZE, TRICKS_BTN_SIZE)
+		btn.set_anchors_preset(Control.PRESET_TOP_LEFT)
+		btn.focus_mode = Control.FOCUS_NONE
+		_scaled_font(btn, 10)
+		btn.pressed.connect(_toggle_tricks_expanded.bind(team))
+		root_node.add_child(btn)
+		_tricks_toggle_btn[team] = btn
+
+		# item_rect_changed, not resized: the columns move horizontally when the
+		# viewport widens without their size changing at all, and the toggle has
+		# to follow that too.
+		_tricks_scroll[team].item_rect_changed.connect(_reposition_tricks_controls)
+
+func _reposition_tricks_controls() -> void:
+	for team in range(2):
+		var scroll: ScrollContainer = _tricks_scroll[team]
+		var btn: Button = _tricks_toggle_btn[team]
+		var panel: PanelContainer = _tricks_overlay[team]
+		if scroll == null or btn == null or panel == null or not scroll.is_inside_tree():
+			continue
+		var box: Rect2 = scroll.get_global_rect()
+		# Medial edge: right of the US column, left of the THEM column.
+		var bx: float = box.end.x + TRICKS_BTN_GAP
+		if team == 1:
+			bx = box.position.x - TRICKS_BTN_GAP - TRICKS_BTN_SIZE
+		btn.position = Vector2(bx, box.position.y + (box.size.y - TRICKS_BTN_SIZE) * 0.5)
+		# The panel opens exactly on the box so it hides it rather than repeating
+		# the rows already visible there, and grows downward over the felt.
+		panel.position = box.position
+
+func _toggle_tricks_expanded(team: int) -> void:
+	_set_tricks_expanded(team, not _tricks_expanded[team])
+
+func _set_tricks_expanded(team: int, expanded: bool) -> void:
+	var pile: TrickPile = _us_tricks if team == 0 else _them_tricks
+	var scroll: ScrollContainer = _tricks_scroll[team]
+	var panel: PanelContainer = _tricks_overlay[team]
+	if pile == null or scroll == null or panel == null:
+		return
+	_tricks_expanded[team] = expanded
+
+	if expanded:
+		# Freeze the box's footprint before the pile leaves it. A ScrollContainer
+		# sizes to its content, so an empty one collapses to its bare minimum,
+		# the top row re-flows, and the points readout and partner hand slide
+		# sideways — the exact layout disturbance this feature must not cause.
+		scroll.custom_minimum_size.x = maxf(scroll.custom_minimum_size.x, scroll.size.x)
+
+	var want_parent: Node = panel if expanded else scroll
+	if pile.get_parent() != want_parent:
+		pile.get_parent().remove_child(pile)
+		want_parent.add_child(pile)
+
+	panel.visible = expanded
+	if expanded:
+		# Snap back to the pile's current minimum. Without this the panel keeps
+		# the height it reached with seven tricks in it and opens over empty felt
+		# on a later hand that has won two.
+		panel.size = Vector2.ZERO
+	_tricks_toggle_btn[team].text = "▲" if expanded else "▼"
+	_reposition_tricks_controls()
 
 func _on_menu_play_pressed():
 	var f = FileAccess.open("user://last_used.json", FileAccess.READ)
@@ -2777,6 +3261,7 @@ func _show_save_preset_popup():
 	prompt_lbl.text = "Name your ruleset:"
 	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	prompt_lbl.add_theme_font_override("font", _font_nunito_heavy)
 	_scaled_font(prompt_lbl, 16)
 	vb.add_child(prompt_lbl)
 
@@ -2968,6 +3453,7 @@ func _show_rename_preset_popup(old_name: String):
 	prompt_lbl.text = "Rename \"%s\":" % old_name
 	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	prompt_lbl.add_theme_font_override("font", _font_nunito_heavy)
 	_scaled_font(prompt_lbl, 16)
 	vb.add_child(prompt_lbl)
 
@@ -3265,6 +3751,7 @@ func _show_new_profile_popup():
 	prompt_lbl.text = "Name the profile:"
 	prompt_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt_lbl.add_theme_color_override("font_color", Color.WHITE)
+	prompt_lbl.add_theme_font_override("font", _font_nunito_heavy)
 	_scaled_font(prompt_lbl, 16)
 	vb.add_child(prompt_lbl)
 

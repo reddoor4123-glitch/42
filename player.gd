@@ -18,7 +18,3 @@ func _init(player_id: int, starting_hand: Array, human: bool = false):
 func reset_round():
 	tricks_won = 0
 	points_won = 0
-
-# Basic AI: plays the first legal domino (placeholder for smarter logic later)
-func choose_domino(legal_moves: Array[Domino]) -> Domino:
-	return legal_moves[0]

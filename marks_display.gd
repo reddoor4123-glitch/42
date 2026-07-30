@@ -9,11 +9,26 @@ var team_color: Color = Color.WHITE
 var label_text: String = "US"
 var font_scale: float = 1.0
 
+# _draw() bypasses the Theme system entirely, so a Theme on game_table's root
+# never reaches here. game_table._build_fonts() assigns this once at startup
+# (same static-var handoff as DominoTile.custom_back_texture); the
+# ThemeDB.fallback_font default keeps this script standalone if it never does.
+static var custom_font: Font = null
+
 const STROKE_LIT    := Color(0.95, 0.90, 0.70)   # Warm white/gold when earned
 const STROKE_UNLIT  := Color(0.25, 0.25, 0.25)   # Dark grey unearned
 const STROKE_WIDTH  := 3.0
 const W := 72.0
 const H := 70.0
+
+# Team name above the strokes. LABEL_BASELINE is a baseline, not a top edge, so
+# it has to clear the font's ascent or the caps get cut off at y=0 — and the
+# strokes start at STROKE_TOP, which is pushed far enough down to leave the
+# label its own band. The two move together; raising the size without raising
+# both would collide with the "ALL".
+const LABEL_SIZE := 20.0
+const LABEL_BASELINE := 21.0
+const STROKE_TOP := 27.0
 
 func _ready():
 	custom_minimum_size = Vector2(W, H + 16)
@@ -34,11 +49,13 @@ func set_team(color: Color, label: String):
 # within the W=72 space, letter height ~60px starting at y=20
 
 func _draw():
-	var font = ThemeDB.fallback_font
-	# Team label at top
-	var lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_CENTER, -1, round(11 * font_scale))
-	draw_string(font, Vector2(W/2 - lbl_size.x/2, 14), label_text,
-		HORIZONTAL_ALIGNMENT_LEFT, -1, round(13 * font_scale), team_color)
+	var font: Font = custom_font if custom_font != null else ThemeDB.fallback_font
+	# Team label at top. Measured at the same size it is drawn at — they used to
+	# differ (11 vs 13), which left the text sitting slightly right of centre.
+	var lbl_px: int = int(round(LABEL_SIZE * font_scale))
+	var lbl_size = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, lbl_px)
+	draw_string(font, Vector2(W/2 - lbl_size.x/2, LABEL_BASELINE * font_scale), label_text,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, lbl_px, team_color)
 
 	# Draw all 7 strokes
 	var stroke_data = _get_strokes()
@@ -51,7 +68,9 @@ func _get_strokes() -> Array:
 	# Letter dimensions
 	var lh = 40.0   # letter height
 	var lw = 18.0   # letter width
-	var top = 18.0
+	# Tied to the label's scaled baseline rather than a bare constant, so the
+	# strokes can never ride up into the team name if font_scale is ever wired.
+	var top = max(STROKE_TOP, LABEL_BASELINE * font_scale + 6.0)
 	var bot = top + lh
 	var mid = top + lh * 0.48
 

@@ -234,15 +234,6 @@ static func _doubles_tier(n: int) -> float:
 # compounding bonus should reward "this hand is doubles-rich," not "this
 # particular candidate happens to leave more doubles off-suit than that
 # one." See AI_Play_Behavior_Bug_Log.md, Finding #4.
-#
-# EXPERIMENTAL INSTRUMENTATION (temporary, remove once the Job 5 rerun
-# confirms the live 38/40 result and this has baked for a while): also
-# reports "legacy_selection_score", the OLD flat formula
-# (estimated_points + trump_count*2.0 + has_double_trump?3.0:0.0), purely
-# for side-by-side comparison. best_trump() below selects on
-# "selection_score" only — legacy_selection_score is never used for any
-# decision, just logged so old vs. new can be compared without needing a
-# mode-switching flag (and the risk of it being left in the wrong position).
 static func trump_selection_score(hand: Array[Domino], trump: int) -> Dictionary:
 	var eval = evaluate_hand(hand, trump)
 
@@ -266,14 +257,10 @@ static func trump_selection_score(hand: Array[Domino], trump: int) -> Dictionary
 		eval["trump_count"], eval.get("has_double_trump", false)
 	)
 
-	var legacy_score = eval["estimated_points"] + eval["trump_count"] * 2.0 \
-		+ (3.0 if eval.get("has_double_trump", false) else 0.0)
-
 	var result = eval.duplicate()
 	result["corrected_estimated_points"] = corrected_points
 	result["control_value"] = control_value
 	result["selection_score"] = corrected_points + control_value
-	result["legacy_selection_score"] = legacy_score  # experimental instrumentation — see note above
 	return result
 
 # Find the best trump suit for this hand. Returns the winning suit's full
@@ -281,7 +268,7 @@ static func trump_selection_score(hand: Array[Domino], trump: int) -> Dictionary
 # read "trump", "estimated_points", "trump_count", "has_double_trump" off
 # this exactly as before; those keys are untouched, inherited via
 # eval.duplicate() inside trump_selection_score(). Selection uses
-# "selection_score" (the corrected formula), never "legacy_selection_score".
+# "selection_score" (the corrected formula).
 static func best_trump(hand: Array[Domino]) -> Dictionary:
 	var best_result := {}
 	var best_score := -INF
