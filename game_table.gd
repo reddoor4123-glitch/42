@@ -146,6 +146,44 @@ const CORNER_OVERLAY_TOP := -115
 
 var game: Game
 
+# ─── GAME SESSION LIFETIME ───────────────────────────────────────────────────
+# Bumped every time `game` is replaced or cleared. Exists because the game loop
+# is built from coroutines that await timers between steps, and Godot does not
+# cancel a suspended coroutine when the state it was working on goes away — the
+# timer fires regardless and the function resumes into whatever `game` now
+# holds.
+#
+# Two ways that goes wrong, both reachable from the Settings screen's "Return to
+# Menu":
+#   - `game` is null and the resumed coroutine dereferences it. This crashed a
+#     real session on July 30 2026, at _run_bidding_sequence()'s human-seat
+#     branch, after Return to Menu was confirmed mid-auction. A long auction
+#     (high minimum_bid, forced bid off, several all-pass reshuffles) widens the
+#     window enough to hit by hand.
+#   - `game` is a NEW Game and the stale coroutine quietly drives someone else's
+#     hand forward. No crash, no error, wrong game. A null check alone would not
+#     catch this one, which is why this is a counter and not a null guard.
+#
+# Contract: every coroutine that touches `game` after an await, or that drives
+# the game loop onward after one, captures _session_id on entry and returns
+# early if it no longer matches. Coroutines that only animate UI and never read
+# `game` (_show_bid_bubble, _show_trump_announcement) are deliberately exempt —
+# they own nothing but their own node and are safe to finish.
+var _session_id: int = 0
+
+# The single place `game` is assigned. Routing every assignment through here is
+# what keeps _session_id from drifting out of step with the thing it guards.
+# Pass null to abandon.
+func _set_game(new_game: Game) -> void:
+	game = new_game
+	_session_id += 1
+
+# True if the session a coroutine started in is no longer the live one — either
+# because the game was abandoned or because it was replaced. Read it as "am I
+# still working on the hand I started on?"
+func _session_expired(session: int) -> bool:
+	return session != _session_id or game == null
+
 # Typeface resources, built once by _build_fonts() before _build_ui() runs.
 # Nunito carries the UI; Rye is reserved for the two display spots (the menu
 # "42" and the end-of-hand banner).
@@ -1510,7 +1548,7 @@ func _on_preset_chosen(key: String):
 	_save_last_used(key)
 	var s := _resolve_settings_for_slot(key)
 	_update_domino_back_texture()
-	game = Game.new(s)
+	_set_game(Game.new(s))
 	game.setup_players(human_seat)
 	_start_hand()
 
@@ -1575,6 +1613,7 @@ func _run_bidding_sequence():
 	# Bidding order comes from Game.bid_order(), which respects
 	# settings.bid_direction ("clockwise" or "counterclockwise").
 	# The shaker always bids last regardless of direction.
+	var my_session := _session_id
 	var bid_order: Array = game.bid_order()
 
 	for i in range(4):
@@ -1591,6 +1630,8 @@ func _run_bidding_sequence():
 			return
 		status_label.text = "%s is thinking..." % _seat_label(pid)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
+		if _session_expired(my_session):
+			return
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
@@ -1598,6 +1639,8 @@ func _run_bidding_sequence():
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
+		if _session_expired(my_session):
+			return
 
 # Accept an AI bid only if it is legal, and return what actually happened.
 # Both AI bid loops go through this instead of assigning game.current_bid
@@ -1882,16 +1925,22 @@ func _on_bid_submitted(bid: RefCounted):
 	})
 	_show_bid_bubble(human_seat, "You\n%s" % bid.debug_string())
 	_set_status("You: %s" % bid.debug_string())
+	var my_session := _session_id
 	await _run_post_human_bids()
+	if _session_expired(my_session):
+		return
 	_finish_bidding([])
 
 func _run_post_human_bids():
+	var my_session := _session_id
 	var bid_order: Array = game.bid_order()
 	var human_pos = bid_order.find(human_seat)
 	for i in range(human_pos + 1, 4):
 		var pid = bid_order[i]
 		status_label.text = "%s is thinking..." % _seat_label(pid)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
+		if _session_expired(my_session):
+			return
 		var player = game.players[pid]
 		var is_forced = (i == 3 and game.current_bid == null and game.settings.allow_forced_bid)
 		var ai_bid = AIPlayer.decide_bid(player.hand, pid, game.current_bid, game.settings, is_forced, game.settings.ai_difficulty, game.bid_decisions, game.shaker, human_seat)
@@ -1899,13 +1948,18 @@ func _run_post_human_bids():
 		_show_bid_bubble(pid, "%s\n%s" % [_seat_label(pid), ai_bid.debug_string()])
 		_set_status("%s: %s" % [_seat_label(pid), ai_bid.debug_string()])
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.7).timeout
+		if _session_expired(my_session):
+			return
 
 func _finish_bidding(_unused: Array):
+	var my_session := _session_id
 	_clear_bid_bubbles()
 	var winning = game.current_bid
 	if winning == null:
 		_set_status("No bid — reshuffling...")
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.5).timeout
+		if _session_expired(my_session):
+			return
 		_start_hand()
 		return
 
@@ -1924,6 +1978,8 @@ func _finish_bidding(_unused: Array):
 			_update_bid_reminder()
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			if _session_expired(my_session):
+				return
 			_begin_play(winning.player_id)
 
 	elif winning.type == BidScript.Type.SEVENS:
@@ -1934,6 +1990,8 @@ func _finish_bidding(_unused: Array):
 		_update_bid_reminder()
 		_refresh_all_hands()
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+		if _session_expired(my_session):
+			return
 		_begin_play(winning.player_id)
 
 	elif winning.type == BidScript.Type.PLUNGE or winning.type == BidScript.Type.SPLASH:
@@ -1945,6 +2003,8 @@ func _finish_bidding(_unused: Array):
 		else:
 			_set_status("%s is calling trump..." % _seat_label(partner_id))
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.0).timeout
+			if _session_expired(my_session):
+				return
 			var suit_names = ["Blanks", "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes"]
 			var ai_eval = AIPlayer.best_trump(game.players[partner_id].hand)
 			var best_suit = ai_eval["trump"]
@@ -1956,6 +2016,8 @@ func _finish_bidding(_unused: Array):
 			_refresh_all_hands()
 			_set_status("%s called %s" % [_seat_label(partner_id), suit_names[best_suit]])
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			if _session_expired(my_session):
+				return
 			_begin_play(partner_id)
 
 	else:
@@ -1976,6 +2038,8 @@ func _finish_bidding(_unused: Array):
 			_show_trump_announcement(best_suit)
 			_refresh_all_hands()
 			await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 0.8).timeout
+			if _session_expired(my_session):
+				return
 			_begin_play()
 
 func _show_trump_panel(message: String = "You won the bid — call your trump suit"):
@@ -2231,6 +2295,7 @@ func _play_trick(leader: int):
 	_play_next_in_trick()
 
 func _play_next_in_trick():
+	var my_session := _session_id
 	var player = game.players[game.current_player]
 
 	# Nello: partner sits out — skip their turn entirely
@@ -2242,6 +2307,8 @@ func _play_next_in_trick():
 				_play_next_in_trick()
 			else:
 				await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.2).timeout
+				if _session_expired(my_session):
+					return
 				_resolve_trick()
 			return
 
@@ -2264,6 +2331,8 @@ func _play_next_in_trick():
 	else:
 		status_label.text = "%s is thinking..." % _seat_label(player.id)
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.4).timeout
+		if _session_expired(my_session):
+			return
 		var chosen = _ai_choose_domino(player)
 		_animate_ai_play(player, chosen)
 
@@ -2424,6 +2493,7 @@ func _ai_choose_domino(player: Player) -> Domino:
 	return chosen
 
 func _execute_play(player: Player, domino: Domino, declared_suit: int = -1):
+	var my_session := _session_id
 	game.play_domino(player, domino, declared_suit)
 	var reason = _last_play_reason if _last_play_reason != "" else ("You played this" if player.is_human else "")
 	_current_trick_reasons.append({"player": player.id, "domino": domino, "reason": reason})
@@ -2440,9 +2510,12 @@ func _execute_play(player: Player, domino: Domino, declared_suit: int = -1):
 		_play_next_in_trick()
 	else:
 		await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 1.2).timeout
+		if _session_expired(my_session):
+			return
 		_resolve_trick()
 
 func _resolve_trick():
+	var my_session := _session_id
 	var winner_id = game.resolve_trick()
 	game.record_trick(game.current_trick, winner_id, _current_trick_reasons)
 	var winner_team = winner_id % 2
@@ -2463,6 +2536,8 @@ func _resolve_trick():
 		_them_tricks.add_trick_dominoes(trick_dominoes)
 
 	await get_tree().create_timer(0.0 if DEBUG_FAST_MODE else 2.2).timeout
+	if _session_expired(my_session):
+		return
 	_clear_play_area()
 	_clear_highlights()
 
@@ -3407,7 +3482,7 @@ func _restart_game_with_settings(new_settings: GameSettings):
 	settings_panel.visible = false
 	preset_panel.visible = false
 	_update_domino_back_texture()
-	game = Game.new(new_settings)
+	_set_game(Game.new(new_settings))
 	game.setup_players(human_seat)
 	_us_marks.set_marks(0)
 	_them_marks.set_marks(0)
@@ -3566,7 +3641,7 @@ func _on_settings_home_pressed():
 		settings_panel.visible = false
 		_show_game_board(false)
 		main_menu_panel.visible = true
-		game = null
+		_set_game(null)
 		confirm.queue_free()
 	)
 	confirm.canceled.connect(func(): confirm.queue_free())
