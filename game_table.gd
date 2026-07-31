@@ -288,8 +288,21 @@ var _new_game_btn: Button = null
 var _replay_trick_label: Label = null
 var _replay_inner_panel: PanelContainer = null
 var _replay_hand_containers: Array = []
-var _replay_played_containers: Array = []
 var _replay_bubble_labels: Array = []
+# Centre cell of the replay top bar, which holds the partner's hand.
+var _replay_partner_hand_slot: Control = null
+# Plain Control holding the four played tiles in the same diamond the live
+# table uses. Plain, not a box container, because the tiles are positioned by
+# seat rather than flowed — see _place_in_replay_diamond().
+var _replay_diamond: Control = null
+# Clearance between neighbouring replay slots. WIDER than the live table's
+# PLAY_SLOT_GAP, which is the opposite of the first guess: on the live table a
+# seat label sits under every tile and does the visual separating, so 8px of
+# felt is enough. Replay tiles have no labels, so neighbouring tiles butt
+# straight up against each other and the gap is the only thing telling them
+# apart. At 6px the four read as one block; this is measured against the
+# vertical slack the layout has to spare, not tuned by eye alone.
+const REPLAY_SLOT_GAP := 16.0
 var _flag_panel: PanelContainer = null
 var _flag_toggle_bidding: Button = null
 var _flag_toggle_gameplay: Button = null
@@ -1209,12 +1222,24 @@ func _build_ui():
 	r_top_bar.add_theme_constant_override("separation", 4)
 	r_vbox.add_child(r_top_bar)
 
+	# Three cells: counter | partner's hand | Flag+close. The partner's hand
+	# lives in the top bar rather than in a row of its own, which is what buys
+	# the vertical band the diamond needs — the bar's height was already being
+	# spent on a 36px button, and a replay hand tile is only ~83px, so hoisting
+	# the hand up here costs about 47px instead of a full ~130px section.
+	# The counter and button cell keep their natural width; the middle cell
+	# takes the rest and centres the hand in it.
 	_replay_trick_label = Label.new()
 	_replay_trick_label.text = "Replay — Trick 1 of 7"
 	_scaled_font(_replay_trick_label, 16)
 	_replay_trick_label.add_theme_color_override("font_color", Color.WHITE)
-	_replay_trick_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_replay_trick_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	r_top_bar.add_child(_replay_trick_label)
+
+	var r_p2_hand_wrap = CenterContainer.new()
+	r_p2_hand_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_top_bar.add_child(r_p2_hand_wrap)
+	_replay_partner_hand_slot = r_p2_hand_wrap
 
 	var r_flag_btn = Button.new()
 	r_flag_btn.text = "🚩 Flag"
@@ -1290,47 +1315,82 @@ func _build_ui():
 	r_table.add_theme_constant_override("separation", 4)
 	r_scroll.add_child(r_table)
 
-	# Pre-fill arrays so indices 0-3 exist before we assign them
+	# Pre-fill arrays so indices 0-3 exist before we assign them. Anything left
+	# null is deliberate: the human keeps no reason label (see below).
 	for _i in range(4):
 		_replay_hand_containers.append(null)
-		_replay_played_containers.append(null)
 		_replay_bubble_labels.append(null)
 
-	# ── Partner (player 2) — top ──
-	var p2_sec = _build_replay_player_section("Partner")
-	r_table.add_child(p2_sec[0])
-	_replay_hand_containers[2]   = p2_sec[1]
-	_replay_played_containers[2] = p2_sec[2]
-	_replay_bubble_labels[2]     = p2_sec[3]
+	# Seat name labels are gone from this screen. With every seat pinned to a
+	# fixed edge — partner top, opponents left and right, you at the bottom —
+	# the orientation reads off the layout, and four labels were costing four
+	# rows of height on the screen least able to spare them.
 
-	# ── Middle row: Left Opponent (player 3) | center spacer | Right Opponent (player 1) ──
+	# ── Partner's hand goes in the top bar, not here ──
+	_replay_hand_containers[2] = _make_replay_hand_row()
+	_replay_partner_hand_slot.add_child(_replay_hand_containers[2])
+
+	# ── Partner's reason, in the band their hand used to occupy ──
+	# Widths as fractions of the window: partner spans the centre band, the two
+	# opponents split the bottom corners with clear air between them.
+	var r_vpw: float = get_viewport().get_visible_rect().size.x
+	_replay_bubble_labels[2] = _make_replay_bubble(r_vpw * 0.40)
+	var r_p2_bubble_wrap = CenterContainer.new()
+	r_p2_bubble_wrap.add_child(_replay_bubble_labels[2])
+	r_table.add_child(r_p2_bubble_wrap)
+
+	# ── Middle row: left hand | played diamond | right hand ──
+	# Both opponent hands are vertically centred against the diamond, which puts
+	# each one level with the slot its own played tile occupies.
 	var r_mid = HBoxContainer.new()
 	r_mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	r_mid.add_theme_constant_override("separation", 4)
 	r_table.add_child(r_mid)
 
-	var p3_sec = _build_replay_player_section("Left Opponent")
-	r_mid.add_child(p3_sec[0])
-	_replay_hand_containers[3]   = p3_sec[1]
-	_replay_played_containers[3] = p3_sec[2]
-	_replay_bubble_labels[3]     = p3_sec[3]
+	var r_left_wrap = CenterContainer.new()
+	r_left_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r_mid.add_child(r_left_wrap)
+	_replay_hand_containers[3] = _make_replay_hand_row()
+	r_left_wrap.add_child(_replay_hand_containers[3])
 
-	var r_spacer = Control.new()
-	r_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	r_mid.add_child(r_spacer)
+	_replay_diamond = Control.new()
+	_replay_diamond.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_replay_diamond.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_replay_diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_replay_diamond.resized.connect(_replace_replay_diamond_children)
+	r_mid.add_child(_replay_diamond)
 
-	var p1_sec = _build_replay_player_section("Right Opponent")
-	r_mid.add_child(p1_sec[0])
-	_replay_hand_containers[1]   = p1_sec[1]
-	_replay_played_containers[1] = p1_sec[2]
-	_replay_bubble_labels[1]     = p1_sec[3]
+	var r_right_wrap = CenterContainer.new()
+	r_right_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	r_mid.add_child(r_right_wrap)
+	_replay_hand_containers[1] = _make_replay_hand_row()
+	r_right_wrap.add_child(_replay_hand_containers[1])
 
-	# ── Human (player 0) — bottom ──
-	var p0_sec = _build_replay_player_section("You", true)
-	r_table.add_child(p0_sec[0])
-	_replay_hand_containers[0]   = p0_sec[1]
-	_replay_played_containers[0] = p0_sec[2]
-	_replay_bubble_labels[0]     = p0_sec[3]
+	# ── Opponent reasons, pushed out to the bottom corners ──
+	# Out of the centre so the diamond has clean space around it, and each one
+	# sits under the hand it belongs to.
+	var r_reasons = HBoxContainer.new()
+	r_reasons.add_theme_constant_override("separation", 4)
+	r_table.add_child(r_reasons)
+
+	_replay_bubble_labels[3] = _make_replay_bubble(r_vpw * 0.27)
+	r_reasons.add_child(_replay_bubble_labels[3])
+
+	var r_reason_spacer = Control.new()
+	r_reason_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_reasons.add_child(r_reason_spacer)
+
+	_replay_bubble_labels[1] = _make_replay_bubble(r_vpw * 0.27)
+	r_reasons.add_child(_replay_bubble_labels[1])
+
+	# ── Your hand along the bottom ──
+	# _replay_bubble_labels[0] stays null on purpose: your own reason line reads
+	# "You played this", which tells you nothing you didn't just watch yourself
+	# do, and dropping it returns a whole row to the seats that need it.
+	var r_p0_wrap = CenterContainer.new()
+	r_table.add_child(r_p0_wrap)
+	_replay_hand_containers[0] = _make_replay_hand_row()
+	r_p0_wrap.add_child(_replay_hand_containers[0])
 
 	r_vbox.add_child(HSeparator.new())
 
@@ -1400,26 +1460,25 @@ func _make_flag_toggle(label_text: String) -> Button:
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return btn
 
-func _build_replay_player_section(label_text: String, invert: bool = false) -> Array:
-	var name_lbl = Label.new()
-	name_lbl.text = label_text
-	_scaled_font(name_lbl, 12)
-	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85))
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-
+func _make_replay_hand_row() -> HBoxContainer:
 	var hand_hbox = HBoxContainer.new()
 	hand_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hand_hbox.add_theme_constant_override("separation", 2)
+	return hand_hbox
 
-	var played_hbox = HBoxContainer.new()
-	played_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-
+# `min_width` is the wrap width, and it matters more than it looks: these labels
+# autowrap, so a narrow box does not clip, it grows downward. The old sections
+# gave every bubble 160px because each sat in a narrow per-seat column; in the
+# new layout partner's sits in a full-width band and the opponents' sit in the
+# bottom corners, so 160 would have turned a one-line reason into a 200px-tall
+# stack and eaten the height this pass exists to reclaim.
+func _make_replay_bubble(min_width: float) -> Label:
 	var bubble_lbl = Label.new()
 	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_scaled_font(bubble_lbl, 11)
 	bubble_lbl.add_theme_color_override("font_color", Color.WHITE)
 	bubble_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	bubble_lbl.custom_minimum_size = Vector2(160, 0)
+	bubble_lbl.custom_minimum_size = Vector2(min_width, 0)
 	var bubble_style = StyleBoxFlat.new()
 	bubble_style.bg_color = Color(0.08, 0.08, 0.10, 0.90)
 	bubble_style.corner_radius_top_left = 6
@@ -1432,23 +1491,31 @@ func _build_replay_player_section(label_text: String, invert: bool = false) -> A
 	bubble_style.content_margin_bottom = 4
 	bubble_lbl.add_theme_stylebox_override("normal", bubble_style)
 	bubble_lbl.visible = false
+	return bubble_lbl
 
-	var section = VBoxContainer.new()
-	section.alignment = BoxContainer.ALIGNMENT_CENTER
-	section.add_theme_constant_override("separation", 4)
+# ── Replay diamond ────────────────────────────────────────────────────────────
+# Same four-seat arrangement the live table uses, sharing _seat_diamond_offset()
+# so the two can't drift apart on which side a seat sits. The slot box is just
+# the tile here — replay played tiles carry no seat label underneath, because
+# the diamond's own geometry already says whose tile is whose.
+func _replay_slot_offset(player_id: int) -> Vector2:
+	return _seat_diamond_offset(player_id, TILE_REPLAY_PLAYED, REPLAY_SLOT_GAP)
 
-	if invert:
-		section.add_child(played_hbox)
-		section.add_child(bubble_lbl)
-		section.add_child(name_lbl)
-		section.add_child(hand_hbox)
-	else:
-		section.add_child(name_lbl)
-		section.add_child(hand_hbox)
-		section.add_child(played_hbox)
-		section.add_child(bubble_lbl)
+func _place_in_replay_diamond(node: Control, offset: Vector2) -> void:
+	var node_size := node.get_combined_minimum_size()
+	node.size = node_size
+	node.position = _replay_diamond.size * 0.5 + offset - node_size * 0.5
 
-	return [section, hand_hbox, played_hbox, bubble_lbl]
+# The diamond is a plain Control, so unlike a box container it does not re-flow
+# its children when it changes size. Driven off `resized` for the same reason
+# _replace_play_area_children() is.
+func _replace_replay_diamond_children() -> void:
+	if not is_instance_valid(_replay_diamond):
+		return
+	for child in _replay_diamond.get_children():
+		if not (child is Control) or not child.has_meta("replay_seat"):
+			continue
+		_place_in_replay_diamond(child, _replay_slot_offset(int(child.get_meta("replay_seat"))))
 
 # ─── GAME FLOW ────────────────────────────────────────────────────────────────
 
@@ -2783,9 +2850,18 @@ func _play_area_slot_offset_for(node: Control) -> Vector2:
 # the centre column horizontally, where the play area has width to spare; top
 # and bottom clear each other vertically, which is the scarce axis.
 func _play_area_slot_offset(player_id: int) -> Vector2:
-	var slot: Vector2 = _play_area_slot_size()
-	var dx: float = slot.x + PLAY_SLOT_GAP
-	var dy: float = (slot.y + PLAY_SLOT_GAP) * 0.5
+	return _seat_diamond_offset(player_id, _play_area_slot_size(), PLAY_SLOT_GAP)
+
+# Which way each seat sits around the centre, given a slot box and the clearance
+# wanted between neighbours. The one implementation of the diamond's geometry:
+# the live table and the replay screen both read seat position from here, so a
+# replay diamond can never disagree with the play area about which side a seat
+# is on. Only the slot size differs between them (replay tiles carry no seat
+# label beneath them, the live ones do), which is why that is a parameter
+# rather than something this function looks up.
+func _seat_diamond_offset(player_id: int, slot: Vector2, gap: float) -> Vector2:
+	var dx: float = slot.x + gap
+	var dy: float = (slot.y + gap) * 0.5
 	if player_id == human_seat:
 		return Vector2(0, dy)          # bottom — toward you
 	elif player_id == (human_seat + 2) % 4:
@@ -4377,31 +4453,35 @@ func _render_replay_trick():
 			tile.setup(d, true, trick_record["trump"])
 			tile.custom_minimum_size = TILE_REPLAY_HAND
 
-	# Render each player's played domino and reasoning bubble
+	# Played dominoes go into the shared diamond, positioned by seat. Cleared
+	# wholesale rather than per-seat, which also handles the seats that did not
+	# play this trick (the Nello partner) without a second pass.
+	for child in _replay_diamond.get_children():
+		child.queue_free()
+
 	for play in trick_record["plays"]:
 		var pid = play["player"]
 
-		var played_container = _replay_played_containers[pid]
-		for child in played_container.get_children():
-			child.queue_free()
 		var played_tile = DominoTile.new()
-		played_tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		played_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		played_container.add_child(played_tile)
+		played_tile.set_meta("replay_seat", pid)   # lets `resized` re-place it
+		_replay_diamond.add_child(played_tile)
 		played_tile.setup(play["domino"], true, trick_record["trump"])
 		played_tile.custom_minimum_size = TILE_REPLAY_PLAYED
+		_place_in_replay_diamond(played_tile, _replay_slot_offset(pid))
 
+		# The human keeps no reason label — _replay_bubble_labels[0] is null by
+		# design, so this stays a null check rather than an unconditional write.
 		var bubble = _replay_bubble_labels[pid]
-		bubble.text = play["reason"] if play["reason"] != "" else "—"
-		bubble.visible = true
+		if bubble != null:
+			bubble.text = play["reason"] if play["reason"] != "" else "—"
+			bubble.visible = true
 
-	# Clear slots for players who didn't play this trick (e.g. Nello partner)
+	# Hide reasons for players who didn't play this trick (e.g. Nello partner)
 	for pid in range(4):
 		var played = trick_record["plays"].any(func(p): return p["player"] == pid)
-		if not played:
+		if not played and _replay_bubble_labels[pid] != null:
 			_replay_bubble_labels[pid].visible = false
-			for child in _replay_played_containers[pid].get_children():
-				child.queue_free()
 
 	# Annotate the winner's bubble with trick value context
 	var winner_id = trick_record["winner_id"]
