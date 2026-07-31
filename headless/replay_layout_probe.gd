@@ -46,11 +46,15 @@ func _restore() -> void:
 # Six tricks of four plays, with reason strings at realistic lengths — the
 # long one is what makes the bubble wrap to two lines, which is the case that
 # actually threatens the height budget.
+# The first entry is the longest reason AIPlayer actually emits (63 chars, tied
+# with two others) — the worst case for wrap height, which is what decides
+# whether the screen still fits. A probe seeded with comfortable strings would
+# report a fit the real game does not have.
 const REASONS := [
-	"Leading my double — nothing left to beat it.",
+	"Trumping in — doesn't cost us anything and secures the trick.",
 	"Had to follow suit.",
-	"Can't win this one — saving my count for later.",
-	"Trumping in to secure this trick for us.",
+	"Can't win this one — saving my count and my double for later.",
+	"Leading my double — nothing left to beat it.",
 ]
 
 func _fake_history(trump: int, trick_count: int) -> Array:

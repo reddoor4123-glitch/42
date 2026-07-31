@@ -295,14 +295,26 @@ var _replay_partner_hand_slot: Control = null
 # table uses. Plain, not a box container, because the tiles are positioned by
 # seat rather than flowed — see _place_in_replay_diamond().
 var _replay_diamond: Control = null
-# Clearance between neighbouring replay slots. WIDER than the live table's
-# PLAY_SLOT_GAP, which is the opposite of the first guess: on the live table a
-# seat label sits under every tile and does the visual separating, so 8px of
-# felt is enough. Replay tiles have no labels, so neighbouring tiles butt
-# straight up against each other and the gap is the only thing telling them
-# apart. At 6px the four read as one block; this is measured against the
-# vertical slack the layout has to spare, not tuned by eye alone.
-const REPLAY_SLOT_GAP := 16.0
+# Centre-to-centre spread of the replay diamond, in tile widths / tile heights.
+# Tuning values from Katy's July 30 markup, kept named and adjustable rather
+# than buried in an inline expression — same reasoning as PARTNER_OVERBID_MARGIN.
+#
+# Expressed as multiples of the tile rather than a pixel gap so the diamond
+# keeps its proportions when TILE_REPLAY_PLAYED rescales with the window.
+#
+# The two axes are wildly different because only one of them is contested.
+# Horizontally the diamond has room to spare, so X gets the full 2.5 the markup
+# asked for. Vertically it is competing with four stacked rows for the same
+# pixels, and Y is capped by the no-scrollbar requirement rather than by taste:
+# measured at 1280x800 with the longest reason strings AIPlayer actually emits,
+# 1.0 fills 99.0% of the available height and 1.1 overflows into a scrollbar.
+# 0.9 lands at 95.3%, leaving ~28px of margin for font-fallback and DPI
+# differences that would otherwise turn a fit into a scrollbar on someone
+# else's machine. The markup asked for roughly 1.4; that and the restored
+# "You played this" row (~48px) cannot both fit at this tile size.
+# headless/replay_layout_probe.gd re-measures all of this on demand.
+const REPLAY_SPREAD_X := 2.5
+const REPLAY_SPREAD_Y := 0.9
 var _flag_panel: PanelContainer = null
 var _flag_toggle_bidding: Button = null
 var _flag_toggle_gameplay: Button = null
@@ -1229,29 +1241,48 @@ func _build_ui():
 	# the hand up here costs about 47px instead of a full ~130px section.
 	# The counter and button cell keep their natural width; the middle cell
 	# takes the rest and centres the hand in it.
+	# All three cells expand, and the two side cells carry the SAME stretch
+	# ratio. That is what centres the partner's hand on the panel — and by
+	# extension on the diamond below it, which is centred the same way. Sizing
+	# the side cells to their contents instead leaves the middle cell offset by
+	# however much wider the trick counter is than the two buttons (~65px), and
+	# the hand sits visibly right of the diamond it belongs above.
+	var r_label_cell = HBoxContainer.new()
+	r_label_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_label_cell.size_flags_stretch_ratio = 1.0
+	r_top_bar.add_child(r_label_cell)
+
 	_replay_trick_label = Label.new()
 	_replay_trick_label.text = "Replay — Trick 1 of 7"
 	_scaled_font(_replay_trick_label, 16)
 	_replay_trick_label.add_theme_color_override("font_color", Color.WHITE)
 	_replay_trick_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	r_top_bar.add_child(_replay_trick_label)
+	r_label_cell.add_child(_replay_trick_label)
 
 	var r_p2_hand_wrap = CenterContainer.new()
 	r_p2_hand_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_p2_hand_wrap.size_flags_stretch_ratio = 2.0
 	r_top_bar.add_child(r_p2_hand_wrap)
 	_replay_partner_hand_slot = r_p2_hand_wrap
+
+	var r_btn_cell = HBoxContainer.new()
+	r_btn_cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r_btn_cell.size_flags_stretch_ratio = 1.0
+	r_btn_cell.alignment = BoxContainer.ALIGNMENT_END
+	r_btn_cell.add_theme_constant_override("separation", 4)
+	r_top_bar.add_child(r_btn_cell)
 
 	var r_flag_btn = Button.new()
 	r_flag_btn.text = "🚩 Flag"
 	r_flag_btn.custom_minimum_size = Vector2(70, 36)
 	r_flag_btn.pressed.connect(_toggle_flag_panel)
-	r_top_bar.add_child(r_flag_btn)
+	r_btn_cell.add_child(r_flag_btn)
 
 	var r_close_btn = Button.new()
 	r_close_btn.text = "✕"
 	r_close_btn.custom_minimum_size = Vector2(36, 36)
 	r_close_btn.pressed.connect(_exit_replay)
-	r_top_bar.add_child(r_close_btn)
+	r_btn_cell.add_child(r_close_btn)
 
 	r_vbox.add_child(HSeparator.new())
 
@@ -1347,15 +1378,26 @@ func _build_ui():
 	r_mid.add_theme_constant_override("separation", 4)
 	r_table.add_child(r_mid)
 
+	# Each opponent column is hand-over-reason, centred as one unit against the
+	# diamond. Centring the pair rather than the hand alone means the hand rides
+	# slightly above the played tile it belongs to instead of dead level with it;
+	# that is the cost of putting the reason directly under its own hand, which
+	# is worth more than the alignment it gives up.
 	var r_left_wrap = CenterContainer.new()
 	r_left_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	r_mid.add_child(r_left_wrap)
+	var r_left_col = VBoxContainer.new()
+	r_left_col.add_theme_constant_override("separation", 8)
+	r_left_wrap.add_child(r_left_col)
 	_replay_hand_containers[3] = _make_replay_hand_row()
-	r_left_wrap.add_child(_replay_hand_containers[3])
+	r_left_col.add_child(_replay_hand_containers[3])
+	_replay_bubble_labels[3] = _make_replay_bubble(r_vpw * 0.27, 2)
+	r_left_col.add_child(_replay_bubble_labels[3])
 
 	_replay_diamond = Control.new()
 	_replay_diamond.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_replay_diamond.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_replay_diamond.custom_minimum_size = _replay_diamond_min_size()
 	_replay_diamond.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_replay_diamond.resized.connect(_replace_replay_diamond_children)
 	r_mid.add_child(_replay_diamond)
@@ -1363,30 +1405,25 @@ func _build_ui():
 	var r_right_wrap = CenterContainer.new()
 	r_right_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	r_mid.add_child(r_right_wrap)
+	var r_right_col = VBoxContainer.new()
+	r_right_col.add_theme_constant_override("separation", 8)
+	r_right_wrap.add_child(r_right_col)
 	_replay_hand_containers[1] = _make_replay_hand_row()
-	r_right_wrap.add_child(_replay_hand_containers[1])
+	r_right_col.add_child(_replay_hand_containers[1])
+	_replay_bubble_labels[1] = _make_replay_bubble(r_vpw * 0.27, 2)
+	r_right_col.add_child(_replay_bubble_labels[1])
 
-	# ── Opponent reasons, pushed out to the bottom corners ──
-	# Out of the centre so the diamond has clean space around it, and each one
-	# sits under the hand it belongs to.
-	var r_reasons = HBoxContainer.new()
-	r_reasons.add_theme_constant_override("separation", 4)
-	r_table.add_child(r_reasons)
+	# ── Your reason, then your hand, along the bottom ──
+	# Sits between the diamond's bottom tile and your hand, so the three read as
+	# one column the way each opponent's does. Dropped in the first pass on the
+	# grounds that "You played this" tells you nothing you didn't just watch
+	# yourself do — restored because on screen the gap where the other three
+	# seats have a line reads as something missing rather than something spared.
+	var r_p0_bubble_wrap = CenterContainer.new()
+	r_table.add_child(r_p0_bubble_wrap)
+	_replay_bubble_labels[0] = _make_replay_bubble(r_vpw * 0.27)
+	r_p0_bubble_wrap.add_child(_replay_bubble_labels[0])
 
-	_replay_bubble_labels[3] = _make_replay_bubble(r_vpw * 0.27)
-	r_reasons.add_child(_replay_bubble_labels[3])
-
-	var r_reason_spacer = Control.new()
-	r_reason_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	r_reasons.add_child(r_reason_spacer)
-
-	_replay_bubble_labels[1] = _make_replay_bubble(r_vpw * 0.27)
-	r_reasons.add_child(_replay_bubble_labels[1])
-
-	# ── Your hand along the bottom ──
-	# _replay_bubble_labels[0] stays null on purpose: your own reason line reads
-	# "You played this", which tells you nothing you didn't just watch yourself
-	# do, and dropping it returns a whole row to the seats that need it.
 	var r_p0_wrap = CenterContainer.new()
 	r_table.add_child(r_p0_wrap)
 	_replay_hand_containers[0] = _make_replay_hand_row()
@@ -1439,6 +1476,13 @@ func _on_viewport_resized():
 		_refresh_play_area_reservation()
 		_replace_play_area_children()
 
+	# TILE_REPLAY_PLAYED just changed, and the diamond's reservation is derived
+	# from it — re-derive before re-placing, or the tiles spread to a size the
+	# box no longer holds.
+	if is_instance_valid(_replay_diamond):
+		_replay_diamond.custom_minimum_size = _replay_diamond_min_size()
+		_replace_replay_diamond_children()
+
 	if is_instance_valid(_pts_picker):
 		_pts_picker.font_scale = font_scale
 		_pts_picker.queue_redraw()
@@ -1472,13 +1516,27 @@ func _make_replay_hand_row() -> HBoxContainer:
 # new layout partner's sits in a full-width band and the opponents' sit in the
 # bottom corners, so 160 would have turned a one-line reason into a 200px-tall
 # stack and eaten the height this pass exists to reclaim.
-func _make_replay_bubble(min_width: float) -> Label:
+# `min_lines` reserves height for that many lines whether or not the text needs
+# them. Used to hold the two opponent columns the same height: each column is
+# hand-over-reason centred as a unit, so a two-line reason on one side and a
+# one-line reason on the other pushed the two hands to visibly different
+# heights (measured: y=289 against y=308). Costs nothing on those two — the
+# columns are shorter than the diamond they sit beside, so the row's height is
+# unchanged. It is NOT free on partner's and your own reason, which occupy rows
+# of their own, so those stay at one line and their rows do still change height
+# between tricks.
+func _make_replay_bubble(min_width: float, min_lines: int = 1) -> Label:
 	var bubble_lbl = Label.new()
 	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_scaled_font(bubble_lbl, 11)
 	bubble_lbl.add_theme_color_override("font_color", Color.WHITE)
 	bubble_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	bubble_lbl.custom_minimum_size = Vector2(min_width, 0)
+	# Height measured off the real font rather than assumed: get_height() reports
+	# the tallest face in the fallback chain, which is what the Label actually
+	# lays out to. The + 8 is the stylebox's own top and bottom content margins.
+	var b_fs: int = int(round(11 * font_scale))
+	var b_font: Font = _font_nunito_regular if _font_nunito_regular != null else ThemeDB.fallback_font
+	bubble_lbl.custom_minimum_size = Vector2(min_width, b_font.get_height(b_fs) * min_lines + 8.0)
 	var bubble_style = StyleBoxFlat.new()
 	bubble_style.bg_color = Color(0.08, 0.08, 0.10, 0.90)
 	bubble_style.corner_radius_top_left = 6
@@ -1499,7 +1557,18 @@ func _make_replay_bubble(min_width: float) -> Label:
 # the tile here — replay played tiles carry no seat label underneath, because
 # the diamond's own geometry already says whose tile is whose.
 func _replay_slot_offset(player_id: int) -> Vector2:
-	return _seat_diamond_offset(player_id, TILE_REPLAY_PLAYED, REPLAY_SLOT_GAP)
+	return _seat_diamond_offset(player_id,
+		TILE_REPLAY_PLAYED.x * REPLAY_SPREAD_X,
+		TILE_REPLAY_PLAYED.y * REPLAY_SPREAD_Y)
+
+# Room the spread diamond needs: the opposing slots sit SPREAD either side of
+# centre, plus one tile so the outermost pair is fully inside the box. Without
+# this the box sizes to its siblings in the row — the opponent columns — and the
+# top and bottom tiles hang out of it, clipped by the rows above and below.
+func _replay_diamond_min_size() -> Vector2:
+	return Vector2(
+		TILE_REPLAY_PLAYED.x * (REPLAY_SPREAD_X * 2.0 + 1.0),
+		TILE_REPLAY_PLAYED.y * (REPLAY_SPREAD_Y * 2.0 + 1.0))
 
 func _place_in_replay_diamond(node: Control, offset: Vector2) -> void:
 	var node_size := node.get_combined_minimum_size()
@@ -2850,18 +2919,20 @@ func _play_area_slot_offset_for(node: Control) -> Vector2:
 # the centre column horizontally, where the play area has width to spare; top
 # and bottom clear each other vertically, which is the scarce axis.
 func _play_area_slot_offset(player_id: int) -> Vector2:
-	return _seat_diamond_offset(player_id, _play_area_slot_size(), PLAY_SLOT_GAP)
+	var slot: Vector2 = _play_area_slot_size()
+	return _seat_diamond_offset(player_id, slot.x + PLAY_SLOT_GAP, (slot.y + PLAY_SLOT_GAP) * 0.5)
 
-# Which way each seat sits around the centre, given a slot box and the clearance
-# wanted between neighbours. The one implementation of the diamond's geometry:
-# the live table and the replay screen both read seat position from here, so a
-# replay diamond can never disagree with the play area about which side a seat
-# is on. Only the slot size differs between them (replay tiles carry no seat
-# label beneath them, the live ones do), which is why that is a parameter
-# rather than something this function looks up.
-func _seat_diamond_offset(player_id: int, slot: Vector2, gap: float) -> Vector2:
-	var dx: float = slot.x + gap
-	var dy: float = (slot.y + gap) * 0.5
+# Which way each seat sits around the centre. The one implementation of the
+# diamond's geometry: the live table and the replay screen both read seat
+# position from here, so a replay diamond can never disagree with the play area
+# about which side a seat is on.
+#
+# The SPREAD is each caller's own business and comes in as dx/dy, because the
+# two screens are solving different problems. The live table is cramped and
+# packs the four slots as close as they can go without touching. The replay
+# screen has room and wants the diamond open enough to read as four separate
+# plays, with different amounts of slack on each axis.
+func _seat_diamond_offset(player_id: int, dx: float, dy: float) -> Vector2:
 	if player_id == human_seat:
 		return Vector2(0, dy)          # bottom — toward you
 	elif player_id == (human_seat + 2) % 4:
