@@ -246,6 +246,9 @@ var settings_panel: Control = null
 var _settings_content_vbox: VBoxContainer = null
 var _settings_panel_inner: PanelContainer = null
 var _settings_scroll: ScrollContainer = null
+# The domino-back swatch row, kept so its selection can be re-marked in place
+# rather than by rebuilding the settings form — see _refresh_domino_back_selection().
+var _domino_back_flow: HFlowContainer = null
 var _pending_settings: GameSettings = null
 var _preset_btn_container: VBoxContainer = null
 # The open "…" drop-down on Choose Rules, and which slot it belongs to. Tracked
@@ -3477,11 +3480,7 @@ func _build_settings_content():
 	var play_btn = Button.new()
 	play_btn.text = "Play"
 	play_btn.custom_minimum_size = Vector2(180, 44)
-	play_btn.pressed.connect(func():
-		_persist_preset_tweaks(_pending_settings)
-		_save_last_used(_pending_settings.preset_id)
-		_restart_game_with_settings(_pending_settings)
-	)
+	play_btn.pressed.connect(_on_settings_play_pressed)
 	btn_row.add_child(play_btn)
 
 	# ── Domino back ──
@@ -3506,6 +3505,7 @@ func _build_settings_content():
 	back_flow.add_theme_constant_override("h_separation", 10)
 	back_flow.add_theme_constant_override("v_separation", 10)
 	_settings_content_vbox.add_child(back_flow)
+	_domino_back_flow = back_flow
 
 	var current_back := _load_domino_back_pref()
 	for entry in DOMINO_BACKS:
@@ -3530,10 +3530,15 @@ func _build_settings_content():
 		swatch.add_theme_stylebox_override("hover", sel_style)
 		swatch.add_theme_stylebox_override("pressed", sel_style)
 		swatch.pressed.connect(_on_domino_back_pressed.bind(res_path))
+		# Which back this swatch stands for, so the selection can be re-marked
+		# without rebuilding the row — see _refresh_domino_back_selection().
+		swatch.set_meta("domino_back_path", res_path)
 		back_flow.add_child(swatch)
 
 		var tile = DominoTile.new()
-		tile.mouse_filter = Control.MOUSE_FILTER_IGNORE   # let clicks reach the Button
+		# Must be `interactive`, not a direct mouse_filter assignment: DominoTile's
+		# _ready() sets mouse_filter itself and would overwrite one made here.
+		tile.interactive = false                          # let clicks reach the Button
 		tile.use_back_override = true
 		tile.back_texture_override = load(res_path) if not res_path.is_empty() \
 			and ResourceLoader.exists(res_path) else null
@@ -3559,6 +3564,72 @@ func _build_settings_content():
 		reset_btn.pressed.connect(_on_reset_to_default_pressed)
 		_settings_content_vbox.add_child(reset_btn)
 
+# Re-marks which swatch is selected by recolouring borders in place. The row
+# itself is untouched.
+#
+# This exists because _build_settings_content() rebuilds the WHOLE form, and
+# calling that from a button's own pressed handler is what made this control
+# feel broken. The swatch row is ~140px of always-open content at the bottom of
+# a form 96px taller than its viewport, so it can only be reached by scrolling —
+# and a full rebuild resets the scroll to the top, putting the swatches back out
+# of reach. Click once, get thrown to the top, and the next click lands on
+# nothing. Measured: the swatch centre sat at y=782 with the scroll viewport
+# ending at y=756, so only a 44px sliver of each 140px swatch was ever
+# clickable. See headless/domino_back_click_probe.gd.
+#
+# The general rule this is the first instance of: a control should update itself
+# (or whatever it directly affects) rather than destroying and recreating the
+# screen it lives on.
+# Play commits the ruleset and starts a NEW game, which discards the one in
+# progress. That is the intended behaviour — rules are transactional and cannot
+# be applied to a hand already under way without invalidating bids already
+# accepted — but it used to happen silently.
+#
+# The asymmetry is what made it a bug: "⌂ Menu" right beside it already confirms
+# before losing the game, so the less destructive of the two buttons warned and
+# the more destructive one didn't. One checkbox and a tap could end a hand seven
+# tricks deep with no way back.
+#
+# Confirms whenever a game is running, regardless of whether anything actually
+# changed. Narrowing it to "only when the rules were edited" needs a dirty flag
+# on the pending settings, which does not exist yet; until it does, the cost of
+# asking unnecessarily is one dialog on a screen nobody opens mid-hand by
+# accident, and the cost of not asking is a destroyed game.
+func _on_settings_play_pressed() -> void:
+	if game == null:
+		_commit_settings_and_restart()
+		return
+	var confirm = ConfirmationDialog.new()
+	confirm.title = "Start a New Game?"
+	confirm.dialog_text = "These rules apply to a new game.\nThe game in progress will be lost."
+	confirm.ok_button_text = "Start New Game"
+	confirm.cancel_button_text = "Keep Playing"
+	confirm.confirmed.connect(func():
+		confirm.queue_free()
+		_commit_settings_and_restart()
+	)
+	confirm.canceled.connect(func(): confirm.queue_free())
+	add_child(confirm)
+	confirm.popup_centered()
+
+func _commit_settings_and_restart() -> void:
+	_persist_preset_tweaks(_pending_settings)
+	_save_last_used(_pending_settings.preset_id)
+	_restart_game_with_settings(_pending_settings)
+
+func _refresh_domino_back_selection() -> void:
+	if not is_instance_valid(_domino_back_flow):
+		return
+	var current := _load_domino_back_pref()
+	for child in _domino_back_flow.get_children():
+		if not child.has_meta("domino_back_path"):
+			continue
+		var style: StyleBox = child.get_theme_stylebox("normal")
+		if style is StyleBoxFlat:
+			style.border_color = Color(0.95, 0.80, 0.15) \
+				if str(child.get_meta("domino_back_path")) == current \
+				else Color(0.30, 0.30, 0.36)
+
 func _on_domino_back_pressed(res_path: String):
 	_save_domino_back_pref(res_path)
 	_update_domino_back_texture()
@@ -3567,7 +3638,9 @@ func _on_domino_back_pressed(res_path: String):
 	# feedback; everything else picks it up on the next hand.
 	if game != null:
 		_refresh_all_hands()
-	_build_settings_content()
+	# Re-mark the selection only. Was _build_settings_content() — a full rebuild
+	# that reset the scroll position and put these swatches back out of reach.
+	_refresh_domino_back_selection()
 
 func _make_section(parent: VBoxContainer, title: String) -> VBoxContainer:
 	var header = Button.new()

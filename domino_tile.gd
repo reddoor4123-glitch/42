@@ -31,6 +31,19 @@ static var custom_back_texture: Texture2D = null
 var use_back_override: bool = false
 var back_texture_override: Texture2D = null
 
+# Whether this tile accepts mouse input at all. Set to false BEFORE add_child()
+# for a tile that is pure decoration sitting on top of something clickable — the
+# Settings screen's back swatches are DominoTiles drawn inside Buttons, and the
+# tile must not eat the Button's clicks.
+#
+# This exists because _ready() assigns mouse_filter unconditionally, so setting
+# mouse_filter directly before add_child() did NOT work: _ready() fires on
+# add_child and overwrote it straight back to STOP. The swatch tile covers
+# 64x128 of a 76x140 button, so the only clickable part left was the ~6px border
+# around it — which is exactly why the back picker felt dead and then
+# occasionally, inexplicably, worked.
+var interactive: bool = true
+
 var _press_pos: Vector2 = Vector2.ZERO
 var _dragging: bool = false
 
@@ -55,7 +68,7 @@ var _trump: int = -1  # Set by parent so trump pips can be colored
 func _ready():
 	custom_minimum_size = Vector2(DOMINO_WIDTH, DOMINO_HEIGHT)
 	size = Vector2(DOMINO_WIDTH, DOMINO_HEIGHT)
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_filter = Control.MOUSE_FILTER_STOP if interactive else Control.MOUSE_FILTER_IGNORE
 	gui_input.connect(_on_gui_input)
 
 func setup(d: Domino, show_face: bool = true, trump: int = -1):
