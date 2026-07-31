@@ -189,6 +189,8 @@ func _session_expired(session: int) -> bool:
 # "42" and the end-of-hand banner).
 var _font_nunito_regular: Font
 var _font_nunito_heavy: Font
+# Lighter than base, for the replay win note only — see FONT_WEIGHT_WIN_NOTE.
+var _font_nunito_win_note: Font
 var _font_rye: Font
 
 # UI node references (assigned in _ready)
@@ -289,6 +291,11 @@ var _replay_trick_label: Label = null
 var _replay_inner_panel: PanelContainer = null
 var _replay_hand_containers: Array = []
 var _replay_bubble_labels: Array = []
+# The bubble PanelContainers (which carry visibility) and the lighter-weight
+# "won trick" labels inside them. Both parallel to _replay_bubble_labels and
+# indexed by player id.
+var _replay_bubble_panels: Array = []
+var _replay_win_labels: Array = []
 # Centre cell of the replay top bar, which holds the partner's hand.
 var _replay_partner_hand_slot: Control = null
 # Plain Control holding the four played tiles in the same diamond the live
@@ -390,6 +397,18 @@ func _player_label(pid: int) -> String:
 const FONT_WEIGHT_BASE  := 777
 const FONT_WEIGHT_HEAVY := 815
 
+# The replay screen's "✓ Won trick — N pts" note, and the ONLY thing in the UI
+# that goes under FONT_WEIGHT_BASE. Deliberately below the floor described
+# above: the note sits directly under the reason that explains the play, and
+# setting it lighter is what makes it scannable trick to trick instead of
+# reading as another sentence. Katy's call, July 30 2026.
+#
+# Worth knowing if this is ever retuned: the floor exists because Nunito reads
+# thin on dark felt at small sizes, and this label is 11px on dark felt — the
+# exact case the comment above warns about. It is legible here because it is a
+# short fixed phrase the eye learns to skip to, not body text.
+const FONT_WEIGHT_WIN_NOTE := 400
+
 func _build_fonts():
 	var nunito_base: FontFile = load("res://fonts/Nunito-VariableFont_wght.ttf")
 	var rye_base: FontFile = load("res://fonts/Rye-Regular.ttf")
@@ -402,6 +421,7 @@ func _build_fonts():
 
 	_font_nunito_regular = _make_variation(nunito_base, fallbacks, FONT_WEIGHT_BASE)
 	_font_nunito_heavy   = _make_variation(nunito_base, fallbacks, FONT_WEIGHT_HEAVY)
+	_font_nunito_win_note = _make_variation(nunito_base, fallbacks, FONT_WEIGHT_WIN_NOTE)
 	# Rye is a single static cut — no wght axis to sample, so no variation_opentype.
 	_font_rye            = _make_variation(rye_base, fallbacks, 0)
 
@@ -1346,11 +1366,13 @@ func _build_ui():
 	r_table.add_theme_constant_override("separation", 4)
 	r_scroll.add_child(r_table)
 
-	# Pre-fill arrays so indices 0-3 exist before we assign them. Anything left
-	# null is deliberate: the human keeps no reason label (see below).
+	# Pre-fill arrays so indices 0-3 exist before we assign them. All four seats
+	# get a reason bubble; the parallel arrays are indexed by player id.
 	for _i in range(4):
 		_replay_hand_containers.append(null)
 		_replay_bubble_labels.append(null)
+		_replay_bubble_panels.append(null)
+		_replay_win_labels.append(null)
 
 	# Seat name labels are gone from this screen. With every seat pinned to a
 	# fixed edge — partner top, opponents left and right, you at the bottom —
@@ -1365,9 +1387,12 @@ func _build_ui():
 	# Widths as fractions of the window: partner spans the centre band, the two
 	# opponents split the bottom corners with clear air between them.
 	var r_vpw: float = get_viewport().get_visible_rect().size.x
-	_replay_bubble_labels[2] = _make_replay_bubble(r_vpw * 0.40)
+	var r_p2_bubble = _make_replay_bubble(r_vpw * 0.40)
+	_replay_bubble_panels[2] = r_p2_bubble[0]
+	_replay_bubble_labels[2] = r_p2_bubble[1]
+	_replay_win_labels[2]    = r_p2_bubble[2]
 	var r_p2_bubble_wrap = CenterContainer.new()
-	r_p2_bubble_wrap.add_child(_replay_bubble_labels[2])
+	r_p2_bubble_wrap.add_child(_replay_bubble_panels[2])
 	r_table.add_child(r_p2_bubble_wrap)
 
 	# ── Middle row: left hand | played diamond | right hand ──
@@ -1391,8 +1416,14 @@ func _build_ui():
 	r_left_wrap.add_child(r_left_col)
 	_replay_hand_containers[3] = _make_replay_hand_row()
 	r_left_col.add_child(_replay_hand_containers[3])
-	_replay_bubble_labels[3] = _make_replay_bubble(r_vpw * 0.27, 2)
-	r_left_col.add_child(_replay_bubble_labels[3])
+	# Three lines reserved, not two: the reason can wrap to two AND the win note
+	# adds a third, so anything less lets the winning opponent's column outgrow
+	# the other and knocks the two hands out of level again.
+	var r_p3_bubble = _make_replay_bubble(r_vpw * 0.27, 3)
+	_replay_bubble_panels[3] = r_p3_bubble[0]
+	_replay_bubble_labels[3] = r_p3_bubble[1]
+	_replay_win_labels[3]    = r_p3_bubble[2]
+	r_left_col.add_child(_replay_bubble_panels[3])
 
 	_replay_diamond = Control.new()
 	_replay_diamond.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1410,8 +1441,11 @@ func _build_ui():
 	r_right_wrap.add_child(r_right_col)
 	_replay_hand_containers[1] = _make_replay_hand_row()
 	r_right_col.add_child(_replay_hand_containers[1])
-	_replay_bubble_labels[1] = _make_replay_bubble(r_vpw * 0.27, 2)
-	r_right_col.add_child(_replay_bubble_labels[1])
+	var r_p1_bubble = _make_replay_bubble(r_vpw * 0.27, 3)
+	_replay_bubble_panels[1] = r_p1_bubble[0]
+	_replay_bubble_labels[1] = r_p1_bubble[1]
+	_replay_win_labels[1]    = r_p1_bubble[2]
+	r_right_col.add_child(_replay_bubble_panels[1])
 
 	# ── Your reason, then your hand, along the bottom ──
 	# Sits between the diamond's bottom tile and your hand, so the three read as
@@ -1421,8 +1455,11 @@ func _build_ui():
 	# seats have a line reads as something missing rather than something spared.
 	var r_p0_bubble_wrap = CenterContainer.new()
 	r_table.add_child(r_p0_bubble_wrap)
-	_replay_bubble_labels[0] = _make_replay_bubble(r_vpw * 0.27)
-	r_p0_bubble_wrap.add_child(_replay_bubble_labels[0])
+	var r_p0_bubble = _make_replay_bubble(r_vpw * 0.27)
+	_replay_bubble_panels[0] = r_p0_bubble[0]
+	_replay_bubble_labels[0] = r_p0_bubble[1]
+	_replay_win_labels[0]    = r_p0_bubble[2]
+	r_p0_bubble_wrap.add_child(_replay_bubble_panels[0])
 
 	var r_p0_wrap = CenterContainer.new()
 	r_table.add_child(r_p0_wrap)
@@ -1525,18 +1562,17 @@ func _make_replay_hand_row() -> HBoxContainer:
 # unchanged. It is NOT free on partner's and your own reason, which occupy rows
 # of their own, so those stay at one line and their rows do still change height
 # between tricks.
-func _make_replay_bubble(min_width: float, min_lines: int = 1) -> Label:
-	var bubble_lbl = Label.new()
-	bubble_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_scaled_font(bubble_lbl, 11)
-	bubble_lbl.add_theme_color_override("font_color", Color.WHITE)
-	bubble_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
-	# Height measured off the real font rather than assumed: get_height() reports
-	# the tallest face in the fallback chain, which is what the Label actually
-	# lays out to. The + 8 is the stylebox's own top and bottom content margins.
+#
+# Returns [panel, reason_label, win_label]. Two labels rather than one string
+# with a newline in it, because the win note is set a lighter weight than the
+# reason above it and a plain Label cannot carry two weights. They share one
+# panel so it still reads as a single bubble.
+func _make_replay_bubble(min_width: float, min_lines: int = 1) -> Array:
 	var b_fs: int = int(round(11 * font_scale))
 	var b_font: Font = _font_nunito_regular if _font_nunito_regular != null else ThemeDB.fallback_font
-	bubble_lbl.custom_minimum_size = Vector2(min_width, b_font.get_height(b_fs) * min_lines + 8.0)
+	var line_h: float = b_font.get_height(b_fs)
+
+	var panel = PanelContainer.new()
 	var bubble_style = StyleBoxFlat.new()
 	bubble_style.bg_color = Color(0.08, 0.08, 0.10, 0.90)
 	bubble_style.corner_radius_top_left = 6
@@ -1547,9 +1583,37 @@ func _make_replay_bubble(min_width: float, min_lines: int = 1) -> Label:
 	bubble_style.content_margin_right = 6
 	bubble_style.content_margin_top = 4
 	bubble_style.content_margin_bottom = 4
-	bubble_lbl.add_theme_stylebox_override("normal", bubble_style)
-	bubble_lbl.visible = false
-	return bubble_lbl
+	panel.add_theme_stylebox_override("panel", bubble_style)
+	panel.visible = false
+
+	var vb = VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 2)
+	# Height measured off the real font rather than assumed: get_height() reports
+	# the tallest face in the fallback chain, which is what the Label actually
+	# lays out to. Reserved on the VBox, not the reason label, so the panel is
+	# the same height whether the win note is showing or not — otherwise the
+	# winning seat's bubble is a line taller than its opposite number's and the
+	# two hands go out of level again.
+	vb.custom_minimum_size = Vector2(min_width, line_h * min_lines)
+	panel.add_child(vb)
+
+	var reason_lbl = Label.new()
+	reason_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(reason_lbl, 11)
+	reason_lbl.add_theme_color_override("font_color", Color.WHITE)
+	reason_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vb.add_child(reason_lbl)
+
+	var win_lbl = Label.new()
+	win_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_scaled_font(win_lbl, 11)
+	win_lbl.add_theme_color_override("font_color", Color.WHITE)
+	win_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	win_lbl.add_theme_font_override("font", _font_nunito_win_note)
+	win_lbl.visible = false
+	vb.add_child(win_lbl)
+
+	return [panel, reason_lbl, win_lbl]
 
 # ── Replay diamond ────────────────────────────────────────────────────────────
 # Same four-seat arrangement the live table uses, sharing _seat_diamond_offset()
@@ -4541,22 +4605,22 @@ func _render_replay_trick():
 		played_tile.custom_minimum_size = TILE_REPLAY_PLAYED
 		_place_in_replay_diamond(played_tile, _replay_slot_offset(pid))
 
-		# The human keeps no reason label — _replay_bubble_labels[0] is null by
-		# design, so this stays a null check rather than an unconditional write.
-		var bubble = _replay_bubble_labels[pid]
-		if bubble != null:
-			bubble.text = play["reason"] if play["reason"] != "" else "—"
-			bubble.visible = true
+		_replay_bubble_labels[pid].text = play["reason"] if play["reason"] != "" else "—"
+		_replay_win_labels[pid].text = ""
+		_replay_win_labels[pid].visible = false
+		_replay_bubble_panels[pid].visible = true
 
 	# Hide reasons for players who didn't play this trick (e.g. Nello partner)
 	for pid in range(4):
 		var played = trick_record["plays"].any(func(p): return p["player"] == pid)
-		if not played and _replay_bubble_labels[pid] != null:
-			_replay_bubble_labels[pid].visible = false
+		if not played:
+			_replay_bubble_panels[pid].visible = false
 
-	# Annotate the winner's bubble with trick value context
+	# Annotate the winner's bubble with trick value context. Its own label inside
+	# the same bubble, not appended to the reason text, so it can carry a lighter
+	# weight than the sentence above it — see FONT_WEIGHT_WIN_NOTE.
 	var winner_id = trick_record["winner_id"]
-	if _replay_bubble_labels[winner_id] != null:
+	if _replay_bubble_panels[winner_id].visible:
 		var trick_pts := 1  # base 1 point for the trick itself
 		var has_counter := false
 		for play in trick_record["plays"]:
@@ -4571,7 +4635,8 @@ func _render_replay_trick():
 			value_str = "Won trick — %d pts" % trick_pts
 		else:
 			value_str = "Won trick"
-		_replay_bubble_labels[winner_id].text += "\n✓ " + value_str
+		_replay_win_labels[winner_id].text = "✓ " + value_str
+		_replay_win_labels[winner_id].visible = true
 
 func _replay_next_trick():
 	_reset_flag_panel()
