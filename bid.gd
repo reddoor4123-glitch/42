@@ -38,6 +38,30 @@ static func to_mark_equivalent(bid: Bid) -> float:
 			return float(bid.value)
 	return 0.0
 
+# The lowest POINTS bid this bidder may legally make right now.
+#
+# Normally settings.minimum_bid, but the shaker facing three passes is being
+# forced to bid and takes settings.forced_bid_minimum instead — the number the
+# table has already told them out loud. It is a max(), not a replacement,
+# because the two settings are independent spinboxes: a forced_bid_minimum
+# BELOW minimum_bid must not open a hole under the table's own floor. That is
+# the same clamp AIPlayer.decide_bid() applies to its own forced bid.
+#
+# This exists as its own function because three places need the answer and all
+# three had drifted: is_valid() enforced only minimum_bid, the human's drum
+# hardcoded 30, and Game.resolve_bidding() manufactured its forced bid straight
+# from forced_bid_minimum unclamped. Callers read this instead of recomputing.
+#
+# `context` is Game.bid_context()'s dictionary; with no context there is no
+# forced moment to detect and the plain table minimum applies.
+static func points_floor(settings: GameSettings, context: Dictionary = {}) -> int:
+	var floor_points: int = settings.minimum_bid
+	if settings.allow_forced_bid \
+			and context.get("is_dealer", false) \
+			and context.get("all_others_passed", false):
+		floor_points = maxi(floor_points, settings.forced_bid_minimum)
+	return floor_points
+
 # Validate whether a bid attempt is legal given the current highest bid and settings.
 #
 # `context` is an optional dictionary used by bids that need info beyond the
@@ -45,9 +69,10 @@ static func to_mark_equivalent(bid: Bid) -> float:
 #   "hand_doubles_count": int   -> how many doubles are in the bidder's hand
 #                                   (required for PLUNGE / SPLASH)
 #   "is_dealer": bool           -> true if bidder is the shaker/dealer
-#                                   (required for NELLO/SEVENS only-on-forced-bid)
+#                                   (NELLO/SEVENS only-on-forced-bid, and the
+#                                    forced points floor — see points_floor())
 #   "all_others_passed": bool   -> true if every other player already passed
-#                                   (required for NELLO/SEVENS only-on-forced-bid)
+#                                   (same two rules as is_dealer)
 static func is_valid(new_bid: Bid, current_high: Bid, settings: GameSettings, context: Dictionary = {}) -> bool:
 	if new_bid.type == Type.PASS:
 		return true
@@ -82,7 +107,7 @@ static func is_valid(new_bid: Bid, current_high: Bid, settings: GameSettings, co
 			return false
 
 	if new_bid.type == Type.POINTS:
-		if new_bid.value < settings.minimum_bid or new_bid.value > 42:
+		if new_bid.value < points_floor(settings, context) or new_bid.value > 42:
 			return false
 
 	# Marks ceiling. Without allow_jump_bids a marks bid may either OPEN the

@@ -99,10 +99,24 @@ func count_doubles(hand: Array) -> int:
 # bids (Plunge, Splash, Low-No). `bid_position` is this player's index
 # (0-based) within bid_order() for this hand.
 func bid_context(player_id: int, bid_position: int) -> Dictionary:
+	return bid_context_against(player_id, bid_position, current_bid)
+
+# The same context, but for a bid made against `standing` rather than against
+# whatever happens to be standing right now.
+#
+# Exists for the bid revisit: a player who won the auction may reopen their
+# choice before the contract is finalised, and the panel has to present the
+# auction as it stood BEFORE their own bid — otherwise they are being asked to
+# outbid themselves. That moment is no longer the present, so the context for it
+# cannot be read off current_bid. `all_others_passed` is the part that matters:
+# it gates both the forced points floor and Nello/Sevens under
+# nello_only_on_forced_bid, and against a non-null current_bid it would come out
+# false even on a hand where everyone really did pass.
+func bid_context_against(player_id: int, bid_position: int, standing) -> Dictionary:
 	return {
 		"hand_doubles_count": count_doubles(players[player_id].hand),
 		"is_dealer": player_id == shaker,
-		"all_others_passed": (bid_position == 3 and current_bid == null),
+		"all_others_passed": (bid_position == 3 and standing == null),
 	}
 
 # Returns which special contract types are currently eligible given settings
@@ -144,9 +158,16 @@ func resolve_bidding(all_bids: Array) -> RefCounted:
 		for b in all_bids:
 			if b.type != BidScript.Type.PASS:
 				current_bid = b
-	# Forced bid: if still no winner, shaker must bid minimum.
+	# Forced bid: if still no winner, shaker must bid minimum. Reaching here with
+	# nothing standing IS the forced moment, so the context is stated outright
+	# rather than rebuilt — bid_context() would need a bid_position this function
+	# never receives. Going through points_floor() keeps a table with
+	# forced_bid_minimum below minimum_bid from manufacturing a standing bid that
+	# sits under its own table floor.
 	if current_bid == null and settings.allow_forced_bid:
-		current_bid = BidScript.new(BidScript.Type.POINTS, settings.forced_bid_minimum, shaker)
+		var forced_value: int = BidScript.points_floor(settings,
+			{"is_dealer": true, "all_others_passed": true})
+		current_bid = BidScript.new(BidScript.Type.POINTS, forced_value, shaker)
 	return current_bid
 
 func apply_bid_result(trump_suit: int = -1):

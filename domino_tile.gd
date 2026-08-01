@@ -77,6 +77,17 @@ func setup(d: Domino, show_face: bool = true, trump: int = -1):
 	_trump = trump
 	queue_redraw()
 
+# Repoint an existing tile at a different trump without rebuilding it. The Call
+# Trump screen's preview repaints the hand on every suit tap; going through
+# _populate_hand_container() would free and re-make seven tiles, and re-wire
+# their four signals, for what is a colour change. Idempotent so a repeat tap on
+# the already-previewed suit costs nothing.
+func set_trump(trump: int) -> void:
+	if _trump == trump:
+		return
+	_trump = trump
+	queue_redraw()
+
 func set_playable(playable: bool):
 	is_playable = playable
 	queue_redraw()
@@ -133,13 +144,33 @@ func _draw():
 		draw_rect(inner, COLOR_BACK)
 		_draw_back_pattern(inner, s)
 
+# The bar between the two halves doubles as a whole-tile trump marker: red and
+# a little heavier when this domino is trump.
+#
+# It exists because red pips cannot cover every suit. A blank half has no pips
+# to colour, so under blanks-trump the pip highlighting says nothing at all and
+# tracking trump was guesswork — 0-0 in particular showed no marking whatsoever.
+# The bar is the one part of a face-up tile that is always drawn regardless of
+# what the halves hold.
+#
+# Applied to every trump suit rather than only to blanks. It is one rule the
+# player learns once — a red bar means the tile is trump — instead of a marker
+# that appears only in blanks hands. For numeric suits it also reads faster than
+# counting pips when you are scanning a hand.
 func _draw_divider(rect: Rect2, s: float):
 	var mid_y = rect.position.y + rect.size.y * 0.5
+	var trump_tile := is_trump_tile()
 	draw_line(
 		Vector2(rect.position.x + DIVIDER_MARGIN * s, mid_y),
 		Vector2(rect.position.x + rect.size.x - DIVIDER_MARGIN * s, mid_y),
-		COLOR_BORDER, max(1.0, 1.5 * s)
+		COLOR_TRUMP_PIP if trump_tile else COLOR_BORDER,
+		max(1.0, (2.5 if trump_tile else 1.5) * s)
 	)
+
+# Whether this domino is trump under the suit currently being painted. Follow Me
+# (-1) is a real trump value meaning "none", so it must not mark anything.
+func is_trump_tile() -> bool:
+	return domino != null and _trump >= 0 and domino.is_trump(_trump)
 
 func _draw_pips(rect: Rect2, s: float):
 	if domino == null:
@@ -149,8 +180,18 @@ func _draw_pips(rect: Rect2, s: float):
 		Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5 + 1),
 		Vector2(rect.size.x, rect.size.y * 0.5 - 1)
 	)
-	_draw_pip_value(domino.left, bot_half, domino.left == _trump, s)
-	_draw_pip_value(domino.right, top_half, domino.right == _trump, s)
+	# Which halves count as trump. Under a numeric trump only the matching pip
+	# reddens, so 5-3 under fives shows a red 5 beside a black 3. Under the
+	# DOUBLES_TRUMP sentinel the tile is trump as a WHOLE — doubles form their
+	# own suit — so both halves redden.
+	#
+	# That second case used to be missing: the test was a bare `pip == _trump`,
+	# and no pip can equal DOUBLES_TRUMP's 7, so a doubles-trump hand drew no red
+	# pips anywhere. Not just a preview problem — it was wrong for the entire
+	# hand in live play.
+	var whole_tile_trump := _trump == Domino.DOUBLES_TRUMP and is_trump_tile()
+	_draw_pip_value(domino.left, bot_half, whole_tile_trump or domino.left == _trump, s)
+	_draw_pip_value(domino.right, top_half, whole_tile_trump or domino.right == _trump, s)
 
 func _draw_pip_value(value: int, rect: Rect2, is_trump_pip: bool, s: float):
 	var color = COLOR_TRUMP_PIP if is_trump_pip else COLOR_PIP

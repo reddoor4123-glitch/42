@@ -75,9 +75,20 @@ const CUSTOM_RULESETS_DIR := "user://custom_rulesets"
 # DominoTile's default procedural pattern. Table-wide display choice, fully
 # independent of which ruleset slot is active — before July 29 2026 the Teel
 # back was inferred from preset_id == "teel" instead of being chosen.
+#
+# Art here must be authored PORTRAIT at the tile's inner-rect aspect (~1:2.09,
+# 437x914 to match the Teel scan). DominoTile._draw() stretches the texture to
+# fit with draw_texture_rect(..., false) and does not preserve aspect, so a
+# landscape source is squashed rather than letterboxed. The Texas back is a
+# vertical-banner rearrangement of the flag for that reason — the real 3:2 flag
+# cannot be dropped in unmodified.
 const DOMINO_BACKS := [
 	["Default", ""],
 	["Teel", "res://art/domino_back_teel.png"],
+	["Texas", "res://art/domino_back_texas.png"],
+	["Texas Map", "res://art/domino_back_texas_map.png"],
+	["Texas Outline", "res://art/domino_back_texas_outline.png"],
+	["Cream", "res://art/domino_back_cream.png"],
 ]
 
 # Swatch size for the Settings picker: one DominoTile (64x128) plus a padding
@@ -226,7 +237,14 @@ var _tricks_overlay: Array[PanelContainer] = [null, null]
 var _tricks_toggle_btn: Array[Button] = [null, null]
 var _tricks_expanded: Array[bool] = [false, false]
 var trump_panel: PanelContainer
-var trump_buttons: HBoxContainer
+# Every button on the Call Trump screen that selects a trump option, tagged with
+# the option it stands for so one function can repaint the selection. Covers the
+# seven suits and the Doubles / Doubles Reversed / Follow Me buttons alike —
+# they are all just previewable options now.
+var _trump_option_buttons: Array[Button] = []
+var _confirm_trump_btn: Button = null
+var _trump_back_btn: Button = null
+var _nello_back_btn: Button = null
 var _special_trump_sep: HSeparator = null
 var _doubles_trump_btn: Button = null
 var _doubles_trump_reversed_btn: Button = null
@@ -330,6 +348,48 @@ var _flag_toggle_bidding: Button = null
 var _flag_toggle_gameplay: Button = null
 var _flag_toggle_explanation: Button = null
 var _flag_note_edit: LineEdit = null
+# Which trump the human is LOOKING at on the Call Trump screen, as opposed to
+# the one they have committed to. Tapping a suit reddens that suit's pips in
+# their hand so they can see how the suit sits before locking it in; nothing
+# reaches game.trump until Confirm.
+#
+# NO_TRUMP_PREVIEW cannot be -1: that is a real, selectable value meaning Follow
+# Me, and "previewing no-trump" has to stay distinguishable from "not previewing".
+const NO_TRUMP_PREVIEW := -2
+var _trump_preview: int = NO_TRUMP_PREVIEW
+# Doubles-as-trump comes in a normal and a reversed flavour that share one trump
+# value, so the preview has to carry the flavour separately. Only meaningful
+# while _trump_preview == Domino.DOUBLES_TRUMP.
+var _trump_preview_doubles_reversed: bool = false
+
+# ─── BID REVISIT ──────────────────────────────────────────────────────────────
+# A player who wins the auction may reopen their bid before the contract is
+# finalised — win at 32 and decide you would rather play Nello. Real 42 allows
+# it; the old flow forced the choice before you knew you had won.
+#
+# This is NOT a second bidding system. It reopens the same bid panel against the
+# auction as it stood immediately BEFORE the player's own bid, so Bid.is_valid()
+# and every floor and ceiling it consults are the ones that applied when they
+# bid. Two things make that work:
+#
+#   _bid_before_human  what was standing when they bid, captured at the moment
+#                      their bid was accepted. Validating against this rather
+#                      than against their own bid is what stops them having to
+#                      outbid themselves — and it keeps _marks_ceiling() right,
+#                      since a 3-mark winner validated against null would be
+#                      refused for exceeding the opening cap.
+#   _revisit_won_bid   the bid they actually won with, which is the floor. They
+#                      may keep it or raise; never lower.
+#
+# game.current_bid is deliberately NOT rewound while the panel is open. A UI flow
+# must not leave shared game state mismatched if it is abandoned — see the
+# Return to Menu crash documented above _run_bidding_sequence().
+var _bid_before_human: RefCounted = null
+var _revisit_won_bid: RefCounted = null
+var _revisiting: bool = false
+# Which screen Cancel goes back to: "trump" or "nello".
+var _revisit_return_to: String = ""
+
 var waiting_for_trump: bool = false
 var waiting_for_nello_mode: bool = false
 var waiting_for_bid: bool = false
@@ -1015,12 +1075,11 @@ func _build_ui():
 	trump_vbox.add_child(row2)
 
 	var suit_names = ["Blanks", "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes"]
-	trump_buttons = row1  # keep ref for compatibility
 	for suit in range(7):
 		var btn = Button.new()
 		btn.text = "%d  %s" % [suit, suit_names[suit]]
 		btn.custom_minimum_size = Vector2(100, 40)
-		btn.pressed.connect(_on_trump_selected.bind(suit))
+		_register_trump_option(btn, suit, false)
 		if suit < 4:
 			row1.add_child(btn)
 		else:
@@ -1040,28 +1099,50 @@ func _build_ui():
 	_doubles_trump_btn.text = "Doubles  (Trump Suit)"
 	_doubles_trump_btn.custom_minimum_size = Vector2(150, 40)
 	_doubles_trump_btn.visible = false
-	_doubles_trump_btn.pressed.connect(func():
-		game.active_doubles_trump_reversed = false
-		_on_trump_selected(Domino.DOUBLES_TRUMP)
-	)
+	# active_doubles_trump_reversed is no longer written here — it is game state,
+	# and previewing must not touch game state. The flavour rides on the preview
+	# and is applied by _on_trump_confirmed().
+	_register_trump_option(_doubles_trump_btn, Domino.DOUBLES_TRUMP, false)
 	special_row.add_child(_doubles_trump_btn)
 
 	_doubles_trump_reversed_btn = Button.new()
 	_doubles_trump_reversed_btn.text = "Doubles  (Reversed)"
 	_doubles_trump_reversed_btn.custom_minimum_size = Vector2(150, 40)
 	_doubles_trump_reversed_btn.visible = false
-	_doubles_trump_reversed_btn.pressed.connect(func():
-		game.active_doubles_trump_reversed = true
-		_on_trump_selected(Domino.DOUBLES_TRUMP)
-	)
+	_register_trump_option(_doubles_trump_reversed_btn, Domino.DOUBLES_TRUMP, true)
 	special_row.add_child(_doubles_trump_reversed_btn)
 
 	_follow_me_btn = Button.new()
 	_follow_me_btn.text = "No Trump  (Follow Me)"
 	_follow_me_btn.custom_minimum_size = Vector2(150, 40)
 	_follow_me_btn.visible = false
-	_follow_me_btn.pressed.connect(_on_trump_selected.bind(-1))
+	_register_trump_option(_follow_me_btn, -1, false)
 	special_row.add_child(_follow_me_btn)
+
+	# --- Confirm row ---
+	# Selecting a suit only previews it now, so committing needs its own control.
+	# The play column has room for this row: it needs 311px inside a middle row
+	# that is 426px because of the side opponents' stacked hands, and
+	# headless/trump_panel_fit_verify.gd holds that line.
+	var confirm_row = HBoxContainer.new()
+	confirm_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	confirm_row.add_theme_constant_override("separation", 8)
+	trump_vbox.add_child(confirm_row)
+
+	# Back shares the Confirm row rather than taking one of its own — a second row
+	# would cost another ~48px of the play column's headroom for one button.
+	_trump_back_btn = Button.new()
+	_trump_back_btn.text = "‹ Change Bid"
+	_trump_back_btn.custom_minimum_size = Vector2(130, 40)
+	_trump_back_btn.pressed.connect(_open_bid_revisit.bind("trump"))
+	confirm_row.add_child(_trump_back_btn)
+
+	_confirm_trump_btn = Button.new()
+	_confirm_trump_btn.text = "Confirm Trump"
+	_confirm_trump_btn.custom_minimum_size = Vector2(150, 40)
+	_confirm_trump_btn.disabled = true
+	_confirm_trump_btn.pressed.connect(_on_trump_confirmed)
+	confirm_row.add_child(_confirm_trump_btn)
 
 	# --- Nello doubles-mode panel ---
 	nello_panel = PanelContainer.new()
@@ -1097,6 +1178,14 @@ func _build_ui():
 	_nello_reversed_btn.visible = false
 	_nello_reversed_btn.pressed.connect(_on_nello_mode_selected.bind("own_suit_reversed"))
 	nello_row.add_child(_nello_reversed_btn)
+
+	# Same escape as the trump screen: the contract is not finalised until a
+	# doubles mode is picked, so the bid is still open to reconsideration.
+	_nello_back_btn = Button.new()
+	_nello_back_btn.text = "‹ Change Bid"
+	_nello_back_btn.custom_minimum_size = Vector2(130, 40)
+	_nello_back_btn.pressed.connect(_open_bid_revisit.bind("nello"))
+	nello_row.add_child(_nello_back_btn)
 
 	# --- Nello blind-exchange panel ---
 	nello_exchange_panel = PanelContainer.new()
@@ -1809,6 +1898,17 @@ func _start_bidding():
 	_human_bid_position = -1
 	_bid_panel_expanded = false
 	_selected_contract_type = BidScript.Type.MARKS
+	# A preview belongs to one visit to the Call Trump screen. Cleared here as
+	# well as on open, so an abandoned hand cannot leave _effective_trump()
+	# reporting a suit nobody called.
+	_trump_preview = NO_TRUMP_PREVIEW
+	_trump_preview_doubles_reversed = false
+	# Same for the revisit: these describe one auction, and a hand abandoned with
+	# the panel open must not carry its floor into the next one.
+	_revisiting = false
+	_revisit_won_bid = null
+	_revisit_return_to = ""
+	_bid_before_human = null
 	_clear_bid_bubbles()
 	_run_bidding_sequence()
 
@@ -1825,7 +1925,10 @@ func _run_bidding_sequence():
 			_human_bid_position = i
 			if i == 3 and game.current_bid == null and game.settings.allow_forced_bid:
 				human_is_forced = true
-				_set_status("Everyone passed — you must bid at least %d!" % game.settings.forced_bid_minimum)
+				# Quote the floor that will actually be enforced, not the raw
+				# setting — forced_bid_minimum below minimum_bid is clamped up.
+				_set_status("Everyone passed — you must bid at least %d!"
+					% BidScript.points_floor(game.settings, game.bid_context(human_seat, i)))
 			else:
 				_set_status("Your turn to bid")
 			waiting_for_bid = true
@@ -1904,8 +2007,17 @@ func _show_bid_panel():
 	_marks_picker = null
 	_contract_marks_picker = null
 
-	var current_high = game.current_bid
-	var min_points = 30
+	# Revisiting reopens the panel against the auction as it stood before this
+	# player's own bid, so every rule below is the one that applied when they bid.
+	var current_high = _bid_before_human if _revisiting else game.current_bid
+	var bid_ctx = game.bid_context_against(human_seat, _human_bid_position, current_high)
+	# The drum's floor comes from Bid.points_floor(), not a hardcoded 30. With
+	# minimum_bid raised the wheel still opened at 30 and Bid.is_valid() rejected
+	# the pick afterwards — the drum offering a value the validator refuses is
+	# exactly what the push_error in _on_bid_submitted() is there to catch. Reading
+	# the same function the validator reads, off the same context it will be handed
+	# at submission, is what keeps the two from drifting apart again.
+	var min_points = BidScript.points_floor(game.settings, bid_ctx)
 	var points_available = true
 	var auction_floor = 1
 
@@ -1917,8 +2029,21 @@ func _show_bid_panel():
 		points_available = false
 		auction_floor = current_high.value + 1
 
+	# The one rule the auction itself does not supply: you may not come back and
+	# lower the bid you already won with. Expressed in mark-equivalent so it
+	# covers every contract type at once — a points bid caps at 0.42, so a
+	# marks-or-better winner has no points option left at all.
+	var revisit_floor := _revisit_floor()
+	if _revisiting:
+		if revisit_floor >= 1.0:
+			points_available = false
+		else:
+			min_points = maxi(min_points, int(round(revisit_floor * 100.0)))
+			if min_points > 42:
+				points_available = false
+		auction_floor = maxi(auction_floor, maxi(1, ceili(revisit_floor)))
+
 	const CONTRACT_ORDER = [BidScript.Type.NELLO, BidScript.Type.SEVENS, BidScript.Type.PLUNGE, BidScript.Type.SPLASH]
-	var bid_ctx = game.bid_context(human_seat, _human_bid_position)
 	var eligible: Array = game.eligible_contracts(game.players[human_seat].hand, bid_ctx)
 	var contracts: Array = []
 	for t in CONTRACT_ORDER:
@@ -1934,6 +2059,20 @@ func _show_bid_panel():
 	center_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	center_vbox.add_theme_constant_override("separation", 6)
 	bid_buttons.add_child(center_vbox)
+
+	# Revisiting looks exactly like bidding, which is the point — and also the
+	# risk. Say plainly that this is changing a contract already won, and name the
+	# floor, so nobody reads the panel as a fresh auction they could pass on.
+	if _revisiting:
+		var revisit_lbl = Label.new()
+		# Names the floor. The status line above says what the screen IS; this says
+		# what the constraint is — saying both in both places just reads as noise.
+		revisit_lbl.text = "You won with %s — that's your minimum" \
+			% _revisit_won_bid.debug_string()
+		revisit_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		revisit_lbl.add_theme_color_override("font_color", Color(0.95, 0.80, 0.15))
+		_scaled_font(revisit_lbl, 13)
+		center_vbox.add_child(revisit_lbl)
 
 	# Single row, slot order:
 	#   collapsed: [Pass]      [Points] [Marks] [More]
@@ -1956,13 +2095,18 @@ func _show_bid_panel():
 		)
 		row.add_child(back_btn)
 
-	# --- Pass (same slot in both states) ---
+	# --- Pass, or Cancel when revisiting ---
+	# Passing on a bid you have already won is not a thing you can do, so the slot
+	# carries the only sensible escape instead: leave the contract as it was.
 	var pass_btn = Button.new()
-	pass_btn.text = "Pass"
+	pass_btn.text = "Cancel" if _revisiting else "Pass"
 	pass_btn.custom_minimum_size = Vector2(64, 76)
 	pass_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(pass_btn)
-	pass_btn.pressed.connect(_on_bid_submitted.bind(BidScript.new(BidScript.Type.PASS, 0, human_seat)))
+	if _revisiting:
+		pass_btn.pressed.connect(_on_revisit_cancelled)
+	else:
+		pass_btn.pressed.connect(_on_bid_submitted.bind(BidScript.new(BidScript.Type.PASS, 0, human_seat)))
 
 	# --- Points drum (collapsed only) ---
 	if not _bid_panel_expanded and points_available:
@@ -1987,7 +2131,12 @@ func _show_bid_panel():
 		var pt_vals: Array[int] = []
 		for v in range(min_points, 43):
 			pt_vals.append(v)
+		# Revisiting lands on the bid you already have, so the drum opens showing
+		# your own contract rather than asking you to find it again.
 		var default_pts_idx = pt_vals.find(31) if pt_vals.has(31) else 0
+		if _revisiting and _revisit_won_bid.type == BidScript.Type.POINTS \
+				and pt_vals.has(_revisit_won_bid.value):
+			default_pts_idx = pt_vals.find(_revisit_won_bid.value)
 		_pts_picker.setup(pt_vals, default_pts_idx)
 		pts_col.add_child(_pts_picker)
 
@@ -2026,7 +2175,11 @@ func _show_bid_panel():
 		var mark_vals: Array[int] = []
 		for v in range(marks_floor, marks_ceiling + 1):
 			mark_vals.append(v)
-		_marks_picker.setup(mark_vals, 0)
+		var default_marks_idx := 0
+		if _revisiting and marks_type == _revisit_won_bid.type \
+				and mark_vals.has(_revisit_won_bid.value):
+			default_marks_idx = mark_vals.find(_revisit_won_bid.value)
+		_marks_picker.setup(mark_vals, default_marks_idx)
 		marks_col.add_child(_marks_picker)
 
 		var marks_bid_btn = Button.new()
@@ -2101,6 +2254,9 @@ func _update_contract_button_visuals(contract_buttons: Dictionary):
 			btn.modulate = Color(1, 1, 1)
 
 func _on_bid_submitted(bid: RefCounted):
+	if _revisiting:
+		_on_revisit_submitted(bid)
+		return
 	if human_is_forced and bid.type == BidScript.Type.PASS:
 		_set_status("You must bid — everyone passed and you're the shaker!")
 		return
@@ -2118,6 +2274,9 @@ func _on_bid_submitted(bid: RefCounted):
 		return
 	bid_panel.visible = false
 	waiting_for_bid = false
+	# What was standing before this bid, kept so the player can reopen the choice
+	# after winning without being asked to outbid themselves.
+	_bid_before_human = game.current_bid
 	if bid.type != BidScript.Type.PASS:
 		game.current_bid = bid
 	game.bid_decisions.append({
@@ -2132,6 +2291,99 @@ func _on_bid_submitted(bid: RefCounted):
 	await _run_post_human_bids()
 	if _session_expired(my_session):
 		return
+	_finish_bidding([])
+
+# ─── BID REVISIT ──────────────────────────────────────────────────────────────
+
+# The floor a revisited bid may not go under, in mark-equivalent. One expression
+# with two callers — it sets the drums' floors in _show_bid_panel() and guards
+# the submit below — so the panel cannot offer a value the submit will refuse.
+# Same shape as Bid.points_floor(), and for the same reason.
+func _revisit_floor() -> float:
+	if not _revisiting or _revisit_won_bid == null:
+		return 0.0
+	return BidScript.to_mark_equivalent(_revisit_won_bid)
+
+# Whether the human may reopen their bid from the screen currently up. Only the
+# player who actually won it: on Plunge and Splash it is the winner's PARTNER
+# who calls trump, and that seat has no standing to change a contract it did not
+# bid.
+func _can_revisit_bid() -> bool:
+	return game != null and game.current_bid != null \
+		and game.current_bid.player_id == human_seat \
+		and game.current_bid.type != BidScript.Type.PASS
+
+func _open_bid_revisit(return_to: String) -> void:
+	if not _can_revisit_bid():
+		return
+	_revisiting = true
+	_revisit_return_to = return_to
+	_revisit_won_bid = game.current_bid
+	trump_panel.visible = false
+	nello_panel.visible = false
+	waiting_for_trump = false
+	waiting_for_nello_mode = false
+	# A trump previewed on the screen we just left must not linger behind the
+	# bid panel; the contract itself is now in question.
+	_clear_trump_preview()
+	_bid_panel_expanded = false
+	_selected_contract_type = BidScript.Type.MARKS
+	waiting_for_bid = true
+	_show_bid_panel()
+	_set_status("Changing your contract — Cancel to leave it as it was")
+
+func _close_bid_revisit() -> void:
+	_revisiting = false
+	_revisit_won_bid = null
+	_revisit_return_to = ""
+	bid_panel.visible = false
+	waiting_for_bid = false
+
+func _on_revisit_cancelled() -> void:
+	var back_to := _revisit_return_to
+	_close_bid_revisit()
+	# Nothing was written, so the contract is exactly as it was — just put the
+	# screen they came from back up.
+	if back_to == "nello":
+		_show_nello_panel()
+	else:
+		_show_trump_panel()
+
+func _on_revisit_submitted(bid: RefCounted) -> void:
+	if bid.type == BidScript.Type.PASS:
+		_set_status("You've already won the bid — Cancel to keep it as it was.")
+		return
+	# The floor is checked FIRST so its specific message wins. Going lower also
+	# trips is_valid() — 31 does not beat the 31 that was standing — but "that
+	# contract isn't legal here" is a much worse thing to read than being told
+	# what your own minimum is.
+	if BidScript.to_mark_equivalent(bid) < _revisit_floor():
+		_set_status("You can't go below %s — that's what you won with."
+			% _revisit_won_bid.debug_string())
+		return
+	# Validated against what was standing BEFORE this player's own bid, which is
+	# what they originally had to beat. Bid.is_valid() is unchanged and does all
+	# the contract work: eligibility, the marks ceiling, the points floor.
+	if not BidScript.is_valid(bid, _bid_before_human, game.settings,
+			game.bid_context_against(human_seat, _human_bid_position, _bid_before_human)):
+		_set_status("That contract isn't legal here.")
+		push_error("Revisit offered an illegal bid: %s (pre-bid high: %s)"
+			% [bid.debug_string(),
+			   "none" if _bid_before_human == null else _bid_before_human.debug_string()])
+		return
+
+	game.current_bid = bid
+	# bid_decisions is deliberately untouched. It is the record of the AUCTION,
+	# and the auction happened as it happened — rewriting this seat's entry would
+	# make an AI that passed against 32 points look like it passed against a
+	# Nello, in exactly the records the bid bug logs are diagnosed from. The
+	# contract that gets played is carried by winning_bid in build_hand_record(),
+	# which reads current_bid and is therefore already correct.
+	_close_bid_revisit()
+	_show_bid_bubble(human_seat, "You\n%s" % bid.debug_string())
+	_set_status("You: %s" % bid.debug_string())
+	# Straight to _finish_bidding: the auction is over, so unlike a first-time
+	# bid there are no seats left to hear from.
 	_finish_bidding([])
 
 func _run_post_human_bids():
@@ -2253,12 +2505,84 @@ func _show_trump_panel(message: String = "You won the bid — call your trump su
 	_doubles_trump_btn.visible = allow_doubles
 	_doubles_trump_reversed_btn.visible = allow_doubles and game.settings.doubles_trump_reversed
 	_special_trump_sep.visible = allow_follow or allow_doubles
+	# Only the seat that actually won the bid may reopen it. On Plunge/Splash this
+	# screen belongs to the winner's PARTNER, who is calling trump on someone
+	# else's contract and has nothing of their own to change.
+	_trump_back_btn.visible = _can_revisit_bid()
+	# Open with nothing previewed, so re-entering the screen never inherits the
+	# highlight from a suit considered on a previous hand.
+	_clear_trump_preview()
 	trump_panel.visible = true
 	_set_status(message)
+
+# Registers a Call Trump button as a previewable option rather than a commit.
+# One place so the seven suits and the three special contracts cannot drift
+# apart in how they behave.
+func _register_trump_option(btn: Button, suit: int, doubles_reversed: bool) -> void:
+	btn.set_meta("trump_suit", suit)
+	btn.set_meta("trump_doubles_reversed", doubles_reversed)
+	btn.pressed.connect(_on_trump_previewed.bind(suit, doubles_reversed))
+	_trump_option_buttons.append(btn)
+
+# The trump the tiles should PAINT with: the previewed suit while the Call Trump
+# screen is deciding, the committed game.trump otherwise. Face-down tiles draw
+# no pips, so opponents are unaffected either way and this needs no seat test.
+func _effective_trump() -> int:
+	if _trump_preview != NO_TRUMP_PREVIEW:
+		return _trump_preview
+	return game.trump if game != null else -1
+
+func _on_trump_previewed(suit: int, doubles_reversed: bool) -> void:
+	_trump_preview = suit
+	_trump_preview_doubles_reversed = doubles_reversed
+	_apply_trump_preview()
+	_set_status("Previewing %s — Confirm to call it" % _trump_preview_label())
+
+func _clear_trump_preview() -> void:
+	_trump_preview = NO_TRUMP_PREVIEW
+	_trump_preview_doubles_reversed = false
+	_apply_trump_preview()
+
+# Repaints the hand and the button row for the current preview. Retargets the
+# existing tiles rather than rebuilding the container — the whole point is that
+# tapping a second suit moves the highlight instantly.
+func _apply_trump_preview() -> void:
+	var t := _effective_trump()
+	for c in player_hand_container.get_children():
+		if c is DominoTile:
+			c.set_trump(t)
+	var previewing := _trump_preview != NO_TRUMP_PREVIEW
+	for btn in _trump_option_buttons:
+		if not is_instance_valid(btn):
+			continue
+		var selected: bool = previewing \
+			and int(btn.get_meta("trump_suit")) == _trump_preview \
+			and bool(btn.get_meta("trump_doubles_reversed")) == _trump_preview_doubles_reversed
+		btn.modulate = Color(0.95, 0.80, 0.15) if selected else Color(1, 1, 1)
+	if is_instance_valid(_confirm_trump_btn):
+		_confirm_trump_btn.disabled = not previewing
+
+func _trump_preview_label() -> String:
+	if _trump_preview == Domino.DOUBLES_TRUMP and _trump_preview_doubles_reversed:
+		return "Doubles (Reversed)"
+	return _trump_display_name(_trump_preview)
+
+func _on_trump_confirmed() -> void:
+	if _trump_preview == NO_TRUMP_PREVIEW:
+		return
+	var suit := _trump_preview
+	# Only now does the preview become game state.
+	if suit == Domino.DOUBLES_TRUMP:
+		game.active_doubles_trump_reversed = _trump_preview_doubles_reversed
+	_on_trump_selected(suit)
 
 func _on_trump_selected(suit: int):
 	trump_panel.visible = false
 	waiting_for_trump = false
+	# Drop the preview before applying, so _effective_trump() reads the committed
+	# value from here on and a stale preview cannot outlive the screen.
+	_trump_preview = NO_TRUMP_PREVIEW
+	_trump_preview_doubles_reversed = false
 	game.apply_bid_result(suit)
 	_update_points_readout()
 	trump_indicator_label.text = "Trump: %s" % _trump_display_name(suit)
@@ -2274,6 +2598,7 @@ func _on_trump_selected(suit: int):
 func _show_nello_panel():
 	waiting_for_nello_mode = true
 	_nello_reversed_btn.visible = game.settings.nello_doubles_reversed
+	_nello_back_btn.visible = _can_revisit_bid()
 	nello_panel.visible = true
 	_set_status("You won Nello — how do doubles play?")
 
@@ -2897,7 +3222,7 @@ func _populate_hand_container(container: Container, hand: Array, face: bool, sma
 		tile.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		tile.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		container.add_child(tile)
-		tile.setup(d, face, game.trump)
+		tile.setup(d, face, _effective_trump())
 		tile.custom_minimum_size = TILE_SMALL if small else TILE_FULL
 		if face:
 			tile.domino_pressed.connect(_on_human_domino_pressed)
