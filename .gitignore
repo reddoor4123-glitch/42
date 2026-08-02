@@ -17,10 +17,12 @@ __pycache__/
 headless/*.json
 
 # Export/build output and capture scratch — all regenerable from an export
-# preset or a recording session, all root-level, and together ~156 MB. Anchored
+# preset or a recording session, all root-level, and together ~290 MB. Anchored
 # with a leading slash so only the real build directories match, not a
 # same-named folder somewhere inside the project.
 /42_web_itch.zip
 /itch_web/
+/42_windows_itch.zip
+/itch_windows/
 /android_test/
 /recordings/
