@@ -1244,7 +1244,7 @@ func _build_ui():
 	gear_btn.custom_minimum_size = Vector2(40, 40)
 	gear_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	gear_btn.position = Vector2(-48, 8)
-	gear_btn.pressed.connect(_show_settings_panel)
+	gear_btn.pressed.connect(_on_gear_pressed)
 	root.add_child(gear_btn)
 
 	# --- Lay Down button (bottom-right, near the player's own hand) —
@@ -1269,6 +1269,11 @@ func _build_ui():
 	settings_panel = Control.new()
 	settings_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	settings_panel.visible = false
+	# Tap-outside-to-dismiss. Hooked on the overlay root rather than the dimmer:
+	# the dimmer is a sibling of the centring container, and siblings are never
+	# reached — the centring container is on top and covers the full rect. It is
+	# MOUSE_FILTER_PASS, so clicks on empty space forward to this parent instead.
+	settings_panel.gui_input.connect(_on_settings_overlay_input)
 	root.add_child(settings_panel)
 
 	var s_dim = ColorRect.new()
@@ -3680,6 +3685,37 @@ func _show_settings_panel():
 	_build_settings_content()
 	settings_panel.visible = true
 
+# The gear toggles rather than only opening. Note the overlay is a later child of
+# root than the gear (10 vs 8), so while Settings is up the gear is behind it and
+# this close branch is not what actually runs — the click lands on the overlay and
+# _on_settings_overlay_input() dismisses it, which is the same outcome from the
+# player's side. Kept explicit so the intent survives any future reordering.
+func _on_gear_pressed() -> void:
+	if settings_panel.visible:
+		_close_settings_panel()
+	else:
+		_show_settings_panel()
+
+# Dismiss on a click anywhere outside the dialog. Reaching this handler IS the
+# test for "outside": _settings_panel_inner is MOUSE_FILTER_STOP, so every click
+# on the dialog itself is absorbed before it can propagate here. No rect maths,
+# which matters because the screen carries three OptionButtons whose dropdowns
+# render outside the dialog's bounds — a rect test would dismiss on them, and on
+# the Play/Menu confirmation dialogs, which are separate windows for the same
+# reason.
+func _on_settings_overlay_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton):
+		return
+	if event.button_index != MOUSE_BUTTON_LEFT or not event.pressed:
+		return
+	_close_settings_panel()
+
+# One owner for closing, shared by Cancel, the gear and the tap-outside path.
+# Matches what Cancel always did: the screen is simply hidden and _pending_settings
+# is abandoned, since _show_settings_panel() rebuilds it from scratch on every open.
+func _close_settings_panel() -> void:
+	settings_panel.visible = false
+
 # Switching slots rebuilds _pending_settings from scratch instead of patching the
 # object in place, so no field from the previously selected slot can survive into
 # the new one.
@@ -3863,7 +3899,7 @@ func _build_settings_content():
 	var cancel_btn = Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 44)
-	cancel_btn.pressed.connect(func(): settings_panel.visible = false)
+	cancel_btn.pressed.connect(_close_settings_panel)
 	btn_row.add_child(cancel_btn)
 
 	# One action replaces both the old "Confirm & Restart" and "Save as New
