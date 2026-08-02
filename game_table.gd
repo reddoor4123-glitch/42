@@ -2950,6 +2950,11 @@ func _on_human_domino_pressed(tile: DominoTile):
 # before any reordering could occur. Human seat only — opponent/partner
 # hands render in their own containers, which never connect these signals.
 func _on_hand_drag_started(tile: DominoTile):
+	# A live ghost here means some earlier drag never reached _on_hand_drag_ended.
+	# Overwriting _drag_ghost without freeing it first would strand the old node in
+	# _bubble_overlay with nothing referencing it, putting it beyond cleanup for
+	# the rest of the process — one permanently stuck tile per interrupted drag.
+	_cancel_hand_drag()
 	tile.modulate.a = 0.35  # original tile fades in place, marks the "source" slot
 	_drag_ghost = DominoTile.new()
 	_bubble_overlay.add_child(_drag_ghost)
@@ -2965,10 +2970,12 @@ func _on_hand_drag_moved(tile: DominoTile, global_pos: Vector2):
 
 func _on_hand_drag_ended(tile: DominoTile, was_drag: bool):
 	tile.modulate.a = 1.0
-	if not was_drag:
-		if is_instance_valid(_drag_ghost):
-			_drag_ghost.queue_free()
-		_drag_ghost = null
+	# A missing ghost means the drag was cancelled underneath us by a hand rebuild.
+	# The drop index would be measured against sibling positions that no longer
+	# describe the hand, so the reorder is abandoned rather than committed. This
+	# also guards the global_position read below, which has no fallback.
+	if not was_drag or not is_instance_valid(_drag_ghost):
+		_cancel_hand_drag()
 		return
 
 	var drop_center_x = _drag_ghost.global_position.x + _drag_ghost.size.x / 2.0
@@ -2987,11 +2994,16 @@ func _on_hand_drag_ended(tile: DominoTile, was_drag: bool):
 	new_index = clampi(new_index, 0, hand.size())
 	hand.insert(new_index, tile.domino)
 
+	_cancel_hand_drag()
+	_refresh_all_hands()
+
+# Drops any in-flight drag ghost. Safe to call unconditionally: clearing the
+# reference as well as freeing the node is what keeps a ghost from outliving the
+# variable that owns it.
+func _cancel_hand_drag() -> void:
 	if is_instance_valid(_drag_ghost):
 		_drag_ghost.queue_free()
 	_drag_ghost = null
-
-	_refresh_all_hands()
 
 func _animate_ai_play(player: Player, domino: Domino):
 	_execute_play(player, domino)
@@ -3215,6 +3227,16 @@ func _refresh_opponent_hands():
 	_populate_hand_container(opponent_right_container, game.players[1].hand, false, true)
 
 func _populate_hand_container(container: Container, hand: Array, face: bool, small: bool = false):
+	# Invariant: the human hand is never torn down with a drag still in flight.
+	# Every tile below is about to be freed, including whichever one is holding the
+	# drag — and that tile is the only emitter of domino_drag_ended, so the ghost
+	# would never be cleaned up. Since it lives on _bubble_overlay, which _build_ui()
+	# builds once per process and nothing ever clears, a stranded ghost survives new
+	# games and settings alike. Enforced here because this is the only place the hand
+	# is rebuilt; the other loops over player_hand_container just set properties.
+	# Every play refreshes all hands, so an AI turn lands here mid-rearrange.
+	if container == player_hand_container:
+		_cancel_hand_drag()
 	for child in container.get_children():
 		child.queue_free()
 	for d in hand:
