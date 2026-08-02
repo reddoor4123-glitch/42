@@ -1845,6 +1845,12 @@ func _on_preset_chosen(key: String):
 	_start_hand()
 
 func _start_hand():
+	# Before anything else: a picker abandoned mid-decision in the previous hand
+	# is still visible, and _start_bidding() below would open the new hand's own
+	# picker underneath it. Must precede that call, which legitimately reopens
+	# bid_panel. Covers every route to a fresh hand — Next Hand, New Game, the
+	# main menu, and Settings -> Play, which is the one that was reported.
+	_close_all_pickers()
 	_hand_over = false
 	_armed_domino = null
 	_small_end_active = false
@@ -2001,6 +2007,7 @@ func _contract_floor(contract_type: int, auction_floor: int) -> int:
 			return auction_floor
 
 func _show_bid_panel():
+	_close_pickers_except(bid_panel)
 	for child in bid_buttons.get_children():
 		child.queue_free()
 	_pts_picker = null
@@ -2498,6 +2505,7 @@ func _finish_bidding(_unused: Array):
 			_begin_play()
 
 func _show_trump_panel(message: String = "You won the bid — call your trump suit"):
+	_close_pickers_except(trump_panel)
 	waiting_for_trump = true
 	var allow_follow = game.settings.allow_follow_me
 	var allow_doubles = game.settings.doubles_are_trump
@@ -2596,6 +2604,7 @@ func _on_trump_selected(suit: int):
 	_begin_play(leader)
 
 func _show_nello_panel():
+	_close_pickers_except(nello_panel)
 	waiting_for_nello_mode = true
 	_nello_reversed_btn.visible = game.settings.nello_doubles_reversed
 	_nello_back_btn.visible = _can_revisit_bid()
@@ -2631,6 +2640,7 @@ func _start_nello_exchange():
 	_show_nello_exchange_panel()
 
 func _show_nello_exchange_panel():
+	_close_pickers_except(nello_exchange_panel)
 	_populate_nello_exchange_hand()
 	nello_exchange_panel.visible = true
 	_set_status("Exchange a domino with your partner, or decline.")
@@ -3283,6 +3293,43 @@ func _play_area_slot_size() -> Vector2:
 	return Vector2(
 		max(TILE_PLAYED.x, label_w),
 		TILE_PLAYED.y + SLOT_VBOX_SEPARATION + f.get_height(fs))
+
+# ── Picker exclusivity ──────────────────────────────────────────────────────
+# The four bidding-flow pickers are sequential decisions — bid, then trump, or
+# Nello mode and then the exchange. Two open at once is always a bug: they are
+# siblings in play_vbox in construction order, so the earlier one renders above
+# the later and pushes it down, far enough on a short window to put the lower
+# picker's controls off the bottom of the screen.
+#
+# Each panel is otherwise opened and closed only by its own handlers, so one
+# abandoned mid-decision stays visible indefinitely. Settings -> Play taken while
+# Call Trump was up carried trump_panel into the next hand and stacked it over the
+# Nello exchange, which is what made the exchange look broken and unclickable
+# (reported August 1, 2026; see Spec_picker_panel_reset_Aug1_2026.md).
+#
+# Flags are cleared per-panel rather than all at once so that re-showing a picker
+# that is already up cannot clear its own flag. _show_bid_panel() re-runs on every
+# "More" and contract-type tap to redraw itself, with waiting_for_bid already true
+# and no caller about to set it again.
+func _close_pickers_except(keep: Control) -> void:
+	if is_instance_valid(bid_panel) and bid_panel != keep:
+		bid_panel.visible = false
+		waiting_for_bid = false
+	if is_instance_valid(trump_panel) and trump_panel != keep:
+		trump_panel.visible = false
+		waiting_for_trump = false
+	if is_instance_valid(nello_panel) and nello_panel != keep:
+		nello_panel.visible = false
+		waiting_for_nello_mode = false
+	# The exchange has no waiting_for_* flag of its own — its visibility is the
+	# whole of its state.
+	if is_instance_valid(nello_exchange_panel) and nello_exchange_panel != keep:
+		nello_exchange_panel.visible = false
+
+# Every picker down. What a fresh hand wants: nothing from the last auction may be
+# inherited, whether or not the new hand happens to open a picker of its own.
+func _close_all_pickers() -> void:
+	_close_pickers_except(null)
 
 # Vertical room the diamond needs: the top and bottom slots sit one slot-height
 # plus a gap apart centre to centre, so the whole span is two slots plus the gap.
